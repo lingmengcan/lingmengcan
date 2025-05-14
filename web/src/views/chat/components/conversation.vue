@@ -289,7 +289,7 @@
         </n-button>
 
         <div class="relative z-0 w-52 h-[40px] mr-9 bg-gray-200 rounded-sm text-neutral-800 text-sm flex items-center">
-          <selectModel v-model:modelName="selectedLlm" class="llm-select" model-type="GENERAL_LLM" />
+          <selectModel v-model:model-name="selectedLlm" class="llm-select" model-type="GENERAL_LLM" />
           <n-popover ref="popoverParamRef" trigger="click" placement="bottom-end" width="400">
             <template #trigger>
               <n-button :bordered="false" class="action-button action-button-border-l">

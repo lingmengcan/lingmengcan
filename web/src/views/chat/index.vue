@@ -5,6 +5,7 @@
   import { useChatStore } from '@/store/modules/chat';
   import List from './components/list.vue';
   import Conversation from './components/conversation.vue';
+  import Chatbox from './components/chatbox.vue';
   import { useDialog, useMessage } from 'naive-ui';
   import { useI18n } from 'vue-i18n';
 
@@ -76,11 +77,12 @@
         </div>
       </div>
     </div>
-    <div class="flex-1"><Conversation v-model:chat-list-visable="chatListVisable" /></div>
+    <div class="flex-1"><Chatbox /></div>
+    <!-- <div class="flex-1"><Conversation v-model:chat-list-visable="chatListVisable" /></div> -->
   </div>
 </template>
 
-<style lang="less" scoped>
+<style scoped>
   .action-button {
     @apply w-10 h-10 bg-gray-200 hover:bg-slate-200 rounded;
   }

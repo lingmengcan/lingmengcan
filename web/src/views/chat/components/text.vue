@@ -6,7 +6,8 @@
   import hljs from 'highlight.js';
   import { copyToClip } from '@/utils';
   import { useI18n } from 'vue-i18n';
-
+  import 'katex/dist/katex.min.css'; // 引入样式
+  
   const { t } = useI18n();
 
   interface Props {

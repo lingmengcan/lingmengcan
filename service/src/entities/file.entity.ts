@@ -1,6 +1,7 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
 import { Conversation } from './conversation.entity';
 import { IsNotEmpty } from 'class-validator';
+import { KnowledgeFile } from './knowledge-file.entity';
 
 @Index('file_conversation_id_foreign', ['conversationId'], {})
 @Entity('file', { schema: 'lmc' })
@@ -57,4 +58,7 @@ export class File {
   })
   @JoinColumn([{ name: 'conversation_id', referencedColumnName: 'conversationId' }])
   conversation: Conversation;
+
+  @OneToMany(() => KnowledgeFile, (knowledgeFile) => knowledgeFile.file)
+  knowledgeFiles: KnowledgeFile[];
 }
