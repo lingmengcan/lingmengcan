@@ -4,11 +4,11 @@ http:
   prefix: 'api'
 
 mysql:
-  host: 'gz-cynosdbmysql-grp-q8nof5dn.sql.tencentcdb.com'
-  port: 27886
-  database: 'lingmengcan'
+  host: 'localhost'
+  port: 3306
+  database: 'lingmengcan-ai'
   username: 'lingmengcan'
-  password: 'lingmengcan-AI(9'
+  password: '1234556'
   charset: 'utf8'
 
 mongodb:
