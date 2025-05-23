@@ -20,9 +20,11 @@ export interface Message {
   previousId?: string;
   conversationId: string;
   fileId?: string;
-  messageText: string;
+  content: string;
+  reasoning?: string;
   status: number;
   sender: string;
+  role: string;
   createdAt?: string;
   completed: number;
 }

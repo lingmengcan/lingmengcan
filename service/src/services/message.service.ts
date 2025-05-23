@@ -69,8 +69,10 @@ export class MessageService {
     entity.previousId = message.previousId;
     entity.conversationId = message.conversationId;
     entity.fileId = message.fileId;
-    entity.messageText = message.messageText;
+    entity.content = message.content;
     entity.sender = message.sender;
+    entity.role = message.role;
+    entity.reasoning = message.reasoning;
     entity.completed = message.completed;
     entity.status = message.status;
     entity.createdAt = new Date();
@@ -86,9 +88,13 @@ export class MessageService {
    */
   async updateMessage(message: Message) {
     const entity = await this.findOne(message.messageId);
-    entity.messageText = message.messageText;
+    entity.content = message.content;
+    entity.sender = message.sender;
+    entity.role = message.role;
+    entity.reasoning = message.reasoning;
     entity.status = message.status;
     entity.completed = message.completed;
+
     return this.repository.save(entity);
   }
 

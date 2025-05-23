@@ -66,10 +66,10 @@ export class ChatService {
     conversation.messages.forEach((item) => {
       // 获取历史消息，如果消息时间小于当前消息，并且文件id相同，则认为是历史消息，当时文件回答时，只获取当前文件的消息
       if (item.createdAt < new Date(message.createdAt) && message.fileId === item.fileId) {
-        if (item.sender === 'Human') {
-          messageHistory.addMessage(new HumanMessage(item.messageText));
-        } else if (item.sender === 'Assistant') {
-          messageHistory.addMessage(new AIMessage(item.messageText));
+        if (item.role === 'user') {
+          messageHistory.addMessage(new HumanMessage(item.content));
+        } else if (item.role === 'assistant') {
+          messageHistory.addMessage(new AIMessage(item.content));
         }
       }
     });
@@ -86,9 +86,9 @@ export class ChatService {
         },
       );
 
-      return this.chatfileOpenAi(message.messageText, temperature, messageHistory, model, vectorStore);
+      return this.chatfileOpenAi(message.content, temperature, messageHistory, model, vectorStore);
     } else {
-      return this.chatOpenAi(message.messageText, temperature, messageHistory, model);
+      return this.chatOpenAi(message.content, temperature, messageHistory, model);
     }
   }
 

@@ -122,7 +122,7 @@
   const message = useMessage();
   const dialog = useDialog();
 
-  const username = userStore.getUsername;
+  const username = userStore.username;
 
   const breadcrumbList = computed(() => {
     return generator(route.matched);

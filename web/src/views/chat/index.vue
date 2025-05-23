@@ -4,7 +4,6 @@
   import { ref } from 'vue';
   import { useChatStore } from '@/store/modules/chat';
   import List from './components/list.vue';
-  import Conversation from './components/conversation.vue';
   import Chatbox from './components/chatbox.vue';
   import { useDialog, useMessage } from 'naive-ui';
   import { useI18n } from 'vue-i18n';

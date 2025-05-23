@@ -59,7 +59,7 @@
     if (loading.value) {
       // 更新回答
       if (answer.value) {
-        answer.value.messageText = t('views.chat.PausedGeneration');
+        answer.value.content = t('views.chat.PausedGeneration');
         answer.value.completed = 1;
         chatStore.updateChatByConversationId(answer.value);
       }
@@ -94,8 +94,9 @@
     // 问题入库
     const newChat: Message = {
       conversationId: conversationId.value,
-      messageText: message,
+      content: message,
       sender: 'Human',
+      role: 'user',
       fileId,
       status: 0,
       completed: 1,
@@ -104,16 +105,16 @@
     const question = await chatStore.addChatByConversationId(newChat);
 
     if (fileId && question) {
-      question.messageText = t('views.chat.documentSummary');
+      question.content = t('views.chat.documentSummary');
     }
 
     // 创建回答
     answer.value = await chatStore.addChatByConversationId({
       conversationId: conversationId.value,
       previousId: question?.messageId,
-      messageText: '',
+      content: '',
       fileId,
-      sender: 'Assistant',
+      sender: 'assistant',
       status: 0,
       completed: 0,
     });
@@ -139,7 +140,7 @@
             while (true) {
               const { done, value } = await res.read();
               if (done) break;
-              answer.value.messageText += new TextDecoder().decode(value);
+              answer.value.content += new TextDecoder().decode(value);
 
               scrollToBottom();
             }
@@ -177,7 +178,7 @@
   async function onRegenerate(answer: Message) {
     // 等待回答
     try {
-      answer.messageText = '';
+      answer.content = '';
       answer.completed = 0;
 
       const fetchChatApiOnce = async () => {
@@ -193,7 +194,7 @@
             while (true) {
               const { done, value } = await res.read();
               if (done) break;
-              answer.messageText += new TextDecoder().decode(value);
+              answer.content += new TextDecoder().decode(value);
 
               scrollToBottom();
             }

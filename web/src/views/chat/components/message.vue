@@ -37,7 +37,7 @@
 
   async function handleCopy() {
     try {
-      await copyToClip(props.item?.messageText || '');
+      await copyToClip(props.item?.content || '');
       message.success(t('views.chat.copySuccess'));
     } catch {
       message.error(t('views.chat.copyFail'));
@@ -59,7 +59,7 @@
         ]"
       >
         <div class="flex flex-col w-full">
-          <Text ref="textRef" :text="item?.messageText" :loading="loading" :as-raw-text="asRawText" />
+          <Text ref="textRef" :text="item?.content" :loading="loading" :as-raw-text="asRawText" />
           <div
             v-if="isAi && !loading"
             class="flex flex-row items-center justify-between py-2 pb-0 mt-2 border-t border-gray-200"
