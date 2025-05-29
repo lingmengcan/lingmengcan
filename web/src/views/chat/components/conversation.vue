@@ -53,7 +53,7 @@
 
   const { scrollRef, scrollToBottom, scrollToBottomIfAtBottom } = useScroll();
 
-  const selectedLlm = ref('ChatGLM3');
+  const selectedLlm = ref('DeepSeek-V3');
 
   function handleStop() {
     if (loading.value) {

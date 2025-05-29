@@ -15,7 +15,8 @@
   const chatListVisable = ref(true);
 
   function handleAdd() {
-    chatStore.addConversation();
+    chatStore.addConversation(t('views.chat.new'));
+    chatStore.reloadRoute(chatStore.activeId);
   }
 
   function handleClear() {
@@ -43,7 +44,7 @@
             </n-icon>
             <div>{{ $t('views.chat.list') }}</div>
           </div>
-          <n-button class="action-button" @click="chatListVisable = !chatListVisable">
+          <n-button class="!w-10 !h-10" @click="chatListVisable = !chatListVisable">
             <template #icon>
               <n-icon>
                 <MenuFoldOutlined />
@@ -52,7 +53,7 @@
           </n-button>
         </div>
         <div class="mt-4">
-          <n-button dashed class="new-chat-button" @click="handleAdd">
+          <n-button dashed class="!w-full !h-10 !bg-white" @click="handleAdd">
             <template #icon>
               <n-icon>
                 <AddCircleOutline />
@@ -76,17 +77,6 @@
         </div>
       </div>
     </div>
-    <div class="flex-1"><Chatbox /></div>
-    <!-- <div class="flex-1"><Conversation v-model:chat-list-visable="chatListVisable" /></div> -->
+    <div class="flex-1"><Chatbox v-model:chat-list-visable="chatListVisable" /></div>
   </div>
 </template>
-
-<style scoped>
-  .action-button {
-    @apply w-10 h-10 bg-gray-200 hover:bg-slate-200 rounded;
-  }
-
-  .new-chat-button {
-    @apply w-full h-10 bg-white;
-  }
-</style>

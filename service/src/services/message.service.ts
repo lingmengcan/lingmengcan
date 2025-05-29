@@ -39,20 +39,20 @@ export class MessageService {
     });
 
     // 按聊天问题记录排序
-    const res = messages.reduce((acc, item) => {
-      if (item.sender === 'Human' || item.sender === 'System') {
-        acc.push(item);
+    // const res = messages.reduce((acc, item) => {
+    //   if (item.sender === 'Human' || item.sender === 'System') {
+    //     acc.push(item);
 
-        const aiMessages = messages.filter((msg) => msg.previousId === item.messageId);
+    //     const aiMessages = messages.filter((msg) => msg.previousId === item.messageId);
 
-        if (aiMessages?.length > 0) {
-          acc.push(...aiMessages);
-        }
-      }
-      return acc;
-    }, [] as Message[]);
+    //     if (aiMessages?.length > 0) {
+    //       acc.push(...aiMessages);
+    //     }
+    //   }
+    //   return acc;
+    // }, [] as Message[]);
 
-    return res;
+    return messages;
   }
 
   /**

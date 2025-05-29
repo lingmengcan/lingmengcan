@@ -60,6 +60,19 @@ export class ChatService {
     // 获取模型信息
     const model = await this.llmService.findByModelName(llm);
 
+    // const input = new HumanMessage({
+    //   content: [
+    //     {
+    //       type: 'text',
+    //       text: message.content,
+    //     },
+    //     {
+    //       type: 'image_url',
+    //       image_url: { url: imageUrl },
+    //     },
+    //   ],
+    // });
+
     // This is where you will store your chat history.
     const messageHistory = new ChatMessageHistory();
 

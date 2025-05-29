@@ -27,7 +27,7 @@ export class ConversationService {
       .createQueryBuilder('Conversation')
       .leftJoinAndSelect('Conversation.messages', 'Message')
       .where({ conversationId, status: 0 })
-      .orderBy({ 'Message.createdAt': 'ASC' })
+      .orderBy({ 'Message.createdAt': 'DESC' })
       .getOne();
 
     // 按聊天问题记录排序

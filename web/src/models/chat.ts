@@ -20,7 +20,7 @@ export interface Message {
   previousId?: string;
   conversationId: string;
   fileId?: string;
-  content: string;
+  content?: string;
   reasoning?: string;
   status: number;
   sender: string;

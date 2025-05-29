@@ -38,8 +38,8 @@ const importMessages = computed(() => {
 // 创建 i18n 实例
 export const i18n = createI18n({
   legacy: false,
-  locale: useLocalStorage(localeConfigKey, 'enUS').value || languages.value[0] || 'enUS',
-  fallbackLocale: 'enUS',
+  locale: useLocalStorage(localeConfigKey, 'en-US').value || languages.value[0] || 'en-US',
+  fallbackLocale: 'en-US',
   messages: importMessages.value,
   globalInjection: true,
 });
