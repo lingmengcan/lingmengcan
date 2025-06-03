@@ -3,8 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ChatDto {
   message: Message;
-  temperature: number;
-  llm: string;
 }
 
 export class ChatGlmDto {

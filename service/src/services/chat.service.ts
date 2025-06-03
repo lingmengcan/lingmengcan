@@ -21,6 +21,7 @@ import { Ollama } from '@langchain/ollama';
 import { Llm } from '@/entities/llm.entity';
 import { ChatPromptValueInterface } from '@langchain/core/dist/prompt_values';
 import { RunnableLike } from '@langchain/core/runnables';
+import { Conversation } from '@/entities/conversation.entity';
 
 @Injectable()
 export class ChatService {
@@ -33,32 +34,23 @@ export class ChatService {
 
   //自由对话
   async chat(dto: ChatDto) {
-    const { message, temperature, llm } = dto;
-    return this.chatLlm(message, temperature, llm);
+    const { message } = dto;
+    return this.chatLlm(message);
   }
 
   //重新回答
   async regenerate(dto: ChatDto) {
-    const { temperature, llm } = dto;
-
     // 获取问题
     const message = await this.messageService.findByMessageId(dto.message.previousId);
-    return this.chatLlm(message, temperature, llm);
+    return this.chatLlm(message);
   }
 
   // 调用大模型对话
-  async chatLlm(message: Message, temperature: number, llm: string) {
+  async chatLlm(message: Message) {
     const conversation = await this.conversationService.findByConversationId(message.conversationId);
 
-    // 变更大模型后更新
-    if (temperature !== conversation.temperature || llm !== conversation.llm) {
-      conversation.temperature = temperature;
-      conversation.llm = llm;
-      this.conversationService.updateConversation(conversation);
-    }
-
     // 获取模型信息
-    const model = await this.llmService.findByModelName(llm);
+    const model = await this.llmService.findByModelName(conversation.llm);
 
     // const input = new HumanMessage({
     //   content: [
@@ -99,32 +91,38 @@ export class ChatService {
         },
       );
 
-      return this.chatfileOpenAi(message.content, temperature, messageHistory, model, vectorStore);
+      return this.chatfileOpenAi(message.content, conversation, messageHistory, model, vectorStore);
     } else {
-      return this.chatOpenAi(message.content, temperature, messageHistory, model);
+      return this.chatOpenAi(message.content, conversation, messageHistory, model);
     }
   }
 
   //自由对话
-  async chatOpenAi(message: string, temperature: number, messageHistory: ChatMessageHistory, model: Llm) {
+  async chatOpenAi(message: string, conversation: Conversation, messageHistory: ChatMessageHistory, model: Llm) {
     //根据内容回答问题
 
     // 工厂函数，创建模型实例
-    function createModelInstance(model: Llm, temperature: number): RunnableLike<ChatPromptValueInterface, unknown> {
+    function createModelInstance(
+      model: Llm,
+      temperature: number,
+      topP: number,
+      maxTokens: number,
+    ): RunnableLike<ChatPromptValueInterface, unknown> {
       if (model.apiType === 'LLM_API_OLLAMA') {
         return new Ollama({
           model: model.modelName,
           temperature,
+          topP,
         });
       } else {
         return new ChatOpenAI(
-          { openAIApiKey: model.apiKey, temperature, streaming: true },
+          { openAIApiKey: model.apiKey, temperature, topP, maxTokens, streaming: true },
           { basePath: model.baseUrl },
         );
       }
     }
 
-    const llm = createModelInstance(model, temperature);
+    const llm = createModelInstance(model, conversation.temperature, conversation.topP, conversation.maxTokens);
 
     const prompt = ChatPromptTemplate.fromMessages([
       new MessagesPlaceholder('history'),
@@ -146,7 +144,7 @@ export class ChatService {
   //文档问答
   async chatfileOpenAi(
     message: string,
-    temperature: number,
+    conversation: Conversation,
     messageHistory: ChatMessageHistory,
     model: Llm,
     vectorStore: VectorStore,
@@ -156,7 +154,7 @@ export class ChatService {
     //根据内容回答问题
     // Instantiate your model and prompt.
     const llm = new ChatOpenAI(
-      { openAIApiKey: model.apiKey, temperature, streaming: true },
+      { openAIApiKey: model.apiKey, temperature: conversation.temperature, streaming: true },
       { basePath: model.baseUrl },
     );
     const prompt = ChatPromptTemplate.fromMessages([

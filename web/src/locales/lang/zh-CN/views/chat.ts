@@ -4,9 +4,6 @@ export default {
   list: '对话列表',
   new: '创建新对话',
   clearList: '清空列表',
-  copy: '复制',
-  copySuccess: '复制成功',
-  copyFail: '复制失败',
   paramsetting: '参数设置',
   temperature: '生成温度',
   temperatureTips: '较高的数值（例如0.8）会使输出更随机，而较低的数值（例如0.2）会使输出更加聚焦和确定性更强。',
@@ -16,13 +13,11 @@ export default {
   hiContent1: '你好，我是一个智能对话系统',
   hiContent2:
     '作为你的智能伙伴，可以回答问题、查找资料、提供建议和执行简单操作，帮助你更高效地获取所需信息并提供支持。',
-  stopGeneration: '停止生成',
-  PausedGeneration: 'Paused generation',
-  inputPlaceholder: '输入一条消息或键入“/”以选择提示...',
-  documentSummary: '输出文档摘要',
-  message: {
-    regenerate: '重新生成',
-  },
+
+  inputPlaceholder: '发消息、输入 @ 或 / 选择技能',
+  thought: '已深度思考',
+  thinking: '思考中',
+
   prompt: {
     index: '提示词',
     title: '标题',

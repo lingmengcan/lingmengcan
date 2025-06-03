@@ -10,7 +10,7 @@ const langModules = import.meta.glob('./lang/*/index.ts', { eager: true }) as Re
 // 存储语言模块和语言代码
 const langModuleMap = new Map<string, Object>();
 export const langCode: Array<string> = [];
-export const localeConfigKey = 'lingmengcan-ai-locale';
+export const localeConfigKey = 'lingmengcan-locale';
 
 // 获取浏览器默认语言环境
 const languages = usePreferredLanguages();

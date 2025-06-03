@@ -17,20 +17,20 @@
         <template #content="{ item, index }">
           <t-chat-reasoning v-if="item.reasoning?.length > 0" expand-icon-placement="right">
             <template #header>
-              <t-chat-loading v-if="isStreamLoad && index === 0" text="思考中..." />
+              <t-chat-loading v-if="isStreamLoad && index === 0" :text="$t('views.chat.thinking')" />
               <div v-else style="display: flex; align-items: center">
                 <CheckCircleIcon style="color: var(--td-success-color-5); font-size: 20px; margin-right: 8px" />
-                <span>已深度思考</span>
+                <span>{{ $t('views.chat.thought') }}</span>
               </div>
             </template>
             <t-chat-content v-if="item.reasoning.length > 0" :content="item.reasoning" />
           </t-chat-reasoning>
           <t-chat-content v-if="item.content.length > 0" :content="item.content" />
         </template>
-        <template #actions="{ item }">
+        <template #actions="{ item, index }">
           <t-chat-action
             :content="item.content"
-            :operation-btn="['good', 'bad', 'replay', 'copy']"
+            :operation-btn="index === 0 ? ['good', 'bad', 'replay', 'copy'] : ['good', 'bad', 'copy']"
             @operation="handleOperation"
           />
         </template>
@@ -38,14 +38,82 @@
           <t-chat-sender
             :stop-disabled="isStreamLoad"
             :textarea-props="{
-              placeholder: '发消息、输入 @ 或 / 选择技能',
+              placeholder: $t('views.chat.inputPlaceholder'),
             }"
             @send="inputEnter"
             @file-select="fileSelect"
             @stop="onStop"
           >
-            <template #inner-header>
-              <div>abc</div>
+            <template #header>
+              <div class="m-1">
+                <t-popup>
+                  <t-button shape="circle" theme="default">
+                    <template #icon><SettingIcon /></template>
+                  </t-button>
+                  <template #content>
+                    <div class="p-3 min-w-96">
+                      <!-- 顶部标题栏 -->
+                      <div class="flex justify-between items-center mb-8">
+                        <h2>高级参数</h2>
+                        <t-button variant="text">
+                          <close-icon class="text-[#94A3B8] hover:text-blue" />
+                        </t-button>
+                      </div>
+
+                      <!-- 参数表单 -->
+                      <t-space direction="vertical" class="w-full">
+                        <t-row>system prompt</t-row>
+                        <t-row>
+                          <t-textarea
+                            v-model="systemPrompt"
+                            placeholder="For mathematical formulas, please wrap the formula with $$ or $"
+                          />
+                        </t-row>
+                        <t-row>temperature</t-row>
+                        <t-row>
+                          <t-slider
+                            v-model="temperature"
+                            size="small"
+                            :min="0"
+                            :max="1"
+                            :step="0.1"
+                            :inputNumberProps="inputNumberConfig"
+                          />
+                        </t-row>
+                        <t-row>top_p</t-row>
+                        <t-row>
+                          <t-slider
+                            v-model="topP"
+                            size="small"
+                            :min="0"
+                            :max="1"
+                            :step="0.1"
+                            :inputNumberProps="inputNumberConfig"
+                          />
+                        </t-row>
+                        <t-row>max_tokens</t-row>
+                        <t-row>
+                          <t-slider
+                            v-model="maxTokens"
+                            size="small"
+                            :min="1"
+                            :max="9999"
+                            :inputNumberProps="inputNumberConfig"
+                          />
+                        </t-row>
+                      </t-space>
+
+                      <!-- 底部操作栏 -->
+                      <div class="flex justify-between items-center pt-4 mt-8 border-t border-[#465672]">
+                        <div class="flex gap-3">
+                          <t-button variant="outline" @click="handleCancel">取消</t-button>
+                          <t-button type="button" theme="primary">确定</t-button>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </t-popup>
+              </div>
             </template>
             <template #prefix>
               <div class="flex items-center gap-2">
@@ -77,7 +145,7 @@
     ChatLoading as TChatLoading,
     ChatReasoning as TChatReasoning,
   } from '@tdesign-vue-next/chat';
-  import { SystemSumIcon, CheckCircleIcon, ChatBubble1Icon } from 'tdesign-icons-vue-next';
+  import { SystemSumIcon, CheckCircleIcon, ChatBubble1Icon, SettingIcon, CloseIcon } from 'tdesign-icons-vue-next';
   import { useRoute } from 'vue-router';
   import { useChatStore } from '@/store/modules/chat';
   import { useUserStore } from '@/store/modules/user';
@@ -91,6 +159,16 @@
       type: [Boolean] as PropType<boolean>,
       default: true,
     },
+  });
+
+  const handleCancel = () => {
+    // 取消逻辑
+  };
+
+  const inputNumberConfig = ref({
+    theme: 'normal', // 主题样式
+    style: { width: '50px' }, // 自定义样式
+    size: 'small', // 尺寸
   });
 
   const emit = defineEmits(['update:chatListVisable']);
@@ -107,7 +185,10 @@
 
   const chatRef = ref();
   const selectedLlm = ref('qwen3-30b-a3b');
+  const systemPrompt = ref('');
   const temperature = ref(0.5);
+  const topP = ref(1);
+  const maxTokens = ref(7000);
 
   interface ChatItem extends Message {
     avatar?: string;

@@ -143,7 +143,7 @@
   };
 
   const navToGitHub = () => {
-    window.open('https://github.com/lingmengcan/lingmengcan-ai');
+    window.open('https://github.com/lingmengcan/lingmengcan');
   };
 
   // 切换全屏图标
