@@ -76,10 +76,10 @@
         <n-form-item :label="$t('views.system.role.sort')" path="sort">
           <n-input-number v-model:value="drawerFormData.sort" :min="0" />
         </n-form-item>
-        <n-form-item :label="$t('common.status')" name="status">
+        <n-form-item :label="$t('common.status')" path="status">
           <selectStatus v-model:status="drawerFormData.status" />
         </n-form-item>
-        <n-form-item :label="$t('views.system.role.description')" name="description">
+        <n-form-item :label="$t('views.system.role.description')" path="description">
           <n-input
             v-model:value="drawerFormData.description"
             type="textarea"

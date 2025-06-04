@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Avatar: typeof import('./src/components/avatar/index.vue')['default']
+    InputSlider: typeof import('./src/components/input/input-slider.vue')['default']
     NAutoComplete: typeof import('naive-ui')['NAutoComplete']
     NAvatar: typeof import('naive-ui')['NAvatar']
     NBackTop: typeof import('naive-ui')['NBackTop']
@@ -28,6 +29,7 @@ declare module 'vue' {
     NDrawerContent: typeof import('naive-ui')['NDrawerContent']
     NDropdown: typeof import('naive-ui')['NDropdown']
     NEllipsis: typeof import('naive-ui')['NEllipsis']
+    NFlex: typeof import('naive-ui')['NFlex']
     NForm: typeof import('naive-ui')['NForm']
     NFormItem: typeof import('naive-ui')['NFormItem']
     NFormItemGi: typeof import('naive-ui')['NFormItemGi']
@@ -75,5 +77,18 @@ declare module 'vue' {
     SelectModel: typeof import('./src/components/select/select-model.vue')['default']
     SelectStatus: typeof import('./src/components/select/select-status.vue')['default']
     SelectTag: typeof import('./src/components/select/select-tag.vue')['default']
+    TButton: typeof import('tdesign-vue-next')['Button']
+    TCol: typeof import('tdesign-vue-next')['Col']
+    TForm: typeof import('tdesign-vue-next')['Form']
+    TFormItem: typeof import('tdesign-vue-next')['FormItem']
+    TIcon: typeof import('tdesign-vue-next')['Icon']
+    TInputNumber: typeof import('tdesign-vue-next')['InputNumber']
+    TLink: typeof import('tdesign-vue-next')['Link']
+    TPopup: typeof import('tdesign-vue-next')['Popup']
+    TRow: typeof import('tdesign-vue-next')['Row']
+    TSlider: typeof import('tdesign-vue-next')['Slider']
+    TSpace: typeof import('tdesign-vue-next')['Space']
+    TSwitch: typeof import('tdesign-vue-next')['Switch']
+    TTextarea: typeof import('tdesign-vue-next')['Textarea']
   }
 }

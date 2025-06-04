@@ -1,7 +1,7 @@
-<h1 align="center">AIGC Application Platform: Lingmengcan AI</h1>
+<h1 align="center">AIGC Application Platform: Lingmengcan</h1>
 <p align="center">English | <a href="README.zh-CN.md">中文</a> </p>
 
-Lingmengcan AI is an AI system based on large models.Currently, it provides functions such as large language model dialogue, model management, text-to-image generation, and background role management. The technology stack used includes Stable Diffusion, OpenAI, ChatGPT, LangChainJS as the AI layer, Vue 3, Naive UI, and Tailwind CSS for the UI layer, and NestJS, LangChainJS, Ollama, and MySQL for the service layer, with ChromaDB as the vector database. This project is a knowledge base enhancement solution that can achieve **fully localized** reasoning and also provides AIGC functions, focusing on solving the pain points of enterprises regarding data security protection and private domain deployment.
+Lingmengcan is an AI system based on large models.Currently, it provides functions such as large language model dialogue, model management, text-to-image generation, and background role management. The technology stack used includes Stable Diffusion, OpenAI, ChatGPT, LangChainJS as the AI layer, Vue 3, Naive UI, and Tailwind CSS for the UI layer, and NestJS, LangChainJS, Ollama, and MySQL for the service layer, with ChromaDB as the vector database. This project is a knowledge base enhancement solution that can achieve **fully localized** reasoning and also provides AIGC functions, focusing on solving the pain points of enterprises regarding data security protection and private domain deployment.
 
 ## Community
 
@@ -108,7 +108,7 @@ The local API service of the local chatglm3 openai mode is enabled. The hardware
   pnpm dev
 ```
 
-Now, you can experience Lingmengcan AI by visiting http://localhost:8089.
+Now, you can experience Lingmengcan by visiting http://localhost:8089.
 
 ### Screenshots and Function Demonstration
 

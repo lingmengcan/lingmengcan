@@ -34,5 +34,10 @@
 </script>
 
 <template>
-  <n-select :value="modelName" :options="options" @update:value="handleSelect" />
+  <n-select
+    :value="modelName"
+    :options="options"
+    @update:value="handleSelect"
+    class="[&_.n-base-selection]:rounded-lg"
+  />
 </template>

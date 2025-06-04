@@ -10,20 +10,24 @@
     >
       <n-grid :cols="24" :x-gap="24">
         <n-form-item-gi :span="5" path="modelName">
-          <n-input v-model:value="queryFormData.modelName" placeholder="请输入模型名称" />
+          <n-input v-model:value="queryFormData.modelName" :placeholder="$t('views.llm.model.placeholder.modelName')" />
         </n-form-item-gi>
         <n-form-item-gi :span="5" path="modelType">
           <selectDict v-model:dict-code="queryFormData.modelType" :multiple="true" dict-type="LLM_TYPE" />
         </n-form-item-gi>
         <n-form-item-gi :span="8">
           <n-space>
-            <n-button @click="clearQuery">重置</n-button>
-            <n-button v-permission="['llm_model_index']" type="primary" @click="handleQuery">查询</n-button>
+            <n-button @click="clearQuery">{{ $t('common.reset') }}</n-button>
+            <n-button v-permission="['llm_model_index']" type="primary" @click="handleQuery">
+              {{ $t('common.query') }}
+            </n-button>
           </n-space>
         </n-form-item-gi>
         <n-gi :span="6">
           <div class="float-right">
-            <n-button v-permission="['llm_model_index']" type="primary" @click="handleAdd">录入模型</n-button>
+            <n-button v-permission="['llm_model_index']" type="primary" @click="handleAdd">
+              {{ $t('views.llm.model.add') }}
+            </n-button>
           </div>
         </n-gi>
       </n-grid>
@@ -43,7 +47,7 @@
       >
         <div>{{ item.description }}</div>
         <template #footer>
-          <div class="text-center">调试</div>
+          <div class="text-center">{{ $t('views.llm.model.view') }}</div>
         </template>
       </n-card>
     </n-grid-item>
@@ -57,7 +61,7 @@
     show-size-picker
     @update:page="handlePageChange"
   >
-    <template #prefix="{}">共 {{ itemCount }} 条数据</template>
+    <template #prefix="{}">{{ itemCount }} {{ $t('common.paginationItemCount') }}</template>
   </n-pagination>
 
   <!-- 新增修改模型 -->
@@ -70,38 +74,45 @@
         :model="drawerFormData"
         :rules="drawerRules"
       >
-        <n-form-item label="模型名称" path="modelName">
-          <n-input v-model:value="drawerFormData.modelName" placeholder="输入模型名称" />
+        <n-form-item :label="$t('views.llm.model.name')" path="modelName">
+          <n-input
+            v-model:value="drawerFormData.modelName"
+            :placeholder="$t('views.llm.model.placeholder.modelName')"
+          />
         </n-form-item>
-        <n-form-item label="描述" name="description">
-          <n-input v-model:value="drawerFormData.description" type="textarea" placeholder="请输入模型描述" />
+        <n-form-item :label="$t('views.llm.model.description')" path="description">
+          <n-input
+            v-model:value="drawerFormData.description"
+            type="textarea"
+            :placeholder="$t('views.llm.model.placeholder.description')"
+          />
         </n-form-item>
-        <n-form-item label="模型类型" path="modelType">
+        <n-form-item :label="$t('views.llm.model.type')" path="modelType">
           <selectDict
             v-model:dict-code="drawerFormData.modelType"
             v-model:dict-name="drawerFormData.modelTypeName"
             dict-type="LLM_TYPE"
           />
         </n-form-item>
-        <n-form-item label="访问类型OpenAI/Ollama" name="apiType">
+        <n-form-item :label="$t('views.llm.model.apiType')" path="apiType">
           <selectDict v-model:dict-code="drawerFormData.apiType" dict-type="LLM_API_TYPE" />
         </n-form-item>
-        <n-form-item label="base url" name="baseUrl">
-          <n-input v-model:value="drawerFormData.baseUrl" placeholder="请输入模型api url" />
+        <n-form-item :label="$t('views.llm.model.baseUrl')" path="baseUrl">
+          <n-input v-model:value="drawerFormData.baseUrl" :placeholder="$t('views.llm.model.placeholder.baseUrl')" />
         </n-form-item>
-        <n-form-item label="api key" name="apiKey">
-          <n-input v-model:value="drawerFormData.apiKey" placeholder="请输入模型api key" />
+        <n-form-item :label="$t('views.llm.model.apiKey')" path="apiKey">
+          <n-input v-model:value="drawerFormData.apiKey" :placeholder="$t('views.llm.model.placeholder.apiKey')" />
         </n-form-item>
-        <n-form-item label="默认embedding模型" name="defaultEmbeddingModel">
+        <n-form-item :label="$t('views.llm.model.defaultEmbeddingModel')" path="defaultEmbeddingModel">
           <selectModel v-model:model-name="drawerFormData.defaultEmbeddingModel" model-type="EMBEDDING_LLM" />
         </n-form-item>
-        <n-form-item label="状态" name="status">
+        <n-form-item :label="$t('common.status')" path="status">
           <selectDict v-model:dict-code="drawerFormData.status" dict-type="SYS_STATUS" />
         </n-form-item>
       </n-form>
       <template #footer>
         <n-space>
-          <n-button type="primary" attr-type="button" @click="handleAddandEdit">确定</n-button>
+          <n-button type="primary" attr-type="button" @click="handleAddandEdit">{{ $t('common.confirm') }}</n-button>
         </n-space>
       </template>
     </n-drawer-content>
@@ -153,11 +164,11 @@
   const drawerFormData = ref(modelInitData);
 
   const drawerRules = {
-    modelName: { required: true, message: '模型名称必填', trigger: 'blur' },
-    description: { required: true, message: '模型描述必填', trigger: 'blur' },
-    modelType: { required: true, message: '模型类型必填', trigger: 'blur' },
-    sort: { type: 'number', required: true, message: '排序必填', trigger: 'blur' },
-    status: { required: true, message: '状态必填', trigger: 'blur' },
+    modelName: { required: true, message: t('views.llm.model.placeholder.modelName'), trigger: 'blur' },
+    description: { required: true, message: t('views.llm.model.placeholder.description'), trigger: 'blur' },
+    modelType: { required: true, message: t('views.llm.model.placeholder.modelType'), trigger: 'blur' },
+    status: { required: true, message: t('views.llm.model.placeholder.status'), trigger: 'blur' },
+    sort: { required: true, type: 'number', message: t('views.llm.model.placeholder.status'), trigger: 'blur' },
   };
 
   // 绑定表格数据
@@ -199,15 +210,15 @@
 
   // 新增
   const handleAdd = async () => {
-    drawerTitle.value = '录入模型';
+    drawerTitle.value = t('views.llm.model.add');
     showDrawer.value = true;
 
     drawerFormData.value = { ...modelInitData };
   };
 
-  // 修改字典
+  // 修改
   const handleEdit = async (item: Llm) => {
-    drawerTitle.value = '修改模型';
+    drawerTitle.value = t('views.llm.model.edit');
     showDrawer.value = true;
 
     // 赋值
@@ -217,7 +228,7 @@
 
   const handleAddandEdit = (e: MouseEvent) => {
     e.preventDefault();
-    const messageReactive = message.loading('处理中', {
+    const messageReactive = message.loading('loading', {
       duration: 0,
     });
     drawerFormRef.value?.validate(async (errors) => {

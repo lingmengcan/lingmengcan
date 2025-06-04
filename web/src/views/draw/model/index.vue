@@ -99,25 +99,25 @@
         <n-form-item
           v-if="drawerFormData.modelType !== 'BASE_MODEL' && drawerFormData.modelType !== 'NOT_DIFFUSION_MODEL'"
           :label="$t('views.draw.model.baseModel')"
-          name="BaseModelId"
+          path="BaseModelId"
         >
           <selectDiffusion v-model:model-id="drawerFormData.baseModelId" model-type="BASE_MODEL" />
         </n-form-item>
-        <n-form-item v-if="drawerFormData.modelType !== 'BASE_MODEL'" :label="$t('views.draw.model.tags')" name="tags">
+        <n-form-item v-if="drawerFormData.modelType !== 'BASE_MODEL'" :label="$t('views.draw.model.tags')" path="tags">
           <selectDict
             v-model:dict-code="drawerFormData.tags"
             :multiple="true"
             :dict-type="['DIFFUSION_TAGS', 'TOPIC', 'STYLE']"
           />
         </n-form-item>
-        <n-form-item :label="$t('views.draw.model.description')" name="description">
+        <n-form-item :label="$t('views.draw.model.description')" path="description">
           <n-input
             v-model:value="drawerFormData.description"
             type="textarea"
             :placeholder="$t('views.draw.model.placeholder.description')"
           />
         </n-form-item>
-        <n-form-item :label="$t('views.draw.model.cover')" name="modelCover">
+        <n-form-item :label="$t('views.draw.model.cover')" path="modelCover">
           <n-upload
             accept=".png,.jpeg,.jpg"
             action="/api/file/upload-image"
@@ -132,7 +132,7 @@
             {{ $t('views.draw.model.upload') }}
           </n-upload>
         </n-form-item>
-        <n-form-item :label="$t('common.status')" name="status">
+        <n-form-item :label="$t('common.status')" path="status">
           <selectDict v-model:dict-code="drawerFormData.status" dict-type="SYS_STATUS" />
         </n-form-item>
       </n-form>
@@ -246,7 +246,7 @@
     modelCoverRef.value = [];
   };
 
-  // 修改字典
+  // 修改
   const handleEdit = async (item: DiffusionModel) => {
     drawerTitle.value = t('views.draw.model.edit');
     showDrawer.value = true;

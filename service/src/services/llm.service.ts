@@ -125,7 +125,7 @@ export class LlmService {
   }
 
   /**
-   * 修改用户
+   * 修改
    *
    * @param model 用户信息
    * @return 结果

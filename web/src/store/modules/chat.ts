@@ -13,7 +13,6 @@ import {
 import { Message, Conversation } from '@/models/chat';
 import router from '@/router';
 import { defineStore } from 'pinia';
-import i18n from '@/locales';
 
 export interface ChatState {
   activeId: string | undefined;
@@ -37,24 +36,12 @@ export const useChatStore = defineStore('chat-store', {
       }
     },
 
-    async addConversation(temperature = 0.5, llm = 'ChatGLM3') {
-      // 显式类型注解
-      const t = i18n.global.t as (key: string) => string;
-      const defaultConversation = {
-        conversationName: t('views.chat.new'),
-        temperature,
-        llm,
-        userName: '',
-        status: 0,
-      };
-
-      const res = await addConversation(defaultConversation);
+    async addConversation(conversation: Conversation) {
+      const res = await addConversation(conversation);
 
       if (res?.code === 0) {
-        const conversation = res.data;
-        this.conversationList.unshift(conversation);
-        this.activeId = conversation.conversationId;
-        this.reloadRoute(conversation.conversationId);
+        this.conversationList.unshift(res.data);
+        this.activeId = res.data.conversationId;
       }
     },
 
@@ -138,8 +125,6 @@ export const useChatStore = defineStore('chat-store', {
     },
 
     async reloadRoute(conversationId?: string | undefined) {
-      // this.setConversationList();
-
       await router.push({ name: 'chat', params: { conversationId } });
     },
   },

@@ -102,9 +102,9 @@ export async function httpStream(url: string, data: any) {
 
   if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-  const reader = res.body?.getReader();
+  // const reader = res.body?.getReader();
 
-  return reader;
+  return res;
 }
 
 /**

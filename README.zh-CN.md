@@ -1,7 +1,7 @@
-<h1 align="center">大模型 AI 应用平台 Lingmengcan AI</h1>
+<h1 align="center">Lingmengcan 大模型开发平台 Lingmengcan</h1>
 <p align="center"><a href="README.md">English</a> | 中文</p>
 
-lingmengcan-ai 是一个基于大模型的 ai 系统，目前提供大语言模型对话、模型管理、文生图和后台角色管理等等功能。使用的技术栈，包括 stable deffusion、openai、chatgpt、LangChainJS 作为 ai 层，Vue 3、Naive UI 和 Tailwind CSS 构建 UI 层，以及 NestJS、LangChainJS、Ollama、MySQL 为服务层，chromadb 为向量数据库。该项目是一个可以实现**完全本地化**推理的知识库增强方案，同时提供 AIGC 功能， 重点解决数据安全保护，私域化部署的企业痛点。
+lingmengcan 大模型开发平台提供端到端的一站式大模型应用开发落地方案，让用户可以自助的完成知识库管理、应用编排、应用评测、应用运营、模型精调等功能；同时提供大语言模型对话、模型管理、文生图和后台角色管理等等功能。使用的技术栈，包括 stable deffusion、openai、chatgpt、LangChainJS 作为 ai 层，Vue 3、Naive UI 和 Tailwind CSS 构建 UI 层，以及 NestJS、LangChainJS、Ollama、MySQL 为服务层，chromadb 为向量数据库。该项目是一个可以实现**完全本地化**推理的知识库增强方案，同时提供 AIGC 功能， 重点解决数据安全保护，私域化部署的企业痛点。
 
 ## 社区
 
@@ -100,7 +100,7 @@ python api_server.py
   pnpm dev
 ```
 
-现在，您可以通过访问 http://localhost:8089 来体验 lingmengcan-ai。
+现在，您可以通过访问 http://localhost:8089 来体验 lingmengcan。
 
 ### 项目截图和功能演示
 

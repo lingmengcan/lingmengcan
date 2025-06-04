@@ -23,7 +23,7 @@ async function bootstrap() {
 
   // 生成api文档, swagger
   const config = new DocumentBuilder()
-    .setTitle('lingmengcan ai api')
+    .setTitle('lingmengcan api')
     .setDescription('api文档')
     .setVersion('0.1.0')
     .build();

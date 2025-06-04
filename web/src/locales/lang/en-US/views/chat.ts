@@ -4,9 +4,6 @@ export default {
   list: 'Conversation List',
   new: 'New Chat',
   clearList: 'Clear List',
-  copy: 'Copy',
-  copySuccess: 'Copy Successed',
-  copyFail: 'Copy Failed',
   paramsetting: 'Parameter Settings',
   temperature: 'Generation Temperature',
   temperatureTips:
@@ -17,13 +14,10 @@ export default {
   hiContent1: 'Hello, I am an intelligent dialogue system.',
   hiContent2:
     'As your intelligent partner, I can answer questions, find information, provide suggestions, and perform simple operations to help you obtain the information you need more efficiently and provide support.',
-  stopGeneration: 'Stop Generation',
-  PausedGeneration: 'Paused Generation',
-  inputPlaceholder: 'Enter a message or type "/" to select a prompt...',
-  documentSummary: 'Document Summary',
-  message: {
-    regenerate: 'Regenerate',
-  },
+  inputPlaceholder: 'Send a message, enter @ or / to select skills',
+  thought: 'Deeply thought through',
+  thinking: 'Thinking...',
+
   prompt: {
     index: 'Prompt',
     title: 'Title',

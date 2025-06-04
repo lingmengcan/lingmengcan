@@ -24,13 +24,13 @@ DROP TABLE IF EXISTS `control_net_preprocessor`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `control_net_preprocessor` (
   `preprocessor_id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `preprocessor_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `preprocessor_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `preprocessor_code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `preprocessor_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `params` json NOT NULL,
   `sort` int NOT NULL,
   `status` tinyint(1) NOT NULL,
-  `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `created_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `updated_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `created_at` datetime NOT NULL,

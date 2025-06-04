@@ -18,12 +18,22 @@ export class Message {
   @IsNotEmpty()
   fileId: string;
 
-  @Column({ type: 'text', name: 'message_text' })
-  messageText: string;
+  @Column({ type: 'text', name: 'content' })
+  content: string;
 
-  @Column('tinyint', {
-    name: 'completed',
-  })
+  @Column({ type: 'text', name: 'reasoning' })
+  @IsNotEmpty()
+  reasoning: string;
+
+  @Column({ type: 'varchar', name: 'sender' })
+  @IsNotEmpty()
+  sender: string;
+
+  @Column({ type: 'varchar', name: 'role' })
+  @IsNotEmpty()
+  role: string;
+
+  @Column({ type: 'tinyint', name: 'completed' })
   @IsNotEmpty()
   completed: number;
 
@@ -33,12 +43,6 @@ export class Message {
   })
   @IsNotEmpty()
   status: number;
-
-  @Column('varchar', {
-    name: 'sender',
-  })
-  @IsNotEmpty()
-  sender: string;
 
   @Column('datetime', {
     name: 'created_at',

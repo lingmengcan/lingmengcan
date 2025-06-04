@@ -39,20 +39,20 @@ export class MessageService {
     });
 
     // 按聊天问题记录排序
-    const res = messages.reduce((acc, item) => {
-      if (item.sender === 'Human' || item.sender === 'System') {
-        acc.push(item);
+    // const res = messages.reduce((acc, item) => {
+    //   if (item.sender === 'Human' || item.sender === 'System') {
+    //     acc.push(item);
 
-        const aiMessages = messages.filter((msg) => msg.previousId === item.messageId);
+    //     const aiMessages = messages.filter((msg) => msg.previousId === item.messageId);
 
-        if (aiMessages?.length > 0) {
-          acc.push(...aiMessages);
-        }
-      }
-      return acc;
-    }, [] as Message[]);
+    //     if (aiMessages?.length > 0) {
+    //       acc.push(...aiMessages);
+    //     }
+    //   }
+    //   return acc;
+    // }, [] as Message[]);
 
-    return res;
+    return messages;
   }
 
   /**
@@ -69,8 +69,10 @@ export class MessageService {
     entity.previousId = message.previousId;
     entity.conversationId = message.conversationId;
     entity.fileId = message.fileId;
-    entity.messageText = message.messageText;
+    entity.content = message.content;
     entity.sender = message.sender;
+    entity.role = message.role;
+    entity.reasoning = message.reasoning;
     entity.completed = message.completed;
     entity.status = message.status;
     entity.createdAt = new Date();
@@ -86,9 +88,13 @@ export class MessageService {
    */
   async updateMessage(message: Message) {
     const entity = await this.findOne(message.messageId);
-    entity.messageText = message.messageText;
+    entity.content = message.content;
+    entity.sender = message.sender;
+    entity.role = message.role;
+    entity.reasoning = message.reasoning;
     entity.status = message.status;
     entity.completed = message.completed;
+
     return this.repository.save(entity);
   }
 

@@ -14,11 +14,20 @@ export class Conversation {
   @Column('varchar', { name: 'user_name', length: 32 })
   userName: string;
 
+  @Column('varchar', { name: 'llm', length: 128 })
+  llm: string;
+
   @Column('float', { name: 'temperature' })
   temperature: number;
 
-  @Column('varchar', { name: 'llm', length: 128 })
-  llm: string;
+  @Column('int', { name: 'max_tokens' })
+  maxTokens: number;
+
+  @Column('float', { name: 'top_p' })
+  topP: number;
+
+  @Column('text', { name: 'system_prompt' })
+  systemPrompt: string;
 
   @Column('tinyint', {
     name: 'status',

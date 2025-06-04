@@ -481,10 +481,10 @@
         <n-form-item :label="$t('views.system.user.sex')" path="sex">
           <selectDict v-model:dict-code="drawerFormData.sex" dict-type="SYS_SEX" />
         </n-form-item>
-        <n-form-item :label="$t('views.system.user.status')" name="status">
+        <n-form-item :label="$t('views.system.user.status')" path="status">
           <selectStatus v-model:status="drawerFormData.status" />
         </n-form-item>
-        <n-form-item :label="$t('views.system.user.description')" name="description">
+        <n-form-item :label="$t('views.system.user.description')" path="description">
           <n-input
             v-model:value="drawerFormData.description"
             type="textarea"

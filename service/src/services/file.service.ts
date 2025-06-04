@@ -66,7 +66,7 @@ export class FileService {
 
     // 文本切割,将文档拆分为块，这里要优化，不能只用中文符号切割
     const textSplitter = new RecursiveCharacterTextSplitter({
-      separators: ['\n\n', '\n', '。', '！', '？'],
+      // separators: ['\n\n', '\n', '。', '！', '？'],
       chunkSize: 400,
       chunkOverlap: 100,
     });

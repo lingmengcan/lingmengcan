@@ -45,7 +45,6 @@ export const deleteMessagesByConversationId = (data: String) =>
 // 重新生成
 export const regenerate = (data: ChatParams) => {
   return httpStream('/chat/regenerate', data);
-  // return http.request<any>('chat/regenerate', Method.POST, data);
 };
 
 // 流式对话
