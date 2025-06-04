@@ -155,6 +155,7 @@
     if (!inputValue) return;
 
     if (conversationId.value) {
+      await chatStore.updateConversation(conversation.value);
       onConversation(inputValue);
     } else {
       conversation.value.conversationName = inputValue.substring(0, 20);
