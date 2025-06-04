@@ -30,20 +30,6 @@ export class ConversationService {
       .orderBy({ 'Message.createdAt': 'DESC' })
       .getOne();
 
-    // 按聊天问题记录排序
-    // conversation.messages = conversation.messages.reduce((acc, item) => {
-    //   if (item.sender === 'Human' || item.sender === 'System') {
-    //     acc.push(item);
-
-    //     const aiMessages = conversation.messages.filter((msg) => msg.previousId === item.messageId);
-
-    //     if (aiMessages?.length > 0) {
-    //       acc.push(...aiMessages);
-    //     }
-    //   }
-    //   return acc;
-    // }, [] as Message[]);
-
     return conversation;
   }
 
@@ -74,6 +60,9 @@ export class ConversationService {
     entity.userName = conversation.userName;
     entity.status = conversation.status;
     entity.temperature = conversation.temperature;
+    entity.systemPrompt = conversation.systemPrompt;
+    entity.topP = conversation.topP;
+    entity.maxTokens = conversation.maxTokens;
     entity.llm = conversation.llm;
     entity.createdAt = new Date();
     entity.updatedAt = new Date();
@@ -91,6 +80,9 @@ export class ConversationService {
     entity.conversationName = conversation.conversationName;
     entity.llm = conversation.llm;
     entity.temperature = conversation.temperature;
+    entity.systemPrompt = conversation.systemPrompt;
+    entity.topP = conversation.topP;
+    entity.maxTokens = conversation.maxTokens;
     entity.status = conversation.status;
     entity.updatedAt = new Date();
     return this.repository.save(entity);

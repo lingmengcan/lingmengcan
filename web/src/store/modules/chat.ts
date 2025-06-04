@@ -36,21 +36,12 @@ export const useChatStore = defineStore('chat-store', {
       }
     },
 
-    async addConversation(inputValue: string, temperature = 0.5, llm = 'DeepSeek-V3') {
-      const defaultConversation = {
-        conversationName: inputValue.substring(0, 20),
-        temperature,
-        llm,
-        userName: '',
-        status: 0,
-      };
-
-      const res = await addConversation(defaultConversation);
+    async addConversation(conversation: Conversation) {
+      const res = await addConversation(conversation);
 
       if (res?.code === 0) {
-        const conversation = res.data;
-        this.conversationList.unshift(conversation);
-        this.activeId = conversation.conversationId;
+        this.conversationList.unshift(res.data);
+        this.activeId = res.data.conversationId;
       }
     },
 

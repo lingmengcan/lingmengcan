@@ -27,7 +27,7 @@ export class Conversation {
   topP: number;
 
   @Column('text', { name: 'system_prompt' })
-  systemPrompt: number;
+  systemPrompt: string;
 
   @Column('tinyint', {
     name: 'status',

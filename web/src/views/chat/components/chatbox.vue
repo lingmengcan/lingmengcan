@@ -46,80 +46,14 @@
           >
             <template #header>
               <div class="m-1">
-                <t-popup>
-                  <t-button shape="circle" theme="default">
-                    <template #icon><SettingIcon /></template>
-                  </t-button>
-                  <template #content>
-                    <div class="p-3 min-w-96">
-                      <!-- 顶部标题栏 -->
-                      <div class="flex justify-between items-center mb-8">
-                        <h2>高级参数</h2>
-                        <t-button variant="text">
-                          <close-icon class="text-[#94A3B8] hover:text-blue" />
-                        </t-button>
-                      </div>
-
-                      <!-- 参数表单 -->
-                      <t-space direction="vertical" class="w-full">
-                        <t-row>system prompt</t-row>
-                        <t-row>
-                          <t-textarea
-                            v-model="systemPrompt"
-                            placeholder="For mathematical formulas, please wrap the formula with $$ or $"
-                          />
-                        </t-row>
-                        <t-row>temperature</t-row>
-                        <t-row>
-                          <t-slider
-                            v-model="temperature"
-                            size="small"
-                            :min="0"
-                            :max="1"
-                            :step="0.1"
-                            :inputNumberProps="inputNumberConfig"
-                          />
-                        </t-row>
-                        <t-row>top_p</t-row>
-                        <t-row>
-                          <t-slider
-                            v-model="topP"
-                            size="small"
-                            :min="0"
-                            :max="1"
-                            :step="0.1"
-                            :inputNumberProps="inputNumberConfig"
-                          />
-                        </t-row>
-                        <t-row>max_tokens</t-row>
-                        <t-row>
-                          <t-slider
-                            v-model="maxTokens"
-                            size="small"
-                            :min="1"
-                            :max="9999"
-                            :inputNumberProps="inputNumberConfig"
-                          />
-                        </t-row>
-                      </t-space>
-
-                      <!-- 底部操作栏 -->
-                      <div class="flex justify-between items-center pt-4 mt-8 border-t border-[#465672]">
-                        <div class="flex gap-3">
-                          <t-button variant="outline" @click="handleCancel">取消</t-button>
-                          <t-button type="button" theme="primary">确定</t-button>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-                </t-popup>
+                <coversationParams v-model:modelValue="conversation" />
               </div>
             </template>
             <template #prefix>
               <div class="flex items-center gap-2">
                 <n-tooltip trigger="hover" :show-arrow="false">
                   <template #trigger>
-                    <selectModel v-model:model-name="selectedLlm" class="llm-select" model-type="GENERAL_LLM" />
+                    <selectModel v-model:model-name="conversation.llm" class="llm-select" model-type="GENERAL_LLM" />
                   </template>
                   <span>切换模型</span>
                 </n-tooltip>
@@ -145,30 +79,21 @@
     ChatLoading as TChatLoading,
     ChatReasoning as TChatReasoning,
   } from '@tdesign-vue-next/chat';
-  import { SystemSumIcon, CheckCircleIcon, ChatBubble1Icon, SettingIcon, CloseIcon } from 'tdesign-icons-vue-next';
+  import { SystemSumIcon, CheckCircleIcon, ChatBubble1Icon } from 'tdesign-icons-vue-next';
   import { useRoute } from 'vue-router';
   import { useChatStore } from '@/store/modules/chat';
   import { useUserStore } from '@/store/modules/user';
   import defaultAvatar from '@/assets/images/avatar.jpg';
   import logo from '@/assets/images/logo.png';
-  import { ChatParams, Message } from '@/models/chat';
+  import { ChatParams, Conversation, Message } from '@/models/chat';
   import { chat, regenerate } from '@/api/chat/chat';
+  import coversationParams from './coversation-params.vue';
 
   defineProps({
     chatListVisable: {
       type: [Boolean] as PropType<boolean>,
       default: true,
     },
-  });
-
-  const handleCancel = () => {
-    // 取消逻辑
-  };
-
-  const inputNumberConfig = ref({
-    theme: 'normal', // 主题样式
-    style: { width: '50px' }, // 自定义样式
-    size: 'small', // 尺寸
   });
 
   const emit = defineEmits(['update:chatListVisable']);
@@ -184,11 +109,14 @@
   const chatList = ref<ChatItem[]>([]);
 
   const chatRef = ref();
-  const selectedLlm = ref('qwen3-30b-a3b');
-  const systemPrompt = ref('');
-  const temperature = ref(0.5);
-  const topP = ref(1);
-  const maxTokens = ref(7000);
+
+  const conversation = ref<Conversation>({
+    llm: 'qwen3-30b-a3b',
+    systemPrompt: '',
+    temperature: 0.5,
+    topP: 1,
+    maxTokens: 7000,
+  });
 
   interface ChatItem extends Message {
     avatar?: string;
@@ -229,7 +157,8 @@
     if (conversationId.value) {
       onConversation(inputValue);
     } else {
-      await chatStore.addConversation(inputValue, temperature.value, selectedLlm.value).then(() => {
+      conversation.value.conversationName = inputValue.substring(0, 20);
+      await chatStore.addConversation(conversation.value).then(() => {
         conversationId.value = chatStore.activeId!;
         onConversation(inputValue);
       });
@@ -285,8 +214,6 @@
     try {
       const chatParams: ChatParams = {
         message: question,
-        temperature: temperature.value,
-        llm: selectedLlm.value,
       };
 
       const isThinking = ref(false);
@@ -350,8 +277,6 @@
 
       const chatParams: ChatParams = {
         message: answer,
-        temperature: temperature.value,
-        llm: selectedLlm.value,
       };
 
       const isThinking = ref(false);
@@ -434,20 +359,20 @@
   onMounted(async () => {
     if (conversationId.value) {
       chatStore.activeId = conversationId.value;
-      const conversation = await chatStore.getChatByConversationId(conversationId.value);
+      const res = await chatStore.getChatByConversationId(conversationId.value);
+      if (res) {
+        conversation.value = res;
+      }
 
       // 将 conversation.messages 转换为 chatList 格式
-      if (conversation?.messages) {
-        chatList.value = conversation.messages.map((msg) => ({
+      if (conversation.value.messages) {
+        chatList.value = conversation.value.messages.map((msg) => ({
           ...msg,
           avatar: msg.role === 'assistant' ? logo : userStore.userInfo.avatar || defaultAvatar,
           name: msg.sender,
           datetime: msg.createdAt,
         }));
       }
-      selectedLlm.value = chatStore.conversation?.llm as string;
-    } else {
-      chatStore.conversation = undefined;
     }
   });
 </script>

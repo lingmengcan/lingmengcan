@@ -1,11 +1,14 @@
 //对话
 export interface Conversation {
   conversationId?: string;
-  conversationName: string;
+  conversationName?: string;
   userName?: string;
-  status: number;
-  llm: string;
-  temperature: number;
+  status?: number;
+  llm?: string;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  systemPrompt?: string;
   createdAt?: string;
   updatedAt?: string;
   messages?: Message[];
@@ -41,6 +44,4 @@ export interface Prompt {
 
 export interface ChatParams {
   message: Message;
-  temperature: number;
-  llm: string;
 }
