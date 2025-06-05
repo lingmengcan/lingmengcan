@@ -1,7 +1,7 @@
 <template>
   <n-popover ref="popoverRef" v-model:show="showPopover" trigger="click" placement="right-start" :show-arrow="false">
     <template #trigger>
-      <n-button strong secondary class="float-right !px-5 !h-7 !text-xs" @click="showPopover = !showPopover">
+      <n-button strong secondary class="float-right px-5! h-7! text-xs!" @click="showPopover = !showPopover">
         {{ $t('views.draw.stableDiffusion.changeModel') }}
       </n-button>
     </template>

@@ -44,7 +44,7 @@
             </n-icon>
             <div>{{ $t('views.chat.list') }}</div>
           </div>
-          <n-button class="!w-10 !h-10" @click="chatListVisable = !chatListVisable">
+          <n-button class="w-10! h-10!" @click="chatListVisable = !chatListVisable">
             <template #icon>
               <n-icon>
                 <MenuFoldOutlined />
@@ -53,7 +53,7 @@
           </n-button>
         </div>
         <div class="mt-4">
-          <n-button dashed class="!w-full !h-10 !bg-white" @click="handleAdd">
+          <n-button dashed class="w-full! h-10! bg-white!" @click="handleAdd">
             <template #icon>
               <n-icon>
                 <AddCircleOutline />

@@ -3,10 +3,10 @@
     <n-popover ref="popoverRef" v-model:show="showPopover" trigger="click" placement="right" :show-arrow="false">
       <template #trigger>
         <div
-          class="flex items-center w-full px-2 bg-white border border-gray-300 rounded cursor-pointer min-h-9"
+          class="flex items-center w-full px-2 bg-white border border-gray-300 rounded-sm cursor-pointer min-h-9"
           @click="togglePopover"
         >
-          <div class="flex flex-wrap items-center flex-grow h-full overflow-hidden space-1">
+          <div class="flex flex-wrap items-center grow h-full overflow-hidden space-1">
             <n-tag
               v-for="item in selectedItems"
               :key="item.modelId"

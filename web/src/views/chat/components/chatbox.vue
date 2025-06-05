@@ -1,6 +1,6 @@
 <template>
   <div class="relative flex h-full overflow-hidden bg-white p-5">
-    <n-button v-if="!chatListVisable" class="!w-10 !h-10" @click="emit('update:chatListVisable', !chatListVisable)">
+    <n-button v-if="!chatListVisable" class="w-10! h-10!" @click="emit('update:chatListVisable', !chatListVisable)">
       <template #icon>
         <ChatBubble1Icon />
       </template>
@@ -57,7 +57,7 @@
                   </template>
                   <span>切换模型</span>
                 </n-tooltip>
-                <n-button :class="{ '!bg-blue-300 !text-white': isThinked }" @click="checkClick" class="!rounded-lg">
+                <n-button :class="{ 'bg-blue-300! text-white!': isThinked }" @click="checkClick" class="rounded-lg!">
                   <template #icon><SystemSumIcon /></template>
                   <span>深度思考</span>
                 </n-button>

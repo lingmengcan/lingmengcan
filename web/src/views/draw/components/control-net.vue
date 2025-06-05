@@ -6,7 +6,7 @@
 
         <div class="float-right">
           {{ $t('views.draw.stableDiffusion.controlNet.enable') }}
-          <n-switch v-model:value="controlNetParamsRef.enabled" size="small" class="!align-text-top"></n-switch>
+          <n-switch v-model:value="controlNetParamsRef.enabled" size="small" class="align-text-top!"></n-switch>
         </div>
       </div>
       <n-select

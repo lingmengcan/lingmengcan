@@ -61,8 +61,8 @@
           <n-button
             v-else
             :bordered="isActive(item.conversationId)"
-            class="!w-full !h-9 !justify-start"
-            :class="isActive(item.conversationId) && ['!bg-sky-200']"
+            class="w-full! h-9! justify-start!"
+            :class="isActive(item.conversationId) && ['bg-sky-200!']"
             @click="handleSelect(item)"
           >
             <n-ellipsis

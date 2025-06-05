@@ -33,7 +33,7 @@
       <div class="flex items-center h-16 pr-2 cursor-pointer">
         <n-tooltip placement="bottom">
           <template #trigger>
-            <div class="flex items-center p-1 rounded hover:bg-slate-200">
+            <div class="flex items-center p-1 rounded-sm hover:bg-slate-200">
               <n-button text type="primary" @click="navToGitHub">
                 <n-icon size="18">
                   <GithubOutlined />
@@ -47,7 +47,7 @@
       <!--多语言-->
       <div class="flex items-center h-16 pr-2 cursor-pointer">
         <n-dropdown placement="bottom-start" trigger="click" :options="langList" @select="languageSelect">
-          <div class="flex items-center p-1 rounded hover:bg-slate-200">
+          <div class="flex items-center p-1 rounded-sm hover:bg-slate-200">
             <n-icon size="18">
               <LanguageOutline />
             </n-icon>
@@ -58,7 +58,7 @@
       <div class="flex items-center h-16 pr-3 text-center cursor-pointer">
         <n-tooltip placement="bottom">
           <template #trigger>
-            <div class="flex items-center p-1 rounded hover:bg-slate-200">
+            <div class="flex items-center p-1 rounded-sm hover:bg-slate-200">
               <n-icon size="18">
                 <component :is="fullscreenIcon" @click="toggleFullScreen" />
               </n-icon>
@@ -76,7 +76,7 @@
           class="w-28"
           @select="avatarSelect"
         >
-          <div class="flex items-center p-1 rounded hover:bg-slate-200">
+          <div class="flex items-center p-1 rounded-sm hover:bg-slate-200">
             <Avatar round />
             <n-divider vertical />
             <span class="ml-1 text-sky-900">{{ username }}</span>
