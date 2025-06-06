@@ -9,15 +9,15 @@
         @submit="handleQuery"
         @reset="clearQuery"
       >
-        <t-form-item name="modelName">
-          <t-input v-model:value="queryFormData.modelName" :placeholder="$t('views.llm.model.placeholder.modelName')" />
+        <t-form-item name="mcpName">
+          <t-input v-model:value="queryFormData.mcpName" :placeholder="$t('views.llm.mcp.placeholder.mcpName')" />
         </t-form-item>
-        <t-form-item name="modelType">
-          <selectDict v-model:dict-code="queryFormData.modelType" :multiple="true" dict-type="LLM_TYPE" />
+        <t-form-item name="mcpType">
+          <selectDict v-model:dict-code="queryFormData.mcpType" :multiple="true" dict-type="MCP_TYPE" />
         </t-form-item>
         <t-form-item>
           <t-space>
-            <t-button theme="primary" type="submit" v-permission="['llm_model_index']">
+            <t-button theme="primary" type="submit" v-permission="['llm_mcp_index']">
               {{ $t('common.query') }}
             </t-button>
             <t-button theme="default" variant="base" type="reset">{{ $t('common.reset') }}</t-button>
@@ -25,47 +25,36 @@
         </t-form-item>
       </t-form>
 
-      <t-button v-permission="['llm_model_index']" theme="primary" @click="handleAdd">
-        {{ $t('views.llm.model.add') }}
+      <t-button v-permission="['llm_mcp_add']" theme="primary" @click="handleAdd">
+        {{ $t('views.llm.mcp.add') }}
       </t-button>
     </div>
   </t-card>
 
   <!-- mcp列表 -->
-  <!-- mcp列表 -->
   <div class="mt-4 mb-4">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-      <div v-for="item in modelsData" :key="item.modelId" class="list-card-item h-full">
+    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 h-full">
+      <div v-for="item in mcpsData" :key="item.mcpId" class="list-card-item h-full">
         <t-card
           :bordered="false"
           class="w-full h-full flex flex-col"
-          :title="item.modelName"
+          :title="item.mcpName"
           hover-shadow
           @click="handleEdit(item)"
         >
           <template #content>
-            <div class="grow h-full">{{ item.description }}</div>
+            <div class="grow h-full overflow-hidden">{{ item.description }}</div>
           </template>
           <template #footer>
-            <div class="text-center border-t border-gray-200 pt-2">{{ $t('views.llm.model.view') }}</div>
+            <div class="text-center border-t border-gray-200 pt-2">{{ $t('views.llm.mcp.view') }}</div>
           </template>
         </t-card>
       </div>
     </div>
   </div>
-  <t-pagination
-    v-model:page="page"
-    :page-size="pageSize"
-    :item-count="itemCount"
-    class="justify-end"
-    show-quick-jumper
-    show-size-picker
-    @update:page="handlePageChange"
-  >
-    <template #prefix="{}">{{ itemCount }} {{ $t('common.paginationItemCount') }}</template>
-  </t-pagination>
+  <t-pagination v-model="page" :page-size="pageSize" :total="total" @current-change="handlePageChange"></t-pagination>
 
-  <!-- 新增修改模型 -->
+  <!-- 新增修改MCP -->
   <!-- <t-drawer v-model:show="showDrawer" :width="599">
     <t-drawer-content :title="drawerTitle" closable>
       <t-form
@@ -75,36 +64,36 @@
         :model="drawerFormData"
         :rules="drawerRules"
       >
-        <t-form-item :label="$t('views.llm.model.name')" name="modelName">
+        <t-form-item :label="$t('views.llm.mcp.name')" name="modelName">
           <t-input
-            v-model:value="drawerFormData.modelName"
-            :placeholder="$t('views.llm.model.placeholder.modelName')"
+            v-model:value="drawerFormData.mcpName"
+            :placeholder="$t('views.llm.mcp.placeholder.mcpName')"
           />
         </t-form-item>
-        <t-form-item :label="$t('views.llm.model.description')" name="description">
+        <t-form-item :label="$t('views.llm.mcp.description')" name="description">
           <t-input
             v-model:value="drawerFormData.description"
             type="textarea"
-            :placeholder="$t('views.llm.model.placeholder.description')"
+            :placeholder="$t('views.llm.mcp.placeholder.description')"
           />
         </t-form-item>
-        <t-form-item :label="$t('views.llm.model.type')" name="modelType">
+        <t-form-item :label="$t('views.llm.mcp.type')" name="modelType">
           <selectDict
-            v-model:dict-code="drawerFormData.modelType"
-            v-model:dict-name="drawerFormData.modelTypeName"
+            v-model:dict-code="drawerFormData.mcpType"
+            v-model:dict-name="drawerFormData.mcpTypeName"
             dict-type="LLM_TYPE"
           />
         </t-form-item>
-        <t-form-item :label="$t('views.llm.model.apiType')" name="apiType">
+        <t-form-item :label="$t('views.llm.mcp.apiType')" name="apiType">
           <selectDict v-model:dict-code="drawerFormData.apiType" dict-type="LLM_API_TYPE" />
         </t-form-item>
-        <t-form-item :label="$t('views.llm.model.baseUrl')" name="baseUrl">
-          <t-input v-model:value="drawerFormData.baseUrl" :placeholder="$t('views.llm.model.placeholder.baseUrl')" />
+        <t-form-item :label="$t('views.llm.mcp.baseUrl')" name="baseUrl">
+          <t-input v-model:value="drawerFormData.baseUrl" :placeholder="$t('views.llm.mcp.placeholder.baseUrl')" />
         </t-form-item>
-        <t-form-item :label="$t('views.llm.model.apiKey')" name="apiKey">
-          <t-input v-model:value="drawerFormData.apiKey" :placeholder="$t('views.llm.model.placeholder.apiKey')" />
+        <t-form-item :label="$t('views.llm.mcp.apiKey')" name="apiKey">
+          <t-input v-model:value="drawerFormData.apiKey" :placeholder="$t('views.llm.mcp.placeholder.apiKey')" />
         </t-form-item>
-        <t-form-item :label="$t('views.llm.model.defaultEmbeddingModel')" name="defaultEmbeddingModel">
+        <t-form-item :label="$t('views.llm.mcp.defaultEmbeddingModel')" name="defaultEmbeddingModel">
           <selectModel v-model:model-name="drawerFormData.defaultEmbeddingModel" model-type="EMBEDDING_LLM" />
         </t-form-item>
         <t-form-item :label="$t('common.status')" name="status">
@@ -134,14 +123,14 @@
   const message = useMessage();
 
   const queryFormData = ref({
-    modelName: '',
-    modelType: '',
+    mcpName: '',
+    mcpType: '',
   });
 
-  const modelsData = ref<Llm[]>([]);
-  const page = ref<number>(1);
-  const pageSize = ref<number>(10);
-  const itemCount = ref(0);
+  const mcpsData = ref<Llm[]>([]);
+  const page = ref(1);
+  const pageSize = ref(10);
+  const total = ref(0);
 
   const showDrawer = ref(false);
   const drawerTitle = ref('');
@@ -150,11 +139,11 @@
   const drawerFormRef = ref<FormInst | null>(null);
 
   // 新增/修改弹窗数据初始化
-  const modelInitData: Llm = {
-    modelId: '',
-    modelName: '',
-    modelType: undefined,
-    modelTypeName: '',
+  const mcpInitData: Llm = {
+    mcpId: '',
+    mcpName: '',
+    mcpType: undefined,
+    mcpTypeName: '',
     baseUrl: '',
     apiKey: '',
     apiType: undefined,
@@ -162,14 +151,14 @@
     status: '0',
     description: '',
   };
-  const drawerFormData = ref(modelInitData);
+  const drawerFormData = ref(mcpInitData);
 
   const drawerRules = {
-    modelName: { required: true, message: t('views.llm.model.placeholder.modelName'), trigger: 'blur-sm' },
-    description: { required: true, message: t('views.llm.model.placeholder.description'), trigger: 'blur-sm' },
-    modelType: { required: true, message: t('views.llm.model.placeholder.modelType'), trigger: 'blur-sm' },
-    status: { required: true, message: t('views.llm.model.placeholder.status'), trigger: 'blur-sm' },
-    sort: { required: true, type: 'number', message: t('views.llm.model.placeholder.status'), trigger: 'blur-sm' },
+    mcpName: { required: true, message: t('views.llm.mcp.placeholder.mcpName'), trigger: 'blur-sm' },
+    description: { required: true, message: t('views.llm.mcp.placeholder.description'), trigger: 'blur-sm' },
+    mcpType: { required: true, message: t('views.llm.mcp.placeholder.mcpType'), trigger: 'blur-sm' },
+    status: { required: true, message: t('views.llm.mcp.placeholder.status'), trigger: 'blur-sm' },
+    sort: { required: true, type: 'number', message: t('views.llm.mcp.placeholder.status'), trigger: 'blur-sm' },
   };
 
   // 绑定表格数据
@@ -183,13 +172,13 @@
 
       const res = await getLlmList(requestData);
       if (res?.code === 0) {
-        modelsData.value = res.data?.list;
+        mcpsData.value = res.data?.list;
         page.value = currentPage;
         pageSize.value = currentPageSize;
-        itemCount.value = res.data.count;
+        total.value = res.data.count;
       }
     } catch (err) {
-      modelsData.value = [];
+      mcpsData.value = [];
     }
   };
 
@@ -199,8 +188,8 @@
 
   const clearQuery = () => {
     queryFormData.value = {
-      modelName: '',
-      modelType: '',
+      mcpName: '',
+      mcpType: '',
     };
     query(page.value, pageSize.value);
   };
@@ -211,20 +200,20 @@
 
   // 新增
   const handleAdd = async () => {
-    drawerTitle.value = t('views.llm.model.add');
+    drawerTitle.value = t('views.llm.mcp.add');
     showDrawer.value = true;
 
-    drawerFormData.value = { ...modelInitData };
+    drawerFormData.value = { ...mcpInitData };
   };
 
   // 修改
   const handleEdit = async (item: Llm) => {
-    drawerTitle.value = t('views.llm.model.edit');
+    drawerTitle.value = t('views.llm.mcp.edit');
     showDrawer.value = true;
 
     // 赋值
-    // 创建一个新的对象，包含 modelInitData 的属性和 item 的属性
-    drawerFormData.value = { ...modelInitData, ...item, status: item.status.toString() };
+    // 创建一个新的对象，包含 mcpInitData 的属性和 item 的属性
+    drawerFormData.value = { ...mcpInitData, ...item, status: item.status.toString() };
   };
 
   const handleAddandEdit = (e: MouseEvent) => {
@@ -236,11 +225,11 @@
       if (!errors) {
         const requestData: Llm = drawerFormData.value;
 
-        const res = drawerFormData.value.modelId ? await editLlm(requestData) : await addLlm(requestData);
+        const res = drawerFormData.value.mcpId ? await editLlm(requestData) : await addLlm(requestData);
 
         if (res?.code === 0) {
           showDrawer.value = false;
-          drawerFormData.value = { ...modelInitData };
+          drawerFormData.value = { ...mcpInitData };
           query(page.value, pageSize.value);
         }
       } else {
