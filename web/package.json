@@ -13,7 +13,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@tdesign-vue-next/chat": "^0.3.0",
+    "@tdesign-vue-next/chat": "^0.4.1",
     "@traptitech/markdown-it-katex": "^3.6.0",
     "@vicons/antd": "^0.12.0",
     "@vicons/ionicons5": "^0.12.0",
