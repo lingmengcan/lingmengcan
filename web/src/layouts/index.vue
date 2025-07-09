@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import MainContent from './components/main.vue';
   import Logo from './components/logo.vue';
-  import Menu from './components/menu.vue';
+  import Menu from './components/tdesign-menu.vue';
   import Header from './components/header.vue';
   import { ref } from 'vue';
 
@@ -12,7 +12,7 @@
 
 <template>
   <t-layout class="flex flex-row">
-    <t-aside :collapsed="collapsed" :width="200" :collapsed-width="64" class="transition-all duration-200">
+    <t-aside class="transition-all duration-200">
       <Logo :collapsed="collapsed" />
       <Menu :inverted="inverted" :collapsed="collapsed" mode="vertical" />
     </t-aside>
@@ -26,7 +26,7 @@
           <MainContent />
         </div>
       </t-content>
-      <t-back-top :right="100" />
+      <t-back-top  />
     </t-layout>
   </t-layout>
 </template>
