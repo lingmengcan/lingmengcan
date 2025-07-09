@@ -11,32 +11,22 @@
 </script>
 
 <template>
-  <n-layout class="flex flex-row" has-sider>
-    <n-layout-sider
-      show-trigger="bar"
-      collapse-mode="width"
-      :collapsed-width="64"
-      :collapsed="collapsed"
-      :inverted="inverted"
-      :width="200"
-      :native-scrollbar="false"
-      @collapse="collapsed = true"
-      @expand="collapsed = false"
-    >
+  <t-layout class="flex flex-row">
+    <t-aside :collapsed="collapsed" :width="200" :collapsed-width="64" class="transition-all duration-200">
       <Logo :collapsed="collapsed" />
       <Menu :inverted="inverted" :collapsed="collapsed" mode="vertical" />
-    </n-layout-sider>
-    <n-layout :inverted="false">
-      <n-layout-header :inverted="false" position="absolute" class="z-10">
+    </t-aside>
+    <t-layout>
+      <t-header class="z-10">
         <Header v-model:collapsed="collapsed" :inverted="inverted" />
-      </n-layout-header>
+      </t-header>
 
-      <n-layout-content>
+      <t-content>
         <div class="h-screen p-2.5 pt-[74px] bg-slate-200 overflow-auto">
           <MainContent />
         </div>
-      </n-layout-content>
-      <n-back-top :right="100" />
-    </n-layout>
-  </n-layout>
+      </t-content>
+      <t-back-top :right="100" />
+    </t-layout>
+  </t-layout>
 </template>
