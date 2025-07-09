@@ -1,5 +1,5 @@
 export default {
-  welcome: 'Hello, Lingmengcan AIGC solution. Welcome to use it.',
+  welcome: 'Login in',
   loginSuccess: 'Login successful.',
   loginError: 'Please fill in the complete information and verify the verification code.',
   remember: 'Remember Account',

@@ -141,11 +141,15 @@
     isStreamLoad.value = false;
   };
 
-  const handleOperation = function (type: string, item: ChatItem) {
+  const handleOperation = function (type: string, context: { e: MouseEvent }) {
     // 这里还不能用，等最新文档出来
-    console.log('type', type, item);
+    console.log('type', type, context);
     if (type === 'replay') {
-      handleRegenerate(item);
+      // 需要从当前聊天列表中获取对应的消息
+      const currentMessage = chatList.value.find((msg) => msg.role === 'assistant');
+      if (currentMessage) {
+        handleRegenerate(currentMessage);
+      }
     }
   };
 

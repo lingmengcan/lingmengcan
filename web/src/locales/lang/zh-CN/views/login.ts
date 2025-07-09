@@ -1,5 +1,5 @@
 export default {
-  welcome: '你好，Lingmengcan 一站式 AI 平台, 欢迎使用',
+  welcome: '登录到',
   loginSuccess: '登录成功',
   loginError: '请填写完整信息，并且进行验证码校验',
   remember: '记住账号',

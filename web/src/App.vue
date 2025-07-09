@@ -35,15 +35,17 @@
 </script>
 
 <template>
-  <n-config-provider :locale="getComponentsLocale" :theme="getDarkTheme" :theme-overrides="getThemeOverrides">
-    <n-dialog-provider>
-      <n-notification-provider>
-        <n-message-provider>
-          <router-view :key="locale" />
-        </n-message-provider>
-      </n-notification-provider>
-    </n-dialog-provider>
-  </n-config-provider>
+  <t-config-provider :global-config="getComponentsLocale">
+    <n-config-provider :locale="getComponentsLocale" :theme="getDarkTheme" :theme-overrides="getThemeOverrides">
+      <n-dialog-provider>
+        <n-notification-provider>
+          <n-message-provider>
+            <router-view :key="locale" />
+          </n-message-provider>
+        </n-notification-provider>
+      </n-dialog-provider>
+    </n-config-provider>
+  </t-config-provider>
 </template>
 
 <style lang="less">

@@ -14,7 +14,7 @@ export default {
   hiContent2:
     '作为你的智能伙伴，可以回答问题、查找资料、提供建议和执行简单操作，帮助你更高效地获取所需信息并提供支持。',
 
-  inputPlaceholder: '发消息、输入 @ 或 / 选择技能',
+  inputPlaceholder: `发消息`,
   thought: '已深度思考',
   thinking: '思考中',
 
