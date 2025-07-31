@@ -120,7 +120,7 @@
       </div>
       <div>
         <div class="px-4 pt-6 pb-4 flex items-center gap-2">
-          <t-icon :name="getCurrentParentInfo.icon" size="16" class="text-gray-600" />
+          <t-icon :name="getCurrentParentInfo.icon" size="18" class="text-gray-600" />
           <h3 class="text-sm text-gray-800">{{ getCurrentParentInfo.title }}</h3>
         </div>
         <t-menu
@@ -136,18 +136,17 @@
               v-if="item.children && item.children.length > 0"
               :value="item.name"
               :title="item.meta?.title"
-              :icon="item.meta?.icon"
             >
               <t-menu-item v-for="child in item.children" :key="child.name" :value="child.name">
                 <template #icon>
-                  <t-icon :name="child.meta?.icon" />
+                  <t-icon :name="child.meta?.icon" class="!h-3.5" />
                 </template>
                 {{ child.meta?.title }}
               </t-menu-item>
             </t-submenu>
             <t-menu-item v-else :value="item.name">
               <template #icon>
-                <t-icon :name="item.meta?.icon" />
+                <t-icon :name="item.meta?.icon" class="!h-3.5" />
               </template>
               {{ item.meta?.title }}
             </t-menu-item>
