@@ -126,12 +126,7 @@
             </t-input>
           </t-form-item>
           <t-form-item name="captcha">
-            <t-input
-              v-model="formInline.captcha"
-              :placeholder="$t('views.login.input.verification')"
-              size="large"
-              clearable
-            >
+            <t-input v-model="formInline.captcha" :placeholder="$t('views.login.input.verification')" size="large">
               <template #prefix-icon>
                 <CheckCircleIcon />
               </template>

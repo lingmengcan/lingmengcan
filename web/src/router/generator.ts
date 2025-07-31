@@ -3,7 +3,6 @@ import type { AppRouteRecordRaw } from '@/router/types';
 import { RouteRecordRaw } from 'vue-router';
 import { getMenuRoutes } from '@/api/system/menu';
 import { MenuRoute } from '@/models/menu';
-import { renderIonicons5 } from '@/utils/icons';
 
 const IFrame = () => import('@/views/iframe.vue');
 const layoutMap = new Map<string, () => Promise<typeof import('*.vue')>>();
@@ -32,7 +31,6 @@ export const generateRoutes = (routerMap: MenuRoute[], parent?: MenuRoute): any[
       meta: {
         ...item.meta,
         label: item.meta.title,
-        icon: item.meta.icon ? renderIonicons5(item.meta.icon) : null,
         permissions: item.meta.permissions || null,
       },
     };
