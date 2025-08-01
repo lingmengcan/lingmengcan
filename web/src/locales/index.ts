@@ -1,5 +1,5 @@
 import { useLocalStorage, usePreferredLanguages } from '@vueuse/core';
-import { DropdownOption } from 'naive-ui';
+import type { DropdownOption } from 'tdesign-vue-next';
 import { computed } from 'vue';
 import { createI18n, useI18n } from 'vue-i18n';
 import { enUS, zhCN } from 'naive-ui';
@@ -51,8 +51,8 @@ export const langList = computed(() => {
   const list: DropdownOption[] = [];
   langModuleMap.forEach((value: any, key) => {
     list.push({
-      label: value.default.lang,
-      key,
+      content: value.default.lang,
+      value: key,
     });
   });
 
