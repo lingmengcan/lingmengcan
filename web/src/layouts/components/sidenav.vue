@@ -103,12 +103,12 @@
       <div class="px-1.5 pt-5 flex flex-col h-full items-center border-0 border-r border-solid border-gray-300">
         <Logo :collapsed="true" />
         <t-divider />
-        <t-space direction="vertical">
+        <t-space direction="vertical" class="!gap-2">
           <div
             v-for="(item, index) in menus"
             :key="index"
             @click="item.name && clickMenuItem(item.name.toString())"
-            class="flex flex-col items-center py-1 rounded-lg cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 text-gray-500"
+            class="flex flex-col items-center py-1.5 rounded-lg cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 text-gray-500"
             :class="{
               'bg-blue-100 text-blue-600': isParentSelected(item),
             }"
@@ -132,11 +132,7 @@
           @expand="menuExpanded"
         >
           <template v-for="item in subMenus" :key="item.name">
-            <t-submenu
-              v-if="item.children && item.children.length > 0"
-              :value="item.name"
-              :title="item.meta?.title"
-            >
+            <t-submenu v-if="item.children && item.children.length > 0" :value="item.name" :title="item.meta?.title">
               <t-menu-item v-for="child in item.children" :key="child.name" :value="child.name">
                 <template #icon>
                   <t-icon :name="child.meta?.icon" class="!h-3.5" />
