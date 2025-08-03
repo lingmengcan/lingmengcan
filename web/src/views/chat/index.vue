@@ -3,6 +3,7 @@
   import { MenuFoldOutlined } from '@vicons/antd';
   import { ref } from 'vue';
   import { useChatStore } from '@/store/modules/chat';
+  import { Conversation } from '@/models/chat';
   import List from './components/list.vue';
   import Chatbox from './components/chatbox.vue';
   import { useDialog, useMessage } from 'naive-ui';
@@ -15,7 +16,10 @@
   const chatListVisable = ref(true);
 
   function handleAdd() {
-    chatStore.addConversation(t('views.chat.new'));
+    const newConversation: Conversation = {
+      conversationName: t('views.chat.new')
+    };
+    chatStore.addConversation(newConversation);
     chatStore.reloadRoute(chatStore.activeId);
   }
 
