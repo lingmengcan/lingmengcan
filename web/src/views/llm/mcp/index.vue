@@ -25,23 +25,17 @@
         </t-form-item>
       </t-form>
 
-      <t-button v-permission="['llm_mcp_add']" theme="primary" @click="handleAdd">
+      <t-button v-permission="['llm_mcp_index']" theme="primary" @click="handleAdd">
         {{ $t('views.llm.mcp.add') }}
       </t-button>
     </div>
   </t-card>
 
-  <!-- mcp列表 -->
-  <div class="mt-4 mb-4">
+  <!-- 列表 -->
+  <div class="my-4">
     <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 h-full">
       <div v-for="item in mcpsData" :key="item.mcpId" class="list-card-item h-full">
-        <t-card
-          :bordered="false"
-          class="w-full h-full flex flex-col"
-          :title="item.mcpName"
-          hover-shadow
-          @click="handleEdit(item)"
-        >
+        <t-card class="w-full h-full flex flex-col" :title="item.mcpName" hover-shadow @click="handleEdit(item)">
           <template #content>
             <div class="grow h-full overflow-hidden">{{ item.description }}</div>
           </template>
