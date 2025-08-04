@@ -2,7 +2,6 @@
   import { computed, onMounted } from 'vue';
   import { useChatStore } from '@/store/modules/chat';
   import { Conversation } from '@/models/chat';
-  import { CheckIcon, CloseIcon, DeleteIcon, EditIcon } from 'tdesign-icons-vue-next';
 
   const chatStore = useChatStore();
 
@@ -40,59 +39,54 @@
 </script>
 
 <template>
-  <n-scrollbar>
+  <div class="overflow-y-auto">
     <div class="mt-4">
       <div class="flex flex-col w-full gap-2">
         <div v-for="(item, index) of conversationList" :key="index">
-          <n-input v-if="item.isEdit" v-model:value="item.conversationName" class="items-center w-full h-9">
-            <template #suffix>
-              <n-icon
+          <t-input v-if="item.isEdit" v-model="item.conversationName" class="items-center w-full h-9">
+            <template #suffix-icon>
+              <t-icon
+                name="check"
                 class="ml-2 text-blue-800 cursor-pointer hover:text-gray-500"
                 @click="handleEdit(item, false, $event)"
-              >
-                <CheckIcon />
-              </n-icon>
+              />
 
-              <n-icon class="text-blue-800 cursor-pointer hover:text-gray-500" @click="item.isEdit = false">
-                <CloseIcon />
-              </n-icon>
+              <t-icon
+                name="close"
+                class="text-blue-800 cursor-pointer hover:text-gray-500"
+                @click="item.isEdit = false"
+              />
             </template>
-          </n-input>
-          <n-button
+          </t-input>
+          <t-button
             v-else
-            :bordered="isActive(item.conversationId)"
+            :variant="isActive(item.conversationId) ? 'outline' : 'text'"
             class="w-full! h-9! justify-start!"
             :class="isActive(item.conversationId) && ['bg-sky-200!']"
             @click="handleSelect(item)"
           >
-            <n-ellipsis
-              :tooltip="false"
-              class="text-[12.5px]"
+            <div
+              class="text-[12.5px] truncate"
               :class="isActive(item.conversationId) && ['w-40', 'text-left']"
+              :title="item.conversationName"
             >
               {{ item.conversationName }}
-            </n-ellipsis>
+            </div>
 
             <div v-if="isActive(item.conversationId)" class="flex ml-2">
-              <n-icon
+              <t-icon
+                name="edit"
                 class="mr-1 text-blue-800 cursor-pointer hover:text-gray-500"
                 @click="handleEdit(item, true, $event)"
-              >
-                <EditIcon />
-              </n-icon>
+              />
 
-              <n-popconfirm placement="top" @positive-click="handleDelete(item, $event)">
-                <template #trigger>
-                  <n-icon class="text-blue-800 cursor-pointer hover:text-gray-500">
-                    <DeleteIcon />
-                  </n-icon>
-                </template>
-                {{ $t('common.deleteConfirm') }}
-              </n-popconfirm>
+              <t-popconfirm placement="top" :content="$t('common.deleteConfirm')" @confirm="handleDelete(item, $event)">
+                <t-icon name="delete" class="text-blue-800 cursor-pointer hover:text-gray-500" />
+              </t-popconfirm>
             </div>
-          </n-button>
+          </t-button>
         </div>
       </div>
     </div>
-  </n-scrollbar>
+  </div>
 </template>
