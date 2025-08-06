@@ -16,16 +16,14 @@
     await chatStore.setActive(conversationId);
   }
 
-  function handleEdit(item: Conversation, isEdit: boolean, event?: MouseEvent) {
-    event?.stopPropagation();
+  function handleEdit(item: Conversation, isEdit: boolean) {
     item.isEdit = isEdit;
     if (!isEdit) {
       chatStore.updateConversation(item);
     }
   }
 
-  function handleDelete(item: Conversation, event?: MouseEvent) {
-    event?.stopPropagation();
+  function handleDelete(item: Conversation) {
     chatStore.deleteConversation(item);
   }
 
@@ -48,7 +46,7 @@
               <t-icon
                 name="check"
                 class="ml-2 text-blue-800 cursor-pointer hover:text-gray-500"
-                @click="handleEdit(item, false, $event)"
+                @click="handleEdit(item, false)"
               />
 
               <t-icon
@@ -73,14 +71,14 @@
               {{ item.conversationName }}
             </div>
 
-            <div v-if="isActive(item.conversationId)" class="flex ml-2">
+            <div v-if="isActive(item.conversationId)" class="flex items-center ml-2">
               <t-icon
                 name="edit"
                 class="mr-1 text-blue-800 cursor-pointer hover:text-gray-500"
-                @click="handleEdit(item, true, $event)"
+                @click="handleEdit(item, true)"
               />
 
-              <t-popconfirm placement="top" :content="$t('common.deleteConfirm')" @confirm="handleDelete(item, $event)">
+              <t-popconfirm placement="top" :content="$t('common.deleteConfirm')" @confirm="handleDelete(item)">
                 <t-icon name="delete" class="text-blue-800 cursor-pointer hover:text-gray-500" />
               </t-popconfirm>
             </div>

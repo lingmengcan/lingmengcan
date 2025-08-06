@@ -1,7 +1,11 @@
 <script setup lang="ts">
-  import { SelectOption } from 'naive-ui';
   import { useLlmStore } from '@/store/modules/llm';
   import { PropType, onMounted, ref } from 'vue';
+
+  interface SelectOption {
+    label: string;
+    value: string;
+  }
 
   const props = defineProps({
     modelType: {
@@ -34,10 +38,5 @@
 </script>
 
 <template>
-  <n-select
-    :value="modelName"
-    :options="options"
-    @update:value="handleSelect"
-    class="[&_.n-base-selection]:rounded-lg"
-  />
+  <t-select :value="modelName" :options="options" @change="handleSelect" />
 </template>

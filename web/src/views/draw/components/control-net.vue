@@ -1,25 +1,26 @@
 <template>
-  <n-grid :cols="6" :x-gap="24" :y-gap="16">
-    <n-gi :span="6">
+  <t-row :gutter="[24, 16]">
+    <t-col :span="12">
       <div class="pb-1">
         {{ $t('views.draw.stableDiffusion.controlNet.controlType') }}
 
         <div class="float-right">
           {{ $t('views.draw.stableDiffusion.controlNet.enable') }}
-          <n-switch v-model:value="controlNetParamsRef.enabled" size="small" class="align-text-top!"></n-switch>
+          <t-switch v-model="controlNetParamsRef.enabled" size="small" class="align-text-top!"></t-switch>
         </div>
       </div>
-      <n-select
-        :value="controlNetParamsRef.module"
+      <t-select
+        v-model="controlNetParamsRef.module"
         :options="controlTypeOptions"
-        @update:value="handleControlTypeSelect"
+        placeholder="请选择控制类型"
+        @change="handleControlTypeSelect"
       />
-    </n-gi>
+    </t-col>
     <template v-if="controlNetParamsRef.module">
-      <n-gi :span="6">
+      <t-col :span="12">
         <imageUpload v-model:base64Image="controlNetParamsRef.image" />
-      </n-gi>
-      <n-gi :span="6">
+      </t-col>
+      <t-col :span="12">
         <inputSlider
           v-model:value="controlNetParamsRef.weight"
           :min="0"
@@ -27,8 +28,8 @@
           :step="0.05"
           :label="$t('views.draw.stableDiffusion.controlNet.weight')"
         />
-      </n-gi>
-      <n-gi :span="3">
+      </t-col>
+      <t-col :span="6">
         <inputSlider
           v-model:value="controlNetParamsRef.guidance_start"
           :min="0"
@@ -36,8 +37,8 @@
           :step="0.01"
           :label="$t('views.draw.stableDiffusion.controlNet.guidanceStart')"
         />
-      </n-gi>
-      <n-gi :span="3">
+      </t-col>
+      <t-col :span="6">
         <inputSlider
           v-model:value="controlNetParamsRef.guidance_end"
           :min="0"
@@ -45,8 +46,8 @@
           :step="0.01"
           :label="$t('views.draw.stableDiffusion.controlNet.guidanceEnd')"
         />
-      </n-gi>
-      <n-gi :span="6">
+      </t-col>
+      <t-col :span="12">
         <inputSlider
           v-model:value="controlNetParamsRef.processor_res"
           :min="64"
@@ -54,8 +55,8 @@
           :step="1"
           :label="$t('views.draw.stableDiffusion.controlNet.resolution')"
         />
-      </n-gi>
-      <n-gi v-if="displayControlNetParams?.max_threshold_a" :span="6">
+      </t-col>
+      <t-col v-if="displayControlNetParams?.max_threshold_a" :span="12">
         <inputSlider
           v-model:value="controlNetParamsRef.threshold_a"
           :min="displayControlNetParams.min_threshold_a"
@@ -63,8 +64,8 @@
           :step="displayControlNetParams.threshold_step"
           :label="displayControlNetParams.threshold_a_label"
         />
-      </n-gi>
-      <n-gi v-if="displayControlNetParams?.max_threshold_b" :span="6">
+      </t-col>
+      <t-col v-if="displayControlNetParams?.max_threshold_b" :span="12">
         <inputSlider
           v-model:value="controlNetParamsRef.threshold_b"
           :min="displayControlNetParams.min_threshold_b"
@@ -72,16 +73,15 @@
           :step="displayControlNetParams.threshold_step"
           :label="displayControlNetParams.threshold_b_label"
         />
-      </n-gi>
+      </t-col>
     </template>
-  </n-grid>
+  </t-row>
 </template>
 
 <script setup lang="ts">
   import inputSlider from './input-slider.vue';
   import imageUpload from './image-upload.vue';
   import { onMounted, PropType, ref, watch } from 'vue';
-  import { SelectOption, SelectGroupOption } from 'naive-ui';
   import { getPreprocessorList } from '@/api/draw';
   import { ResultEnum } from '@/constants';
   import { ControlNetParams, ControlNetPreprocessor, DisplayControlNetParams } from '@/models/draw';
@@ -101,7 +101,7 @@
   const displayControlNetParams = ref<DisplayControlNetParams>();
 
   // select options
-  const controlTypeOptions = ref<Array<SelectOption | SelectGroupOption>>([]);
+  const controlTypeOptions = ref<Array<{ label: string; value: string }>>([]);
   const preprocessorList = ref<ControlNetPreprocessor[]>([]);
 
   const handleControlTypeSelect = (value: string) => {

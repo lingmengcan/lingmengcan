@@ -108,13 +108,11 @@
   import selectDict from '@/components/select/select-dict.vue';
   import { addLlm, editLlm, getLlmList } from '@/api/llm/model';
   import { Llm } from '@/models/llm';
-  import { FormInst, useMessage } from 'naive-ui';
+  import { MessagePlugin, LoadingPlugin } from 'tdesign-vue-next';
   import selectModel from '@/components/select/select-model.vue';
   import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
-
-  const message = useMessage();
 
   const queryFormData = ref({
     mcpName: '',
@@ -129,8 +127,8 @@
   const showDrawer = ref(false);
   const drawerTitle = ref('');
 
-  const formRef = ref<FormInst | null>(null);
-  const drawerFormRef = ref<FormInst | null>(null);
+  const formRef = ref(null);
+  const drawerFormRef = ref(null);
 
   // 新增/修改弹窗数据初始化
   const mcpInitData: Llm = {
@@ -148,11 +146,11 @@
   const drawerFormData = ref(mcpInitData);
 
   const drawerRules = {
-    mcpName: { required: true, message: t('views.llm.mcp.placeholder.mcpName'), trigger: 'blur-sm' },
-    description: { required: true, message: t('views.llm.mcp.placeholder.description'), trigger: 'blur-sm' },
-    mcpType: { required: true, message: t('views.llm.mcp.placeholder.mcpType'), trigger: 'blur-sm' },
-    status: { required: true, message: t('views.llm.mcp.placeholder.status'), trigger: 'blur-sm' },
-    sort: { required: true, type: 'number', message: t('views.llm.mcp.placeholder.status'), trigger: 'blur-sm' },
+    mcpName: { required: true, message: t('views.llm.mcp.placeholder.mcpName'), trigger: 'blur' },
+    description: { required: true, message: t('views.llm.mcp.placeholder.description'), trigger: 'blur' },
+    mcpType: { required: true, message: t('views.llm.mcp.placeholder.mcpType'), trigger: 'blur' },
+    status: { required: true, message: t('views.llm.mcp.placeholder.status'), trigger: 'blur' },
+    sort: { required: true, type: 'number', message: t('views.llm.mcp.placeholder.status'), trigger: 'blur' },
   };
 
   // 绑定表格数据
@@ -210,29 +208,27 @@
     drawerFormData.value = { ...mcpInitData, ...item, status: item.status.toString() };
   };
 
-  const handleAddandEdit = (e: MouseEvent) => {
+  const handleAddandEdit = async ({ validateResult, firstError, e }) => {
     e.preventDefault();
-    const messageReactive = message.loading('loading', {
-      duration: 0,
-    });
-    drawerFormRef.value?.validate(async (errors) => {
-      if (!errors) {
-        const requestData: Llm = drawerFormData.value;
 
-        const res = drawerFormData.value.mcpId ? await editLlm(requestData) : await addLlm(requestData);
+    LoadingPlugin(true);
+    if (validateResult === true) {
+      const requestData: Llm = drawerFormData.value;
 
-        if (res?.code === 0) {
-          showDrawer.value = false;
-          drawerFormData.value = { ...mcpInitData };
-          query(page.value, pageSize.value);
-        }
-      } else {
-        console.log(errors);
-        message.error(t('common.validationFailed'));
+      const res = drawerFormData.value.mcpId ? await editLlm(requestData) : await addLlm(requestData);
+
+      if (res?.code === 0) {
+        showDrawer.value = false;
+        drawerFormData.value = { ...mcpInitData };
+        query(page.value, pageSize.value);
+        MessagePlugin.success(t('common.success'));
       }
+    } else {
+      console.log('Validate Errors: ', firstError, validateResult);
+      MessagePlugin.error(t('common.validationFailed'));
+    }
 
-      messageReactive.destroy();
-    });
+    LoadingPlugin(false);
   };
 
   onMounted(async () => {

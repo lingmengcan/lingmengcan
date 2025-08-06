@@ -2,10 +2,10 @@
   <div ref="containerRef" class="relative">
     <div v-for="item in items" :key="item.mediaId" class="absolute" :style="item.style">
       <template v-if="item.loading">
-        <n-spin size="large" />
+        <t-loading size="large" />
       </template>
       <template v-else>
-        <n-image :src="item.src" class="rounded-md" :width="columnWidth" />
+        <t-image :src="item.src" class="rounded-md" :style="{ width: columnWidth + 'px' }" />
       </template>
     </div>
   </div>
@@ -91,10 +91,10 @@
       items.value = tempItems;
     });
   };
+
   onMounted(() => {
     nextTick(() => {
       initializeWaterfall();
-
       window.addEventListener('resize', initializeWaterfall);
     });
   });

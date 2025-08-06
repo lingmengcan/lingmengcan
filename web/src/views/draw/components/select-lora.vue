@@ -1,66 +1,66 @@
 <template>
   <div class="relative">
-    <n-popover ref="popoverRef" v-model:show="showPopover" trigger="click" placement="right" :show-arrow="false">
-      <template #trigger>
-        <div
-          class="flex items-center w-full px-2 bg-white border border-gray-300 rounded-sm cursor-pointer min-h-9"
-          @click="togglePopover"
-        >
-          <div class="flex flex-wrap items-center grow h-full overflow-hidden space-1">
-            <n-tag
-              v-for="item in selectedItems"
-              :key="item.modelId"
-              closable
-              class="m-[2px]"
-              :data-model-id="item.modelId"
-              @close="removeItem(item)"
-            >
-              {{ item.modelCode }}
-            </n-tag>
-            <div v-if="selectedItems.length === 0" class="text-gray-300">{{ $t('common.select') }}</div>
-          </div>
-          <button class="self-center ml-2 text-gray-500" @click.stop="clearAllSelected">&times;</button>
-        </div>
-      </template>
-      <n-grid :x-gap="12" :y-gap="12" cols="5" class="my-3 overflow-auto">
-        <n-grid-item v-for="item in modelsData" :key="item.modelId" @click.stop="handleClick(item)">
-          <div class="relative w-40 border cursor-pointer h-28 max-w-40 max-h-28">
-            <div class="flex items-center justify-center w-full h-full overflow-hidden">
-              <img :src="`${cdnBaseUrl}${item.modelCover}`" alt="" class="block max-w-full max-h-full" />
-            </div>
+    <t-popup ref="popupRef" v-model="showPopup" trigger="click" placement="right" :show-arrow="false">
+      <template #content>
+        <div class="my-3 overflow-auto" style="width: 800px; max-height: 400px">
+          <div class="grid grid-cols-5 gap-3">
             <div
-              class="absolute inset-0 flex items-center justify-center transition-opacity duration-300 bg-opacity-0 bg-slate-400 hover:bg-opacity-50 hover:text-white text-shadow"
+              v-for="item in modelsData"
+              :key="item.modelId"
+              class="relative w-40 border cursor-pointer h-28 max-w-40 max-h-28"
+              @click.stop="handleClick(item)"
             >
-              <p>{{ item.modelName }}</p>
+              <div class="flex items-center justify-center w-full h-full overflow-hidden">
+                <img :src="`${cdnBaseUrl}${item.modelCover}`" alt="" class="block max-w-full max-h-full" />
+              </div>
+              <div
+                class="absolute inset-0 flex items-center justify-center transition-opacity duration-300 bg-opacity-0 bg-slate-400 hover:bg-opacity-50 hover:text-white text-shadow"
+              >
+                <p>{{ item.modelName }}</p>
+              </div>
             </div>
           </div>
-        </n-grid-item>
-      </n-grid>
-      <n-pagination
-        v-model:page="page"
-        :page-size="pageSize"
-        :item-count="itemCount"
-        class="justify-end"
-        show-quick-jumper
-        show-size-picker
-        @update:page="handlePageChange"
-      >
-        <template #prefix="{}">{{ itemCount }} {{ $t('common.paginationItemCount') }}</template>
-      </n-pagination>
-    </n-popover>
+        </div>
+        <t-pagination
+          v-model="page"
+          :page-size="pageSize"
+          :total="itemCount"
+          show-jumper
+          @change="handlePageChange"
+        ></t-pagination>
+      </template>
+
+      <div class="flex items-center w-full px-2 bg-white border border-gray-300 rounded-sm cursor-pointer min-h-9">
+        <div class="flex flex-wrap items-center grow h-full overflow-hidden space-1">
+          <t-tag
+            v-for="item in selectedItems"
+            :key="item.modelId"
+            closable
+            class="m-[2px]"
+            :data-model-id="item.modelId"
+            @close="removeItem(item)"
+          >
+            {{ item.modelCode }}
+          </t-tag>
+          <div v-if="selectedItems.length === 0" class="text-gray-300">{{ $t('common.select') }}</div>
+        </div>
+        <t-button variant="text" size="small" class="self-center ml-2 text-gray-500" @click.stop="clearAllSelected">
+          ×
+        </t-button>
+      </div>
+    </t-popup>
   </div>
 </template>
 
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
-  import { PopoverInst } from 'naive-ui';
   import { DiffusionModel } from '@/models/diffusion-model';
   import { getDiffusionModelList } from '@/api/draw/model';
 
   const emit = defineEmits(['update:loraList', 'selected']);
 
-  const popoverRef = ref<PopoverInst | null>(null);
-  const showPopover = ref(false);
+  const popupRef = ref();
+  const showPopup = ref(false);
   const cdnBaseUrl = import.meta.env.VITE_APP_CDN_BASEURL;
 
   const modelsData = ref<DiffusionModel[]>([]);
@@ -68,10 +68,6 @@
   const page = ref<number>(1);
   const pageSize = ref<number>(10);
   const itemCount = ref(0);
-
-  const togglePopover = () => {
-    showPopover.value = !showPopover.value;
-  };
 
   const removeItem = (item: DiffusionModel) => {
     const index = selectedItems.value.indexOf(item);
@@ -106,8 +102,8 @@
     }
   };
 
-  const handlePageChange = (currentPage: number) => {
-    query(currentPage, pageSize.value);
+  const handlePageChange = (pageInfo: { current: number; pageSize: number }) => {
+    query(pageInfo.current, pageInfo.pageSize);
   };
 
   function handleClick(item: DiffusionModel) {
@@ -127,7 +123,7 @@
     const modelCodeList = selectedItems.value.map((model) => model.modelCode);
     emit('update:loraList', modelCodeList);
     emit('selected', modelCodeList);
-    showPopover.value = false;
+    showPopup.value = false;
   }
 
   function clearAllSelected() {
@@ -140,3 +136,42 @@
     query(page.value, pageSize.value);
   });
 </script>
+
+<style lang="less" scoped>
+  .grid {
+    display: grid;
+  }
+
+  .grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .gap-3 {
+    gap: 0.75rem;
+  }
+
+  .text-shadow {
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  :deep(.t-popup__content) {
+    padding: 12px;
+  }
+</style>

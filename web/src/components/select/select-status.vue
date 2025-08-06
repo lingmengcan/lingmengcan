@@ -23,11 +23,11 @@
     selectValue.value = props.status;
   });
 
-  const handleSelect = () => {
-    emit('update:status', selectValue.value);
+  const handleSelect = (value: number | string) => {
+    emit('update:status', value);
   };
 </script>
 
 <template>
-  <n-select v-model:value="selectValue" :options="statusOptions" @update:value="handleSelect" />
+  <t-select :value="selectValue" :options="statusOptions" @change="handleSelect" />
 </template>

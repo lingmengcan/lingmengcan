@@ -39,6 +39,7 @@ export default {
     createdAt: '创建时间',
     menuRights: '菜单权限',
     roleUsers: '分配用户',
+    confirmMessage: '确认要{action} "{user}"角色吗？',
     add: '添加角色',
     placeholder: {
       roleName: '请输入角色名称',
@@ -80,6 +81,7 @@ export default {
       query: '请输入路由参数',
       component: '请输入组件路径',
       permissions: '请输入权限标识',
+      sort: '请输入排序',
       description: '请输入描述',
     },
   },

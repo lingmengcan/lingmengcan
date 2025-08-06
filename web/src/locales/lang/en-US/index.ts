@@ -26,7 +26,7 @@ export default {
     enable: 'Enable',
     disable: 'Disable',
     upload: 'Upload File',
-    paginationItemCount: 'items',
+    description: 'description',
     validationFailed: 'Validation failed',
     deleteConfirm: 'Do you want to continue deleting?',
     table: {

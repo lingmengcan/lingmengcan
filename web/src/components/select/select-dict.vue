@@ -1,7 +1,16 @@
 <script setup lang="ts">
   import { PropType, onMounted, ref, watchEffect } from 'vue';
   import { useDictStore } from '@/store/modules/dict';
-  import { SelectOption, SelectGroupOption } from 'naive-ui';
+
+  interface SelectOption {
+    label: string;
+    value: string;
+  }
+
+  interface SelectGroupOption {
+    group: string;
+    children: SelectOption[];
+  }
 
   const props = defineProps({
     dictType: {
@@ -34,13 +43,12 @@
     selectValue.value = props.dictCode;
   });
 
-  const handleSelect = (value: string | (string | number)[], option: SelectOption) => {
-    if (Array.isArray(option)) {
-      const labels = option.map((opt) => opt.label);
-
+  const handleSelect = (value: string | (string | number)[], context: any) => {
+    if (Array.isArray(context.selectedOptions)) {
+      const labels = context.selectedOptions.map((opt: any) => opt.label);
       emit('update:dictName', labels);
     } else {
-      emit('update:dictName', option.label);
+      emit('update:dictName', context.selectedOptions?.label);
     }
 
     emit('update:dictCode', value);
@@ -66,9 +74,7 @@
         if (parentName) {
           if (!groups[dict.dictType]) {
             groups[dict.dictType] = {
-              type: 'group',
-              label: parentName,
-              key: dict.dictType,
+              group: parentName,
               children: [],
             };
           }
@@ -101,5 +107,5 @@
 </script>
 
 <template>
-  <n-select :value="selectValue" :multiple="multiple" :options="options" filterable @update:value="handleSelect" />
+  <t-select :value="selectValue" :multiple="multiple" :options="options" filterable @change="handleSelect" />
 </template>

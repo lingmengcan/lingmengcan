@@ -26,7 +26,7 @@ export default {
     enable: '启用',
     disable: '停用',
     upload: '上传文件',
-    paginationItemCount: '条数据',
+    description: '描述',
     validationFailed: '验证不通过',
     deleteConfirm: '删除后无法恢复，是否继续删除？',
     table: {

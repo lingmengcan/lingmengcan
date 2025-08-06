@@ -1,63 +1,66 @@
 <template>
   <div class="flex-1 px-4 pb-4 overflow-auto">
-    <n-grid :cols="6" :x-gap="24" :y-gap="16">
-      <n-gi :span="6">
+    <t-row :gutter="[24, 16]">
+      <t-col :span="12">
         <div class="pb-1">{{ $t('views.draw.stableDiffusion.personalizedGeneration') }}</div>
         <selectLora v-model:lora-list="loraListValue" @selected="selectedLora" />
-      </n-gi>
-      <n-gi :span="6">
+      </t-col>
+      <t-col :span="12">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.prompt') }}
         </div>
-        <n-input v-model:value="txt2imgParamsRef.prompt" type="textarea" rows="5" placeholder="Enter prompt here..." />
-      </n-gi>
-      <n-gi :span="6">
+        <t-textarea
+          v-model="txt2imgParamsRef.prompt"
+          :autosize="{ minRows: 5, maxRows: 5 }"
+          placeholder="请输入提示词..."
+        />
+      </t-col>
+      <t-col :span="12">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.negativePrompt') }}
         </div>
-        <n-input
-          v-model:value="txt2imgParamsRef.negative_prompt"
-          type="textarea"
-          rows="3"
-          placeholder="Enter negative prompt here..."
+        <t-textarea
+          v-model="txt2imgParamsRef.negative_prompt"
+          :autosize="{ minRows: 3, maxRows: 3 }"
+          placeholder="请输入负面提示词..."
         />
-      </n-gi>
-      <n-gi :span="6">
+      </t-col>
+      <t-col :span="12">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.batchSize') }}
-          <n-tag class="float-right" size="small">{{ txt2imgParamsRef.batch_size }}</n-tag>
+          <t-tag class="float-right" size="small">{{ txt2imgParamsRef.batch_size }}</t-tag>
         </div>
-        <n-slider v-model:value="txt2imgParamsRef.batch_size" :min="1" :max="5" :step="1" />
-      </n-gi>
-      <n-gi :span="3">
+        <t-slider v-model="txt2imgParamsRef.batch_size" :min="1" :max="5" :step="1" />
+      </t-col>
+      <t-col :span="6">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.width') }}
-          <n-tag class="float-right" size="small">{{ txt2imgParamsRef.width }}</n-tag>
+          <t-tag class="float-right" size="small">{{ txt2imgParamsRef.width }}</t-tag>
         </div>
-        <n-slider v-model:value="txt2imgParamsRef.width" :min="64" :max="2048" :step="1" />
-      </n-gi>
-      <n-gi :span="3">
+        <t-slider v-model="txt2imgParamsRef.width" :min="64" :max="2048" :step="1" />
+      </t-col>
+      <t-col :span="6">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.height') }}
-          <n-tag class="float-right" size="small">{{ txt2imgParamsRef.height }}</n-tag>
+          <t-tag class="float-right" size="small">{{ txt2imgParamsRef.height }}</t-tag>
         </div>
-        <n-slider v-model:value="txt2imgParamsRef.height" :min="64" :max="2048" :step="1" />
-      </n-gi>
-      <n-gi :span="3">
+        <t-slider v-model="txt2imgParamsRef.height" :min="64" :max="2048" :step="1" />
+      </t-col>
+      <t-col :span="6">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.steps') }}
-          <n-tag class="float-right" size="small">{{ txt2imgParamsRef.steps }}</n-tag>
+          <t-tag class="float-right" size="small">{{ txt2imgParamsRef.steps }}</t-tag>
         </div>
-        <n-slider v-model:value="txt2imgParamsRef.steps" :min="1" :max="99" :step="1" />
-      </n-gi>
-      <n-gi :span="3">
+        <t-slider v-model="txt2imgParamsRef.steps" :min="1" :max="99" :step="1" />
+      </t-col>
+      <t-col :span="6">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.cfgScale') }}
-          <n-tag class="float-right" size="small">{{ txt2imgParamsRef.cfg_scale }}</n-tag>
+          <t-tag class="float-right" size="small">{{ txt2imgParamsRef.cfg_scale }}</t-tag>
         </div>
-        <n-slider v-model:value="txt2imgParamsRef.cfg_scale" :min="1" :max="30" :step="1" />
-      </n-gi>
-      <n-gi :span="3">
+        <t-slider v-model="txt2imgParamsRef.cfg_scale" :min="1" :max="30" :step="1" />
+      </t-col>
+      <t-col :span="6">
         <div class="pb-1">
           {{ $t('views.draw.stableDiffusion.sampler') }}
         </div>
@@ -66,94 +69,92 @@
           :dict-name="txt2imgParamsRef.sampler_name"
           dict-type="SAMPLER"
         />
-      </n-gi>
-      <n-gi :span="3">
+      </t-col>
+      <t-col :span="6">
         <div class="pb-1">{{ $t('views.draw.stableDiffusion.seed') }}</div>
-        <n-input-number v-model:value="txt2imgParamsRef.seed" :show-button="false" />
-      </n-gi>
-      <n-gi :span="6">
+        <t-input-number v-model="txt2imgParamsRef.seed" theme="normal" />
+      </t-col>
+      <t-col :span="12">
         <div>
           {{ $t('views.draw.stableDiffusion.restoreFaces') }}
-          <n-switch v-model:value="txt2imgParamsRef.restore_faces" size="small" class="float-right" />
+          <t-switch v-model="txt2imgParamsRef.restore_faces" size="small" class="float-right" />
         </div>
-      </n-gi>
-      <n-gi :span="6">
+      </t-col>
+      <t-col :span="12">
         <div>
           {{ $t('views.draw.stableDiffusion.hiresFix') }}
 
-          <n-switch v-model:value="txt2imgParamsRef.enable_hr" size="small" class="float-right" />
-          <n-collapse-transition :show="txt2imgParamsRef.enable_hr" class="pt-1">
-            <n-grid :cols="6" :x-gap="24" :y-gap="16">
-              <n-gi :span="3">
+          <t-switch v-model="txt2imgParamsRef.enable_hr" size="small" class="float-right" />
+          <transition name="collapse" mode="out-in">
+            <t-row v-if="txt2imgParamsRef.enable_hr" :gutter="[24, 16]" class="pt-1">
+              <t-col :span="6">
                 <div class="py-2">
                   {{ $t('views.draw.stableDiffusion.width') }}
-                  <n-tag class="float-right" size="small">{{ txt2imgParamsRef.hr_resize_x }}</n-tag>
+                  <t-tag class="float-right" size="small">{{ txt2imgParamsRef.hr_resize_x }}</t-tag>
                 </div>
-                <n-slider v-model:value="txt2imgParamsRef.hr_resize_x" :min="512" :max="3840" :step="1" />
-              </n-gi>
-              <n-gi :span="3">
+                <t-slider v-model="txt2imgParamsRef.hr_resize_x" :min="512" :max="3840" :step="1" />
+              </t-col>
+              <t-col :span="6">
                 <div class="py-2">
                   {{ $t('views.draw.stableDiffusion.height') }}
-                  <n-tag class="float-right" size="small">
+                  <t-tag class="float-right" size="small">
                     {{ txt2imgParamsRef.hr_resize_y }}
-                  </n-tag>
+                  </t-tag>
                 </div>
-                <n-slider v-model:value="txt2imgParamsRef.hr_resize_y" :min="512" :max="3840" :step="1" />
-              </n-gi>
-              <n-gi :span="6">
+                <t-slider v-model="txt2imgParamsRef.hr_resize_y" :min="512" :max="3840" :step="1" />
+              </t-col>
+              <t-col :span="12">
                 <div class="pb-1">
                   {{ $t('views.draw.stableDiffusion.upscaler1') }}
                 </div>
                 <selectDict v-model:dict-code="txt2imgParamsRef.hr_upscaler" dict-type="HIRES_FIX_UPSCALER" />
-              </n-gi>
-              <n-gi :span="6">
+              </t-col>
+              <t-col :span="12">
                 <div class="pb-1">
                   {{ $t('views.draw.stableDiffusion.hiresSteps') }}
-                  <n-tag class="float-right" size="small">
+                  <t-tag class="float-right" size="small">
                     {{ txt2imgParamsRef.hr_second_pass_steps }}
-                  </n-tag>
+                  </t-tag>
                 </div>
-                <n-slider v-model:value="txt2imgParamsRef.hr_second_pass_steps" :min="0" :max="150" :step="1" />
-              </n-gi>
-              <n-gi :span="6">
+                <t-slider v-model="txt2imgParamsRef.hr_second_pass_steps" :min="0" :max="150" :step="1" />
+              </t-col>
+              <t-col :span="12">
                 <div class="pb-1">
                   {{ $t('views.draw.stableDiffusion.denoisingStrength') }}
-                  <n-tag class="float-right" size="small">
+                  <t-tag class="float-right" size="small">
                     {{ txt2imgParamsRef.denoising_strength }}
-                  </n-tag>
+                  </t-tag>
                 </div>
-                <n-slider v-model:value="txt2imgParamsRef.denoising_strength" :min="0" :max="1" :step="0.1" />
-              </n-gi>
-            </n-grid>
-          </n-collapse-transition>
+                <t-slider v-model="txt2imgParamsRef.denoising_strength" :min="0" :max="1" :step="0.1" />
+              </t-col>
+            </t-row>
+          </transition>
         </div>
-      </n-gi>
-      <n-grid-item :span="6">
-        <n-collapse arrow-placement="right">
-          <n-collapse-item title="ControlNet" name="1">
-            <n-tabs
-              v-model:value="controlNetValue"
-              justify-content="space-evenly"
-              type="card"
+      </t-col>
+      <t-col :span="12">
+        <t-collapse>
+          <t-collapse-panel header="ControlNet" value="1" size="small">
+            <t-tabs
+              v-model="controlNetValue"
+              theme="card"
               addable
-              closable
-              animated
-              @close="handleControNetRemove"
               @add="handleControNetAdd"
+              @remove="handleControNetRemove"
             >
-              <n-tab-pane
+              <t-tab-panel
                 v-for="(_, index) in controlNetParamsListRef"
                 :key="index"
-                :name="index"
-                :tab="$t('views.draw.stableDiffusion.controlNet.control') + ' ' + index"
+                :value="index"
+                :label="$t('views.draw.stableDiffusion.controlNet.control') + ' ' + index"
+                :removable="controlNetParamsListRef.length > 1"
               >
                 <controlNet v-model:control-net-params="controlNetParamsListRef[index]" />
-              </n-tab-pane>
-            </n-tabs>
-          </n-collapse-item>
-        </n-collapse>
-      </n-grid-item>
-    </n-grid>
+              </t-tab-panel>
+            </t-tabs>
+          </t-collapse-panel>
+        </t-collapse>
+      </t-col>
+    </t-row>
   </div>
 </template>
 
@@ -220,3 +221,27 @@
     txt2imgParamsRef.value.alwayson_scripts!.controlnet.args = controlNetParamsListRef;
   });
 </script>
+
+<style scoped>
+  .collapse-enter-active,
+  .collapse-leave-active {
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+
+  .collapse-enter-from,
+  .collapse-leave-to {
+    opacity: 0;
+    max-height: 0;
+  }
+
+  .collapse-enter-to,
+  .collapse-leave-from {
+    opacity: 1;
+    max-height: 500px;
+  }
+
+  :deep(.t-collapse-panel__content) {
+    padding: 5px;
+  }
+</style>
