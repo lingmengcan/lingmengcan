@@ -1,3 +1,4 @@
+import componentsLocale from 'tdesign-vue-next/es/locale/zh_CN';
 import layout from './layout';
 import views from './views';
 
@@ -33,4 +34,5 @@ export default {
       actions: '操作',
     },
   },
+  componentsLocale,
 };

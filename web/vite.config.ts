@@ -6,7 +6,7 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import tailwindcss from '@tailwindcss/vite';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
-import { NaiveUiResolver, TDesignResolver } from 'unplugin-vue-components/resolvers';
+import { TDesignResolver } from 'unplugin-vue-components/resolvers';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -20,26 +20,16 @@ export default defineConfig({
           library: 'vue-next',
         }),
       ],
-      imports: [
-        'vue',
-        {
-          'naive-ui': ['useDialog', 'useMessage', 'useNotification', 'useLoadingBar'],
-        },
-      ],
     }),
-    // 自动按需引入naive组件
+    // 自动按需引入TDesign组件
     Components({
       resolvers: [
-        NaiveUiResolver(),
         TDesignResolver({
           library: 'vue-next',
         }),
       ],
     }),
   ],
-  css: {
-    postcss: './postcss.config.js',
-  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

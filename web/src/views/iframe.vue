@@ -39,7 +39,7 @@
 </script>
 
 <template>
-  <n-spin :show="loading">
+  <t-loading :loading="loading" text="加载中...">
     <div class="w-full h-screen">
       <iframe
         ref="frameRef"
@@ -47,5 +47,5 @@
         class="w-full h-full overflow-hidden border-0 box-border"
       ></iframe>
     </div>
-  </n-spin>
+  </t-loading>
 </template>
