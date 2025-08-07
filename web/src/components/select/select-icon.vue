@@ -2,7 +2,6 @@
   <t-select
     v-model="selectIcon"
     placeholder="请选择图标"
-    filterable
     clearable
     :filter="filterMethod"
     :style="{ width: '400px' }"
@@ -14,12 +13,12 @@
         <span class="text-xs text-gray-600">{{ item.stem }}</span>
       </div>
     </t-option>
-    <!-- <template #valueDisplay>
+    <template #valueDisplay>
       <div class="flex items-center">
         <t-icon :name="selectIcon" :style="{ marginRight: '8px' }" />
         {{ selectIcon }}
       </div>
-    </template> -->
+    </template>
   </t-select>
 </template>
 
@@ -43,9 +42,6 @@
 
   // 过滤后的图标列表
   const filteredOptions = computed(() => {
-    if (!filterText.value) {
-      return options.value;
-    }
     return options.value.filter((item) => item.stem.toLowerCase().includes(filterText.value.toLowerCase()));
   });
 
