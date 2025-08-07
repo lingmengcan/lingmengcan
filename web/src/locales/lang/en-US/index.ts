@@ -1,3 +1,4 @@
+import componentsLocale from 'tdesign-vue-next/es/locale/en_US';
 import layout from './layout';
 import views from './views';
 
@@ -26,11 +27,12 @@ export default {
     enable: 'Enable',
     disable: 'Disable',
     upload: 'Upload File',
-    paginationItemCount: 'items',
+    description: 'description',
     validationFailed: 'Validation failed',
     deleteConfirm: 'Do you want to continue deleting?',
     table: {
       actions: 'Actions',
     },
   },
+  componentsLocale,
 };

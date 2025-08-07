@@ -1,8 +1,12 @@
 <script setup lang="ts">
-  import { SelectOption } from 'naive-ui';
   import { PropType, onMounted, ref } from 'vue';
   import { getDiffusionModelListByType } from '@/api/draw/model';
   import { ResultEnum } from '@/constants';
+
+  interface SelectOption {
+    label: string;
+    value: string;
+  }
 
   const props = defineProps({
     modelType: {
@@ -39,5 +43,5 @@
 </script>
 
 <template>
-  <n-select :value="modelId" :options="options" @update:value="handleSelect" />
+  <t-select :value="modelId" :options="options" @change="handleSelect" />
 </template>

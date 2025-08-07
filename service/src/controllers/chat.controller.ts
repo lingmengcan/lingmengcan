@@ -40,17 +40,6 @@ export class ChatController {
       res.write(chunk);
     }
     res.end();
-
-    // const { message, temperature, llm } = dto;
-    // const stream = await this.chatService.chatLlm(message, temperature, llm);
-    // const httpResponse = new Response(stream, {
-    //   headers: {
-    //     'Content-Type': 'text/plain; charset=utf-8',
-    //     'Transfer-Encoding': 'chunked',
-    //     'X-Content-Type-Options': 'nosniff',
-    //   },
-    // });
-    // return httpResponse;
   }
 
   @UseGuards(AuthGuard('jwt'))

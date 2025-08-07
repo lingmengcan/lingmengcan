@@ -1,6 +1,5 @@
 // @ts-check
-const { defineConfig } = require('eslint-define-config');
-module.exports = defineConfig({
+module.exports = {
   root: true,
   env: {
     browser: true,
@@ -31,4 +30,4 @@ module.exports = defineConfig({
     '@typescript-eslint/no-var-requires': 'off',
     '@typescript-eslint/ban-types': 'off',
   },
-});
+};

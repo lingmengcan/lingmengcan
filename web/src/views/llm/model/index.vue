@@ -1,122 +1,114 @@
 <template>
-  <n-card :bordered="false">
-    <n-form
-      ref="formRef"
-      inline
-      label-placement="left"
-      label-width="auto"
-      :model="queryFormData"
-      :show-feedback="false"
-    >
-      <n-grid :cols="24" :x-gap="24">
-        <n-form-item-gi :span="5" path="modelName">
-          <n-input v-model:value="queryFormData.modelName" :placeholder="$t('views.llm.model.placeholder.modelName')" />
-        </n-form-item-gi>
-        <n-form-item-gi :span="5" path="modelType">
-          <selectDict v-model:dict-code="queryFormData.modelType" :multiple="true" dict-type="LLM_TYPE" />
-        </n-form-item-gi>
-        <n-form-item-gi :span="8">
-          <n-space>
-            <n-button @click="clearQuery">{{ $t('common.reset') }}</n-button>
-            <n-button v-permission="['llm_model_index']" type="primary" @click="handleQuery">
-              {{ $t('common.query') }}
-            </n-button>
-          </n-space>
-        </n-form-item-gi>
-        <n-gi :span="6">
-          <div class="float-right">
-            <n-button v-permission="['llm_model_index']" type="primary" @click="handleAdd">
-              {{ $t('views.llm.model.add') }}
-            </n-button>
-          </div>
-        </n-gi>
-      </n-grid>
-    </n-form>
-  </n-card>
-  <n-grid :x-gap="12" :y-gap="12" cols="4" class="my-3 overflow-auto">
-    <n-grid-item v-for="item in modelsData" :key="item.modelId">
-      <n-card
-        footer-style="padding: 10px;"
-        class="w-full h-full"
-        :title="item.modelName"
-        :segmented="{
-          footer: true,
-        }"
-        hoverable
-        @click="handleEdit(item)"
+  <t-card :bordered="false">
+    <div class="flex justify-between items-center">
+      <t-form
+        ref="formRef"
+        layout="inline"
+        :label-width="0"
+        :data="queryFormData"
+        @submit="handleQuery"
+        @reset="clearQuery"
       >
-        <div>{{ item.description }}</div>
-        <template #footer>
-          <div class="text-center">{{ $t('views.llm.model.view') }}</div>
-        </template>
-      </n-card>
-    </n-grid-item>
-  </n-grid>
-  <n-pagination
-    v-model:page="page"
+        <t-form-item name="modelName">
+          <t-input v-model="queryFormData.modelName" :placeholder="$t('views.llm.model.placeholder.modelName')" />
+        </t-form-item>
+
+        <t-form-item name="modelType">
+          <selectDict v-model:dict-code="queryFormData.modelType" :multiple="true" dict-type="LLM_TYPE" />
+        </t-form-item>
+
+        <t-form-item>
+          <t-space>
+            <t-button theme="primary" type="submit" v-permission="['llm_model_index']">
+              {{ $t('common.query') }}
+            </t-button>
+            <t-button theme="default" variant="base" type="reset">{{ $t('common.reset') }}</t-button>
+          </t-space>
+        </t-form-item>
+      </t-form>
+
+      <t-button v-permission="['llm_model_index']" theme="primary" @click="handleAdd">
+        {{ $t('views.llm.model.add') }}
+      </t-button>
+    </div>
+  </t-card>
+
+  <!-- 列表 -->
+  <div class="my-4">
+    <t-row :gutter="[10, 10]">
+      <t-col v-for="item in modelsData" :key="item.modelId" :xs="12" :sm="8" :md="6" :lg="4" :xl="3" class="h-48">
+        <t-card
+          size="small"
+          class="w-full h-full flex flex-col"
+          :title="item.modelName"
+          :bordered="true"
+          hoverShadow
+          @click="handleEdit(item)"
+        >
+          <div class="flex-1 overflow-hidden text-sm text-gray-600 leading-relaxed">
+            {{ item.description }}
+          </div>
+          <template #footer>
+            <div class="text-center text-blue-600 hover:text-blue-800 transition-colors">
+              {{ $t('views.llm.model.view') }}
+            </div>
+          </template>
+        </t-card>
+      </t-col>
+    </t-row>
+  </div>
+
+  <t-pagination
+    v-model="page"
     :page-size="pageSize"
-    :item-count="itemCount"
-    class="justify-end"
-    show-quick-jumper
-    show-size-picker
-    @update:page="handlePageChange"
-  >
-    <template #prefix="{}">{{ itemCount }} {{ $t('common.paginationItemCount') }}</template>
-  </n-pagination>
+    :total="itemCount"
+    show-jumper
+    @change="handlePageChange"
+  ></t-pagination>
 
   <!-- 新增修改模型 -->
-  <n-drawer v-model:show="showDrawer" :width="599">
-    <n-drawer-content :title="drawerTitle" closable>
-      <n-form
-        ref="drawerFormRef"
-        label-placement="left"
-        label-width="auto"
-        :model="drawerFormData"
-        :rules="drawerRules"
-      >
-        <n-form-item :label="$t('views.llm.model.name')" path="modelName">
-          <n-input
-            v-model:value="drawerFormData.modelName"
-            :placeholder="$t('views.llm.model.placeholder.modelName')"
-          />
-        </n-form-item>
-        <n-form-item :label="$t('views.llm.model.description')" path="description">
-          <n-input
-            v-model:value="drawerFormData.description"
-            type="textarea"
-            :placeholder="$t('views.llm.model.placeholder.description')"
-          />
-        </n-form-item>
-        <n-form-item :label="$t('views.llm.model.type')" path="modelType">
-          <selectDict
-            v-model:dict-code="drawerFormData.modelType"
-            v-model:dict-name="drawerFormData.modelTypeName"
-            dict-type="LLM_TYPE"
-          />
-        </n-form-item>
-        <n-form-item :label="$t('views.llm.model.apiType')" path="apiType">
-          <selectDict v-model:dict-code="drawerFormData.apiType" dict-type="LLM_API_TYPE" />
-        </n-form-item>
-        <n-form-item :label="$t('views.llm.model.baseUrl')" path="baseUrl">
-          <n-input v-model:value="drawerFormData.baseUrl" :placeholder="$t('views.llm.model.placeholder.baseUrl')" />
-        </n-form-item>
-        <n-form-item :label="$t('views.llm.model.apiKey')" path="apiKey">
-          <n-input v-model:value="drawerFormData.apiKey" :placeholder="$t('views.llm.model.placeholder.apiKey')" />
-        </n-form-item>
-        <n-form-item :label="$t('views.llm.model.defaultEmbeddingModel')" path="defaultEmbeddingModel">
-          <selectModel v-model:model-name="drawerFormData.defaultEmbeddingModel" model-type="EMBEDDING_LLM" />
-        </n-form-item>
-        <n-form-item :label="$t('common.status')" path="status">
-          <selectDict v-model:dict-code="drawerFormData.status" dict-type="SYS_STATUS" />
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <n-space>
-          <n-button type="primary" attr-type="button" @click="handleAddandEdit">{{ $t('common.confirm') }}</n-button>
-        </n-space>
-      </template>
-    </n-drawer-content>
-  </n-drawer>
+  <t-drawer v-model:visible="showDrawer" size="599px" :header="drawerTitle" :footer="false">
+    <t-form
+      ref="drawerFormRef"
+      :data="drawerFormData"
+      :rules="drawerRules"
+      label-align="right"
+      :label-width="120"
+      @submit="handleAddandEdit"
+    >
+      <t-form-item :label="$t('views.llm.model.name')" name="modelName">
+        <t-input v-model="drawerFormData.modelName" :placeholder="$t('views.llm.model.placeholder.modelName')" />
+      </t-form-item>
+      <t-form-item :label="$t('views.llm.model.description')" name="description">
+        <t-textarea v-model="drawerFormData.description" :placeholder="$t('views.llm.model.placeholder.description')" />
+      </t-form-item>
+      <t-form-item :label="$t('views.llm.model.type')" name="modelType">
+        <selectDict
+          v-model:dict-code="drawerFormData.modelType"
+          v-model:dict-name="drawerFormData.modelTypeName"
+          dict-type="LLM_TYPE"
+        />
+      </t-form-item>
+      <t-form-item :label="$t('views.llm.model.apiType')" name="apiType">
+        <selectDict v-model:dict-code="drawerFormData.apiType" dict-type="LLM_API_TYPE" />
+      </t-form-item>
+      <t-form-item :label="$t('views.llm.model.baseUrl')" name="baseUrl">
+        <t-input v-model="drawerFormData.baseUrl" :placeholder="$t('views.llm.model.placeholder.baseUrl')" />
+      </t-form-item>
+      <t-form-item :label="$t('views.llm.model.apiKey')" name="apiKey">
+        <t-input v-model="drawerFormData.apiKey" :placeholder="$t('views.llm.model.placeholder.apiKey')" />
+      </t-form-item>
+      <t-form-item :label="$t('views.llm.model.defaultEmbeddingModel')" name="defaultEmbeddingModel">
+        <selectModel v-model:model-name="drawerFormData.defaultEmbeddingModel" model-type="EMBEDDING_LLM" />
+      </t-form-item>
+      <t-form-item :label="$t('common.status')" name="status">
+        <selectDict v-model:dict-code="drawerFormData.status" dict-type="SYS_STATUS" />
+      </t-form-item>
+      <t-form-item>
+        <t-button theme="primary" type="submit">{{ $t('common.confirm') }}</t-button>
+      </t-form-item>
+    </t-form>
+  </t-drawer>
 </template>
 
 <script setup lang="ts">
@@ -124,13 +116,11 @@
   import selectDict from '@/components/select/select-dict.vue';
   import { addLlm, editLlm, getLlmList } from '@/api/llm/model';
   import { Llm } from '@/models/llm';
-  import { FormInst, useMessage } from 'naive-ui';
+  import { LoadingPlugin, MessagePlugin } from 'tdesign-vue-next';
   import selectModel from '@/components/select/select-model.vue';
   import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
-
-  const message = useMessage();
 
   const queryFormData = ref({
     modelName: '',
@@ -145,8 +135,8 @@
   const showDrawer = ref(false);
   const drawerTitle = ref('');
 
-  const formRef = ref<FormInst | null>(null);
-  const drawerFormRef = ref<FormInst | null>(null);
+  const formRef = ref(null);
+  const drawerFormRef = ref(null);
 
   // 新增/修改弹窗数据初始化
   const modelInitData: Llm = {
@@ -164,11 +154,11 @@
   const drawerFormData = ref(modelInitData);
 
   const drawerRules = {
-    modelName: { required: true, message: t('views.llm.model.placeholder.modelName'), trigger: 'blur' },
-    description: { required: true, message: t('views.llm.model.placeholder.description'), trigger: 'blur' },
-    modelType: { required: true, message: t('views.llm.model.placeholder.modelType'), trigger: 'blur' },
-    status: { required: true, message: t('views.llm.model.placeholder.status'), trigger: 'blur' },
-    sort: { required: true, type: 'number', message: t('views.llm.model.placeholder.status'), trigger: 'blur' },
+    modelName: [{ required: true, message: t('views.llm.model.placeholder.modelName'), trigger: 'blur' }],
+    description: [{ required: true, message: t('views.llm.model.placeholder.description'), trigger: 'blur' }],
+    modelType: [{ required: true, message: t('views.llm.model.placeholder.modelType'), trigger: 'blur' }],
+    status: [{ required: true, message: t('views.llm.model.placeholder.status'), trigger: 'blur' }],
+    sort: [{ required: true, type: 'number', message: t('views.llm.model.placeholder.status'), trigger: 'blur' }],
   };
 
   // 绑定表格数据
@@ -204,8 +194,8 @@
     query(page.value, pageSize.value);
   };
 
-  const handlePageChange = (currentPage: number) => {
-    query(currentPage, pageSize.value);
+  const handlePageChange = (pageInfo: { current: number; pageSize: number }) => {
+    query(pageInfo.current, pageInfo.pageSize);
   };
 
   // 新增
@@ -226,29 +216,27 @@
     drawerFormData.value = { ...modelInitData, ...item, status: item.status.toString() };
   };
 
-  const handleAddandEdit = (e: MouseEvent) => {
+  const handleAddandEdit = async ({ validateResult, firstError, e }) => {
     e.preventDefault();
-    const messageReactive = message.loading('loading', {
-      duration: 0,
-    });
-    drawerFormRef.value?.validate(async (errors) => {
-      if (!errors) {
-        const requestData: Llm = drawerFormData.value;
 
-        const res = drawerFormData.value.modelId ? await editLlm(requestData) : await addLlm(requestData);
+    LoadingPlugin(true);
 
-        if (res?.code === 0) {
-          showDrawer.value = false;
-          drawerFormData.value = { ...modelInitData };
-          query(page.value, pageSize.value);
-        }
-      } else {
-        console.log(errors);
-        message.error(t('common.validationFailed'));
+    if (validateResult === true) {
+      const requestData: Llm = drawerFormData.value;
+
+      const res = drawerFormData.value.modelId ? await editLlm(requestData) : await addLlm(requestData);
+
+      if (res?.code === 0) {
+        showDrawer.value = false;
+        drawerFormData.value = { ...modelInitData };
+        query(page.value, pageSize.value);
       }
+    } else {
+      console.log('Validate Errors: ', firstError, validateResult);
+      MessagePlugin.error(t('common.validationFailed'));
+    }
 
-      messageReactive.destroy();
-    });
+    LoadingPlugin(false);
   };
 
   onMounted(async () => {
@@ -257,5 +245,10 @@
 </script>
 
 <style scoped>
-  /* Add any necessary styling here */
+  /* 确保卡片内容区域正确布局 */
+  :deep(.t-card__body) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
 </style>

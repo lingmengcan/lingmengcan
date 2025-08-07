@@ -1,7 +1,7 @@
 <script setup lang="tsx">
   import { onBeforeMount } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { NEmpty } from 'naive-ui';
+  import { Empty } from 'tdesign-vue-next';
 
   const route = useRoute();
   const router = useRouter();
@@ -14,7 +14,7 @@
     });
   });
   const App = () => {
-    return <NEmpty />;
+    return <Empty />;
   };
 </script>
 

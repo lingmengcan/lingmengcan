@@ -1,79 +1,80 @@
 <script setup lang="ts">
-  import { ChatbubblesOutline, AddCircleOutline, TrashOutline } from '@vicons/ionicons5';
-  import { MenuFoldOutlined } from '@vicons/antd';
   import { ref } from 'vue';
   import { useChatStore } from '@/store/modules/chat';
+  import { Conversation } from '@/models/chat';
   import List from './components/list.vue';
   import Chatbox from './components/chatbox.vue';
-  import { useDialog, useMessage } from 'naive-ui';
+  import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
   import { useI18n } from 'vue-i18n';
 
   const { t } = useI18n();
-  const message = useMessage();
-  const dialog = useDialog();
   const chatStore = useChatStore();
   const chatListVisable = ref(true);
 
-  function handleAdd() {
-    chatStore.addConversation(t('views.chat.new'));
-    chatStore.reloadRoute(chatStore.activeId);
+  async function handleAdd() {
+    const newConversation: Conversation = {
+      conversationName: t('views.chat.new'),
+      llm: 'qwen3-30b-a3b',
+      systemPrompt: '',
+      temperature: 0.5,
+      topP: 1,
+      maxTokens: 7000,
+    };
+
+    await chatStore.addConversation(newConversation);
+    // addConversation 方法会自动设置 activeId，所以直接使用更新后的 activeId
+    await chatStore.reloadRoute(chatStore.activeId);
   }
 
   function handleClear() {
-    dialog.warning({
-      title: t('common.alert'),
-      content: t('views.chat.clearMessage'),
-      positiveText: t('common.confirm'),
-      negativeText: t('common.cancel'),
-      onPositiveClick: () => {
+    DialogPlugin.confirm({
+      header: t('common.alert'),
+      body: t('views.chat.clearMessage'),
+      confirmBtn: t('common.confirm'),
+      cancelBtn: t('common.cancel'),
+      onConfirm: () => {
         chatStore.clearConversationList().then(() => {
-          message.success(t('views.chat.clearSuccess'));
+          MessagePlugin.success(t('views.chat.clearSuccess'));
         });
       },
     });
   }
 </script>
 <template>
-  <div class="flex w-full h-full overflow-hidden rounded-md">
+  <div class="flex w-full h-full rounded-md">
     <div>
       <div v-if="chatListVisable" class="relative flex h-full w-[260px] flex-col p-4 transition-all bg-[#ffffff99]">
         <div class="flex flex-row justify-between h-10">
           <div class="flex items-center text-gray-500">
-            <n-icon size="22" class="mx-2">
-              <ChatbubblesOutline />
-            </n-icon>
+            <t-icon name="chat-bubble" size="22" class="mx-2" />
             <div>{{ $t('views.chat.list') }}</div>
           </div>
-          <n-button class="!w-10 !h-10" @click="chatListVisable = !chatListVisable">
+          <t-button variant="outline" shape="square" class="w-10! h-10!" @click="chatListVisable = !chatListVisable">
             <template #icon>
-              <n-icon>
-                <MenuFoldOutlined />
-              </n-icon>
+              <t-icon name="menu-unfold" />
             </template>
-          </n-button>
+          </t-button>
         </div>
         <div class="mt-4">
-          <n-button dashed class="!w-full !h-10 !bg-white" @click="handleAdd">
+          <t-button variant="dashed" class="w-full! h-10! bg-white!" @click="handleAdd">
             <template #icon>
-              <n-icon>
-                <AddCircleOutline />
-              </n-icon>
+              <t-icon name="add-circle" />
             </template>
             {{ $t('views.chat.new') }}
-          </n-button>
+          </t-button>
         </div>
 
-        <List />
+        <div class="flex-1 overflow-hidden">
+          <List />
+        </div>
 
-        <div class="flex-col">
-          <n-button :bordered="false" class="gap-3 hover:bg-gray-500/10" @click="handleClear">
+        <div class="flex-col mt-auto">
+          <t-button variant="text" class="gap-3 hover:bg-gray-500/10" @click="handleClear">
             <template #icon>
-              <n-icon size="14">
-                <TrashOutline />
-              </n-icon>
+              <t-icon name="delete" size="14" />
             </template>
             {{ $t('views.chat.clearList') }}
-          </n-button>
+          </t-button>
         </div>
       </div>
     </div>

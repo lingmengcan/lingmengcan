@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import { PropType, onMounted, ref, watchEffect } from 'vue';
-  import { SelectOption, SelectGroupOption } from 'naive-ui';
   import { getPreprocessorList } from '@/api/draw';
   import { ResultEnum } from '@/constants';
   import { ControlNetParams, ControlNetPreprocessor } from '@/models/draw';
@@ -22,7 +21,7 @@
   const emit = defineEmits(['update:preprocessorCode', 'update:controlNetParams']);
 
   // select options
-  const options = ref<Array<SelectOption | SelectGroupOption>>([]);
+  const options = ref<Array<{ label: string; value: string }>>([]);
 
   //监控父组件变化
   watchEffect(() => {
@@ -44,6 +43,7 @@
 
     if (res && res.code === ResultEnum.SUCCESS) {
       const list = res.data;
+      preprocessorList.value = list;
 
       options.value = list.map((item) => ({
         label: item.preprocessorName,
@@ -54,5 +54,5 @@
 </script>
 
 <template>
-  <n-select :value="selectValue" :options="options" filterable @update:value="handleSelect" />
+  <t-select v-model="selectValue" :options="options" filterable placeholder="请选择预处理器" @change="handleSelect" />
 </template>

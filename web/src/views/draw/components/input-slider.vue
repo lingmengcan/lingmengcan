@@ -1,19 +1,19 @@
 <template>
   <div class="pb-1">
     {{ label }}
-
-    <n-input-number
-      v-model:value="valueRef"
+    <t-input-number
+      v-model="valueRef"
       class="float-right w-12"
-      size="tiny"
+      size="small"
       :min="min"
       :max="max"
       :step="step"
-      :show-button="false"
+      :show-controls="false"
     />
   </div>
-  <n-slider v-model:value="valueRef" :min="min" :max="max" :step="step" />
+  <t-slider v-model="valueRef" :min="min" :max="max" :step="step" />
 </template>
+
 <script setup lang="ts">
   import { PropType, ref, watch } from 'vue';
 

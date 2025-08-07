@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-  import { onMounted, reactive, ref } from 'vue';
+  import { onMounted, ref, reactive } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useUserStore } from '@/store/modules/user';
-  import { useMessage } from 'naive-ui';
-  import { PersonOutline, LockClosedOutline, ShieldOutline } from '@vicons/ionicons5';
+  import { FormProps, MessagePlugin } from 'tdesign-vue-next';
+  import { UserIcon, LockOnIcon, CheckCircleIcon } from 'tdesign-icons-vue-next';
   import { PageEnum } from '@/constants/page';
   import { ResultEnum } from '@/constants';
   import { LoginParams } from '@/models/user';
@@ -13,7 +13,6 @@
   const { t } = useI18n();
 
   const formRef = ref();
-  const message = useMessage();
   const loading = ref(false);
   const autoLogin = ref(true);
   const captchaUrl = ref('');
@@ -25,9 +24,9 @@
     captcha: '',
   });
 
-  const rules = {
-    username: { required: true, message: t('views.login.input.account'), trigger: 'blur' },
-    password: { required: true, message: t('views.login.input.password'), trigger: 'blur' },
+  const rules: FormProps['rules'] = {
+    username: [{ required: true, message: t('views.login.input.account'), trigger: 'blur' }],
+    password: [{ required: true, message: t('views.login.input.password'), trigger: 'blur' }],
     captcha: [{ required: true, message: t('views.login.input.verification'), trigger: 'blur' }],
   };
 
@@ -48,37 +47,38 @@
     refreshCaptcha();
   });
 
-  const handleSubmit = () => {
-    formRef.value.validate(async (errors: any) => {
-      if (!errors) {
-        const { username, password, captcha } = formInline;
+  const handleSubmit = async ({ validateResult, firstError }) => {
+    if (validateResult === true) {
+      const { username, password, captcha } = formInline;
 
-        loading.value = true;
+      loading.value = true;
 
-        const params: LoginParams = {
-          username,
-          password,
-          captcha,
-        };
+      const params: LoginParams = {
+        username,
+        password,
+        captcha,
+      };
 
-        try {
-          const res = await userStore.login(params);
-          message.destroyAll();
+      try {
+        const res = await userStore.login(params);
+        MessagePlugin.closeAll();
 
-          if (res?.code == ResultEnum.SUCCESS) {
-            const toPath = decodeURIComponent((route.query?.redirect || '/') as string);
-            message.success(t('views.login.loginSuccess'));
-            if (route.name === LOGIN_NAME) {
-              router.replace('/');
-            } else router.replace(toPath);
-          }
-        } finally {
-          loading.value = false;
+        if (res?.code == ResultEnum.SUCCESS) {
+          const toPath = decodeURIComponent((route.query?.redirect || '/') as string);
+          MessagePlugin.success(t('views.login.loginSuccess'));
+          if (route.name === LOGIN_NAME) {
+            router.replace('/');
+          } else router.replace(toPath);
         }
-      } else {
-        message.error(t('views.login.loginError'));
+      } catch (error) {
+        MessagePlugin.error(t('views.login.loginError'));
+      } finally {
+        loading.value = false;
       }
-    });
+    } else {
+      console.log('Validate Errors: ', firstError, validateResult);
+      MessagePlugin.warning(firstError);
+    }
   };
 </script>
 
@@ -86,63 +86,75 @@
   <div
     class="flex flex-col h-screen overflow-auto bg-cover bg-no-repeat bg-[url('@/assets/images/login_bg.png')] place-items-center justify-center"
   >
-    <div class="absolute flex-grow max-w-md px-5 mx-auto bg-white rounded-lg shadowlg">
-      <div class="pt-2 pb-5 text-center">
-        <div>
-          <img src="@/assets/images/full-logo.png" alt="" />
-        </div>
-        <div class="text-sm text-sky-300">{{ $t('views.login.welcome') }}</div>
+    <div class="absolute flex-grow max-w-md px-5 mx-auto bg-white rounded-lg shadowlg w-[500px] pt-5 pb-6">
+      <div class="pb-5 text-5xl text-gray-700">
+        <h1 class="text-4xl">{{ t('views.login.welcome') }}</h1>
+        <h1 class="text-3xl text-center">Lingmengcan</h1>
       </div>
       <div>
-        <n-form ref="formRef" label-placement="left" size="large" :model="formInline" :rules="rules">
-          <n-form-item path="username">
-            <n-input v-model:value="formInline.username" :placeholder="$t('views.login.input.account')">
-              <template #prefix>
-                <n-icon size="18" color="#808695">
-                  <PersonOutline />
-                </n-icon>
-              </template>
-            </n-input>
-          </n-form-item>
-          <n-form-item path="password">
-            <n-input
-              v-model:value="formInline.password"
-              type="password"
-              show-password-on="click"
-              :placeholder="$t('views.login.input.password')"
+        <t-form
+          ref="formRef"
+          :data="formInline"
+          :rules="rules"
+          label-width="0"
+          @submit="handleSubmit"
+          :show-error-message="true"
+        >
+          <t-form-item name="username">
+            <t-input
+              v-model="formInline.username"
+              :placeholder="$t('views.login.input.account')"
+              size="large"
+              clearable
             >
-              <template #prefix>
-                <n-icon size="18" color="#808695">
-                  <LockClosedOutline />
-                </n-icon>
+              <template #prefix-icon>
+                <UserIcon />
               </template>
-            </n-input>
-          </n-form-item>
-          <n-form-item path="captcha">
-            <n-input v-model:value="formInline.captcha" :placeholder="$t('views.login.input.verification')">
-              <template #prefix>
-                <n-icon size="18" color="#808695">
-                  <ShieldOutline />
-                </n-icon>
+            </t-input>
+          </t-form-item>
+          <t-form-item name="password">
+            <t-input
+              v-model="formInline.password"
+              type="password"
+              :placeholder="$t('views.login.input.password')"
+              size="large"
+              clearable
+            >
+              <template #prefix-icon>
+                <LockOnIcon />
               </template>
-            </n-input>
-            <img :src="captchaUrl" class="cursor-pointer" @click="refreshCaptcha" />
-          </n-form-item>
-          <n-form-item>
-            <div class="flex">
-              <n-checkbox v-model:checked="autoLogin">{{ $t('views.login.remember') }}</n-checkbox>
-
-              <div class="flex items-center justify-center">
-                <a href="javascript:">{{ $t('views.login.forget') }}</a>
-              </div>
+            </t-input>
+          </t-form-item>
+          <t-form-item name="captcha">
+            <t-input v-model="formInline.captcha" :placeholder="$t('views.login.input.verification')" size="large">
+              <template #prefix-icon>
+                <CheckCircleIcon />
+              </template>
+              <template #suffix>
+                <t-image
+                  :src="captchaUrl"
+                  class="cursor-pointer -mr-3"
+                  @click="refreshCaptcha"
+                  alt="验证码"
+                  fit="contain"
+                />
+              </template>
+            </t-input>
+          </t-form-item>
+          <t-form-item>
+            <div class="flex justify-between items-center">
+              <t-space>
+                <t-checkbox v-model="autoLogin">{{ $t('views.login.remember') }}</t-checkbox>
+                <t-link href="javascript:">{{ $t('views.login.forget') }}</t-link>
+              </t-space>
             </div>
-          </n-form-item>
-          <n-form-item>
-            <n-button type="primary" size="large" :loading="loading" block @click="handleSubmit">
+          </t-form-item>
+          <t-form-item>
+            <t-button theme="primary" size="large" type="submit" :loading="loading" block>
               {{ $t('views.login.signIn') }}
-            </n-button>
-          </n-form-item>
-        </n-form>
+            </t-button>
+          </t-form-item>
+        </t-form>
       </div>
     </div>
   </div>

@@ -39,6 +39,7 @@ export default {
     createdAt: 'Creation Time',
     menuRights: 'Menu Rights',
     roleUsers: 'Assign Users',
+    confirmMessage: 'Are you sure you want to {action} the role "{role}"?',
     add: 'Add Role',
     placeholder: {
       roleName: 'Please enter role name',
@@ -80,6 +81,7 @@ export default {
       query: 'Please enter route parameters',
       component: 'Please enter component path',
       permissions: 'Please enter permission identifier',
+      sort: 'Please enter sort',
       description: 'Please enter description',
     },
   },

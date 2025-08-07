@@ -1,42 +1,34 @@
 <template>
-  <n-popover ref="popoverRef" trigger="click" placement="bottom-start" width="500">
-    <template #trigger>
-      <n-button>
-        <template v-if="selectItem" #icon>
-          <component :is="vicons[selectItem]" />
-        </template>
-        {{ selectItem }}
-      </n-button>
+  <t-select
+    v-model="selectIcon"
+    placeholder="请选择图标"
+    clearable
+    :filter="filterMethod"
+    :style="{ width: '400px' }"
+    :popup-props="{ overlayInnerStyle: { width: '400px' } }"
+  >
+    <t-option v-for="item in filteredOptions" :key="item.stem" :value="item.stem" class="overlay-options">
+      <div>
+        <t-icon :name="item.stem" :style="{ marginRight: '2px' }" />
+        <span class="text-xs text-gray-600">{{ item.stem }}</span>
+      </div>
+    </t-option>
+    <template #valueDisplay>
+      <div class="flex items-center">
+        <t-icon :name="selectIcon" :style="{ marginRight: '8px' }" />
+        {{ selectIcon }}
+      </div>
     </template>
-    <n-grid :cols="4" x-gap="1">
-      <n-grid-item v-for="item of icons" :key="item" style="height: 60px">
-        <div class="flex flex-col items-center justify-center p-2 icon-wrapper" @click="onIconClick(item)">
-          <n-icon size="30" color="#0e7a0d">
-            <component :is="vicons[item]" />
-          </n-icon>
-          <n-ellipsis :line-clamp="1" style="font-size: 12px">{{ item }}</n-ellipsis>
-        </div>
-      </n-grid-item>
-    </n-grid>
-    <div class="flex justify-end mt-2 mb-2">
-      <n-pagination
-        :page="currentPage"
-        :page-size="pageSize"
-        :page-slot="5"
-        :item-count="itemCount"
-        @update-page="onUpdatePage"
-      />
-    </div>
-  </n-popover>
+  </t-select>
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, shallowReactive } from 'vue';
-  import * as vicons from '@vicons/ionicons5';
-  import { PopoverInst } from 'naive-ui';
+  import { ref, watch, computed } from 'vue';
+  import { manifest } from 'tdesign-icons-vue-next';
 
-  // const antdIcons = import('@vicons/antd');
-  const iconNames = Object.keys(vicons);
+  // 获取全部图标的列表
+  const options = ref(manifest);
+  const filterText = ref('');
 
   const props = defineProps({
     value: {
@@ -46,37 +38,39 @@
   });
   const emit = defineEmits(['updated:value', 'selected']);
 
-  const popoverRef = ref<PopoverInst | null>(null);
-  const pageSize = 20;
-  const icons = shallowReactive(iconNames.slice(0, 20));
-  const currentPage = ref(1);
-  const itemCount = computed(() => iconNames.length);
-  const selectItem = ref(props.value || '选择图标');
+  const selectIcon = ref(props.value || '选择图标');
 
-  //监控父组件变化
-  // watchEffect(() => {
-  //   selectItem.value = props.value || '选择图标';
-  // });
+  // 过滤后的图标列表
+  const filteredOptions = computed(() => {
+    return options.value.filter((item) => item.stem.toLowerCase().includes(filterText.value.toLowerCase()));
+  });
 
-  function onUpdatePage(page: number) {
-    currentPage.value = page;
-    icons.length = 0;
-    const start = (currentPage.value - 1) * pageSize;
-    icons.push(...iconNames.slice(start, start + pageSize));
-  }
+  // 自定义过滤方法
+  const filterMethod = (value: string) => {
+    filterText.value = value;
+    return true; // 返回 true 让组件使用我们的 filteredOptions
+  };
 
-  function onIconClick(item: string) {
-    selectItem.value = item;
+  // 监听 selectIcon 变化，并将值更新到父组件
+  watch(selectIcon, (newValue) => {
+    emit('updated:value', newValue);
+    emit('selected', newValue);
+  });
 
-    emit('updated:value', item);
-    emit('selected', item);
-    popoverRef.value?.setShow(false);
-  }
+  // 监听 props.value 变化，更新本地值
+  watch(
+    () => props.value,
+    (newValue) => {
+      if (newValue !== selectIcon.value) {
+        selectIcon.value = newValue;
+      }
+    },
+  );
 </script>
 
-<style lang="less" scoped>
-  .icon-wrapper {
-    cursor: pointer;
-    border: 1px solid #f5f5f5;
+<style lang="less">
+  .overlay-options {
+    display: inline-block;
+    font-size: 20px;
   }
 </style>

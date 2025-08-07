@@ -1,10 +1,16 @@
 <template>
   <div class="relative flex h-full overflow-hidden bg-white p-5">
-    <n-button v-if="!chatListVisable" class="!w-10 !h-10" @click="emit('update:chatListVisable', !chatListVisable)">
+    <t-button
+      v-if="!chatListVisable"
+      theme="default"
+      variant="outline"
+      shape="square"
+      @click="emit('update:chatListVisable', !chatListVisable)"
+    >
       <template #icon>
-        <ChatBubble1Icon />
+        <t-icon name="chat-bubble" />
       </template>
-    </n-button>
+    </t-button>
     <div class="flex-1 flex justify-center max-w-[1080px] mx-auto">
       <t-chat
         ref="chatRef"
@@ -13,13 +19,18 @@
         :text-loading="loading"
         :data="chatList"
         :is-stream-load="isStreamLoad"
+        class="h-full overflow-y-auto"
+        style="max-height: calc(100vh - 100px)"
       >
         <template #content="{ item, index }">
           <t-chat-reasoning v-if="item.reasoning?.length > 0" expand-icon-placement="right">
             <template #header>
               <t-chat-loading v-if="isStreamLoad && index === 0" :text="$t('views.chat.thinking')" />
               <div v-else style="display: flex; align-items: center">
-                <CheckCircleIcon style="color: var(--td-success-color-5); font-size: 20px; margin-right: 8px" />
+                <t-icon
+                  name="check-circle"
+                  style="color: var(--td-success-color-5); font-size: 20px; margin-right: 8px"
+                />
                 <span>{{ $t('views.chat.thought') }}</span>
               </div>
             </template>
@@ -51,16 +62,21 @@
             </template>
             <template #prefix>
               <div class="flex items-center gap-2">
-                <n-tooltip trigger="hover" :show-arrow="false">
-                  <template #trigger>
-                    <selectModel v-model:model-name="conversation.llm" class="llm-select" model-type="GENERAL_LLM" />
-                  </template>
-                  <span>切换模型</span>
-                </n-tooltip>
-                <n-button :class="{ '!bg-blue-300 !text-white': isThinked }" @click="checkClick" class="!rounded-lg">
-                  <template #icon><SystemSumIcon /></template>
-                  <span>深度思考</span>
-                </n-button>
+                <t-tooltip content="切换模型">
+                  <selectModel
+                    v-model:model-name="conversation.llm"
+                    class="llm-select rounded-full"
+                    model-type="GENERAL_LLM"
+                  />
+                </t-tooltip>
+                <t-button
+                  :theme="isThinked ? 'primary' : 'default'"
+                  variant="outline"
+                  shape="round"
+                  @click="checkClick"
+                >
+                  深度思考
+                </t-button>
               </div>
             </template>
           </t-chat-sender>
@@ -79,7 +95,7 @@
     ChatLoading as TChatLoading,
     ChatReasoning as TChatReasoning,
   } from '@tdesign-vue-next/chat';
-  import { SystemSumIcon, CheckCircleIcon, ChatBubble1Icon } from 'tdesign-icons-vue-next';
+  import { Button as TButton, Tooltip as TTooltip } from 'tdesign-vue-next';
   import { useRoute } from 'vue-router';
   import { useChatStore } from '@/store/modules/chat';
   import { useUserStore } from '@/store/modules/user';
@@ -141,11 +157,15 @@
     isStreamLoad.value = false;
   };
 
-  const handleOperation = function (type: string, item: ChatItem) {
+  const handleOperation = function (type: string, context: { e: MouseEvent }) {
     // 这里还不能用，等最新文档出来
-    console.log('type', type, item);
+    console.log('type', type, context);
     if (type === 'replay') {
-      handleRegenerate(item);
+      // 需要从当前聊天列表中获取对应的消息
+      const currentMessage = chatList.value.find((msg) => msg.role === 'assistant');
+      if (currentMessage) {
+        handleRegenerate(currentMessage);
+      }
     }
   };
 

@@ -3,45 +3,47 @@
     <div class="relative flex h-full w-[500px] flex-col py-3 transition-all bg-[#ffffff99]">
       <div class="px-4">
         <span class="text-base">{{ $t('views.draw.stableDiffusion.model') }}</span>
-        <n-tag>{{ modelName }}</n-tag>
+        <t-tag>{{ modelName }}</t-tag>
         <selectModel
           v-model:model-name="modelName"
           v-model:model-code="txt2imgParams.override_settings.sd_model_checkpoint"
         />
       </div>
-      <n-tabs size="large" justify-content="space-evenly" type="line" animated class="flex-1 overflow-hidden">
-        <n-tab-pane name="txt2img" :tab="$t('views.draw.stableDiffusion.txt2img')" class="flex flex-col h-full">
+      <t-tabs size="large" placement="top" default-value="txt2img" class="flex-1 flex flex-col overflow-hidden">
+        <t-tab-panel value="txt2img" :label="$t('views.draw.stableDiffusion.txt2img')" class="flex-1 overflow-hidden">
           <stableDiffusion v-model:txt2img-params="txt2imgParams" v-model:lora-list="loraList" />
-        </n-tab-pane>
-        <n-tab-pane name="img2img" :tab="$t('views.draw.stableDiffusion.img2img')" class="flex flex-col h-full">
+        </t-tab-panel>
+        <t-tab-panel value="img2img" :label="$t('views.draw.stableDiffusion.img2img')" class="flex-1 overflow-hidden">
           <stableDiffusion v-model:txt2img-params="txt2imgParams" v-model:lora-list="loraList" />
-        </n-tab-pane>
-        <n-tab-pane name="2video" :tab="$t('views.draw.stableDiffusion.genVideo')" disabled></n-tab-pane>
-      </n-tabs>
+        </t-tab-panel>
+        <t-tab-panel value="2video" :label="$t('views.draw.stableDiffusion.genVideo')" disabled></t-tab-panel>
+      </t-tabs>
       <div class="flex justify-center pt-3 border-t">
-        <n-button type="primary" :loading="generating" @click="handleGenerate">生成图片</n-button>
+        <t-button theme="primary" :loading="generating" @click="handleGenerate">生成图片</t-button>
       </div>
     </div>
 
-    <n-infinite-scroll ref="scrollRef" class="flex-1 pl-5" :distance="10" @load="handleLoad">
+    <div ref="scrollRef" class="flex-1 pl-5 overflow-auto" @scroll="handleScroll">
       <div v-masonry transition-duration="0s" :gutter="10" item-selector=".masonry-item">
         <div v-for="image in images" :key="image.mediaId" v-masonry-tile class="w-64 masonry-item">
           <div
             v-if="image.status === 'in_progress'"
             class="flex items-center justify-center w-64 h-64 mb-3 bg-white rounded-md opacity-50"
           >
-            <n-spin size="large" />
+            <t-loading size="large" />
           </div>
 
-          <n-image v-else :src="image.filePath" class="w-full mb-3 rounded-md" />
+          <t-image v-else :src="image.filePath" class="w-full mb-3 rounded-md" fit="cover" />
         </div>
       </div>
-      <div v-if="scrolling" class="flex items-center justify-center">
-        <n-spin size="small" />
-        加载中...
+      <div v-if="scrolling" class="flex items-center justify-center py-4">
+        <t-loading size="small" />
+        <span class="ml-2">加载中...</span>
       </div>
-      <div v-if="noMore" class="flex items-center justify-center">没有更多了</div>
-    </n-infinite-scroll>
+      <div v-if="noMore" class="flex items-center justify-center py-4">
+        <t-tag variant="outline">没有更多了</t-tag>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -123,11 +125,6 @@
     }
   };
 
-  // function handleSelectedModel(item: string) {
-  //   txt2imgParams.override_settings.sd_model_checkpoint = item;
-  //   modelName.value = item;
-  // }
-
   const handleGenerate = async () => {
     for (let i = 0; i < txt2imgParams.batch_size; i++) {
       images.value.unshift({
@@ -162,11 +159,19 @@
     }
   };
 
-  const handleLoad = async () => {
+  // 处理滚动加载
+  const handleScroll = async (e: Event) => {
     if (scrolling.value || noMore.value) return;
-    scrolling.value = true;
-    await getImages(page.value + 1, pageSize.value);
-    scrolling.value = false;
+
+    const target = e.target as HTMLElement;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+
+    // 当滚动到距离底部10px时触发加载
+    if (scrollHeight - scrollTop - clientHeight < 10) {
+      scrolling.value = true;
+      await getImages(page.value + 1, pageSize.value);
+      scrolling.value = false;
+    }
   };
 
   onMounted(async () => {
@@ -174,4 +179,15 @@
   });
 </script>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+  :deep(.t-tabs__content) {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  :deep(.t-tab-panel) {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+</style>

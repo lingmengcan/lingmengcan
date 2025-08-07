@@ -1,9 +1,10 @@
 import { PageEnum } from '@/constants/page';
+import { RouteRecordRaw } from 'vue-router';
 
 /**
  * 递归组装菜单格式
  */
-export function generatorMenu(routerMap: Array<any>) {
+export function generatorMenu(routerMap: Array<RouteRecordRaw>) {
   return filterRouter(routerMap).map((item) => {
     const currentMenu = {
       ...item,
@@ -24,7 +25,7 @@ export function generatorMenu(routerMap: Array<any>) {
 /**
  * 排除Router
  * */
-export function filterRouter(routerMap: Array<any>) {
+export function filterRouter(routerMap: Array<RouteRecordRaw>) {
   return routerMap.filter((item) => {
     return (
       (item.meta?.hidden || false) != true &&
@@ -37,10 +38,7 @@ export function filterRouter(routerMap: Array<any>) {
  * 判断根路由 Router
  * */
 export function isRootRouter(item) {
-  return (
-    item.meta?.alwaysShow != true &&
-    item?.children?.filter((item) => !Boolean(item?.meta?.hidden))?.length === 1
-  );
+  return item.meta?.alwaysShow != true && item?.children?.filter((item) => !Boolean(item?.meta?.hidden))?.length === 1;
 }
 
 /**

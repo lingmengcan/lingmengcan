@@ -14,7 +14,7 @@ export default {
   hiContent1: 'Hello, I am an intelligent dialogue system.',
   hiContent2:
     'As your intelligent partner, I can answer questions, find information, provide suggestions, and perform simple operations to help you obtain the information you need more efficiently and provide support.',
-  inputPlaceholder: 'Send a message, enter @ or / to select skills',
+  inputPlaceholder: `Send a message`,
   thought: 'Deeply thought through',
   thinking: 'Thinking...',
 
