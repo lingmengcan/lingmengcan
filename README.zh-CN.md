@@ -1,132 +1,389 @@
-<h1 align="center">Lingmengcan 大模型开发平台 Lingmengcan</h1>
+<h1 align="center">Lingmengcan AI 应用平台</h1>
 <p align="center"><a href="README.md">English</a> | 中文</p>
 
-lingmengcan 大模型开发平台提供端到端的一站式大模型应用开发落地方案，让用户可以自助的完成知识库管理、应用编排、应用评测、应用运营、模型精调等功能；同时提供大语言模型对话、模型管理、文生图和后台角色管理等等功能。使用的技术栈，包括 stable deffusion、openai、chatgpt、LangChainJS 作为 ai 层，Vue 3、Naive UI 和 Tailwind CSS 构建 UI 层，以及 NestJS、LangChainJS、Ollama、MySQL 为服务层，chromadb 为向量数据库。该项目是一个可以实现**完全本地化**推理的知识库增强方案，同时提供 AIGC 功能， 重点解决数据安全保护，私域化部署的企业痛点。
+<p align="center">
+  <img src="https://img.shields.io/badge/Vue-3.x-4FC08D?style=flat-square&logo=vue.js" alt="Vue">
+  <img src="https://img.shields.io/badge/NestJS-10.x-E0234E?style=flat-square&logo=nestjs" alt="NestJS">
+  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript" alt="TypeScript">
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql" alt="MySQL">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+</p>
 
-## 社区
+Lingmengcan 是一个基于大语言模型的端到端 AI 应用开发平台，提供知识库管理、智能对话、工作流编排、AI 绘图等一站式解决方案。平台采用现代化微服务架构，支持完全本地化部署，保障企业数据安全。
 
-- QQ 一群 651535270
+## ✨ 核心特性
 
-## 特点
+- **🤖 多模型支持**: 兼容 OpenAI、Ollama 等多种大语言模型
+- **💬 智能对话**: 支持多轮对话、上下文记忆、角色扮演
+- **📚 知识库 RAG**: 文档上传、向量化存储、智能检索增强
+- **🎨 AI 绘图**: 集成 Stable Diffusion，支持文本生成图像
+- **🔄 工作流**: 可视化流程编排，支持复杂业务逻辑
+- **👥 权限管理**: 完整的 RBAC 权限体系
+- **🔒 私有部署**: 完全本地化运行，无需依赖外网
 
-- **大模型**: 使用 openai(ChatGPT)或者本地本地部署 ChatGLM3 (https://github.com/THUDM/ChatGLM3) ，用 openai api 的格式统一所有本地模型。
-- **对话**: 支持与大型语言模型进行高效、自然的对话交互。
-- **角色管理**: 包含一个完整的后台角色管理模块，便于用户管理和权限控制。
-- **AI 画图功能**: 本地部署 stable diffusion webui (https://github.com/AUTOMATIC1111/stable-diffusion-webui) ，并打开 api 模式。
-- **推理和训练**: 后续完善。
-- **私域化部署**: 支持完全本地化部署，无需依赖公网网络。
+## 🏗️ 技术架构
 
-## 技术栈
+### 前端层 (`web/`)
+```
+Vue 3 + TypeScript + Vite
+├── UI 框架: TDesign + Tailwind CSS
+├── 状态管理: Pinia
+├── 路由管理: Vue Router
+└── HTTP 客户端: Axios
+```
 
-- **UI 层**: 使用 Vue 3、Naive UI、Tailwind CSS
-- **服务层**: 使用 NestJS、LangChainJ 实现业务逻辑开发与数据处理，提高与拓展模型层的性能，提供对话、aigc、训练、推理和后台管理等你功能；对话参考项目 https://github.com/chatchat-space/Langchain-Chatchat 持续优化。
-  依托于本项目支持的开源 LLM 与 Embedding 模型，本项目可实现全部使用开源模型离线私有部署。与此同时，本项目也支持 OpenAI GPT API 的调用，并将在后续持续扩充对各类模型及模型 API 的接入。
-  本项目实现原理如下图所示，过程包括加载文件 -> 读取文本 -> 文本分割 -> 文本向量化 -> 问句向量化 -> 在文本向量中匹配出与问句向量最相似的 top k 个 -> 匹配出的文本作为上下文和问题一起添加到 prompt 中 -> 提交给 LLM 生成回答。
+### 服务层 (`service/`)
+```
+NestJS + TypeScript
+├── 数据库: TypeORM + MySQL
+├── 身份认证: JWT + Passport
+├── AI 集成: LangChain + OpenAI API
+├── 文件存储: 本地存储 + 云存储
+└── 向量数据库: ChromaDB
+```
 
-  ![实现原理图1](images/langchain+chatglm.png)
+### 核心模块
+- **用户管理**: 用户注册、登录、权限控制
+- **对话系统**: 多轮对话、历史记录、流式输出
+- **知识库**: 文档解析、向量化、相似度检索
+- **模型管理**: 多模型配置、负载均衡、监控
+- **工作流**: 节点编排、条件分支、循环控制
+- **绘图系统**: Stable Diffusion 集成、参数调节
 
-  从文档处理角度来看，实现流程如下：
-  ![实现原理图2](images/langchain+chatglm2.png)
-
-  AIGC 文生图，通过调用 stable diffusion webui 接口，生成图片。
-  ![效果如下](images/txt2img.png)
-
-- **数据层**: 使用 MySQL、chromadb，后续加入 redis、mongodb
-
-## 快速开始
+## 🚀 快速开始
 
 ### 环境要求
 
-确保您的开发环境满足以下要求：
+| 组件 | 版本 | 说明 |
+|------|------|------|
+| Node.js | 18+ | 前后端运行环境 |
+| Python | 3.10+ | AI 模型环境 |
+| MySQL | 8.0+ | 主数据库 |
+| pnpm | 最新 | 包管理工具 |
 
-- Python 3.10+
-- Node.js 18+
-- MySQL 5.7+
-
-### 本地部署 stable diffusion webui 或者，在配置文件配置
-
-- stablediffusion:
-  apiUrl: 'http://localhost:7861'
-
-  本地部署参考[stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
-
-### 如果本地已有大语言模型：从本地加载模型
-
-#### Ollama
-
-通过 Ollama 本地部署模型参考[https://github.com/ollama/ollama](https://github.com/ollama/ollama)
-
-#### ChatGLM3
-
-请参考 [THUDM/ChatGLM3#从本地加载模型](https://github.com/THUDM/ChatGLM3#从本地加载模型)
+### 1️⃣ 克隆项目
 
 ```bash
-# 下载模型
-git clone https://github.com/THUDM/ChatGLM3
-# 安装依赖
-# 启动模型
-cd ChatGLM3/openai_api_demo
-python api_server.py
+git clone https://github.com/lingmengcan/lingmengcan.git
+cd lingmengcan
 ```
 
-就启用了本地 chatglm3 openai 模式的本地 api 服务，硬件配置参考 ChatGLM3 要求
-
-### 安装
-
-#### 存储层(mysql、chromadb)
-
-- 安装 mysql，然后导入 doc 目录的 lingmengcan.sql 文件，同时在配置文件配置 mysql 连接
-- 安装 chromadb，同时在配置文件配置 chromadb 连接
-
-#### 服务层(service)
+### 2️⃣ 数据库初始化
 
 ```bash
-# 安装依赖
-  cd service
-  pnpm install
-# 配置
-# config.development.yaml，在系统模型管理里面，设置模型对应 url 和 api_key（如需要）
-# 运行
-  pnpm run start
+# 创建数据库
+mysql -u root -p -e "CREATE DATABASE lingmengcan_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 导入数据结构
+mysql -u root -p lingmengcan_ai < doc/lingmengcan-ai.sql
 ```
 
-#### 前端 UI 层
+### 3️⃣ 后端服务
 
 ```bash
+cd service
+
 # 安装依赖
-  cd web
-  pnpm install
-# 运行
-  pnpm dev
+pnpm install
+
+# 配置环境变量
+cp .env.example .env
+# 编辑 config.development.yaml 配置数据库连接
+
+# 启动开发服务
+pnpm run start:dev
 ```
 
-现在，您可以通过访问 http://localhost:8089 来体验 lingmengcan。
+### 4️⃣ 前端应用
 
-### 项目截图和功能演示
+```bash
+cd web
 
-- 大语言模型对话 1
-  ![大语言模型对话1](images/chat1.png)
+# 安装依赖
+pnpm install
 
-- 大语言模型对话 2
-  ![大语言模型对话2](images/chat2.png)
+# 启动开发服务
+pnpm dev
+```
 
-- 大语言模型管理
-  ![大语言模型管理](images/llm-model1.png)
+### 5️⃣ AI 模型部署 (可选)
 
-- 文生图
-  ![文生图](images/txt2img.png)
+#### 方案一：Ollama (推荐)
+Ollama 是最简单的本地大模型部署方案，支持多种开源模型。
 
-- 登录
-  ![登录](images/login.png)
+```bash
+# macOS/Linux 安装
+curl -fsSL https://ollama.ai/install.sh | sh
 
-- 用户管理
-  ![用户管理](images/user.png)
+# Windows 安装：下载 https://ollama.ai/download/windows
 
-- 角色管理
-  ![角色管理](images/role.png)
+# 下载并运行模型
+ollama pull llama2          # Meta Llama 2
+ollama pull qwen:7b         # 阿里通义千问
+ollama pull codellama       # 代码专用模型
 
-- 菜单管理
-  ![菜单管理](images/menu.png)
+# 启动服务 (默认端口 11434)
+ollama serve
 
-- 字典管理
-  ![字典管理](images/dict.png)
+# 测试模型
+ollama run llama2
+```
+
+#### 方案二：LM Studio (图形化界面)
+LM Studio 提供友好的图形界面，适合非技术用户。
+
+```bash
+# 1. 下载安装 LM Studio
+# 官网：https://lmstudio.ai/
+
+# 2. 在 LM Studio 中搜索并下载模型：
+# - Qwen/Qwen2-7B-Instruct-GGUF
+# - microsoft/Phi-3-mini-4k-instruct-gguf
+# - TheBloke/Llama-2-7B-Chat-GGUF
+
+# 3. 启动本地服务器
+# 在 LM Studio 中点击 "Local Server" 标签
+# 选择模型并点击 "Start Server"
+# 默认地址：http://localhost:1234/v1
+```
+
+#### 方案三：Stable Diffusion WebUI (AI 绘图)
+```bash
+# 克隆项目
+git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+cd stable-diffusion-webui
+
+# 启动 API 模式
+./webui.sh --api --listen --port 7860
+# 或 Windows: webui-user.bat --api --listen --port 7860
+
+# API 地址：http://localhost:7860
+```
+
+#### 模型配置说明
+
+
+```yaml
+# Stable Diffusion 配置
+stablediffusion:
+  apiUrl: "http://localhost:7860"
+  enabled: true
+```
+
+### 6️⃣ 访问应用
+
+- 🌐 前端地址: http://localhost:8089
+- 🔧 后端 API: http://localhost:3000
+- 👤 默认账号: `admin` / `123456`
+
+## 📱 功能展示
+
+> **⚠️ 重要提示**: 以下截图为早期版本，当前版本界面和功能已有重大更新，急需重新截图！
+
+### 💬 智能对话系统
+**新功能特性**:
+- ✅ 多轮对话、上下文理解
+- ✅ 知识库 RAG 增强问答  
+- ✅ 流式输出、打字机效果
+- ✅ 多模型实时切换对比
+- ✅ 对话历史管理
+- ✅ 导出对话记录
+
+<div align="center">
+  <img src="images/chat1.png" alt="对话界面1 - 需要更新" width="45%">
+  <img src="images/chat2.png" alt="对话界面2 - 需要更新" width="45%">
+</div>
+
+### 🎨 AI 绘图工作台
+**新功能特性**:
+- ✅ 文本生成图像 (Text-to-Image)
+- ✅ 图像风格转换和编辑
+- ✅ 高级参数精细调节
+- ✅ 批量生成和管理
+- ✅ ControlNet 精确控制
+- ✅ 图像历史版本管理
+
+<div align="center">
+  <img src="images/txt2img.png" alt="AI绘图界面 - 需要更新" width="60%">
+</div>
+
+### 🤖 模型库
+<div align="center">
+  <img src="images/llm-model1.png" alt="模型库" width="80%">
+</div>
+
+### ⚙️ 系统管理中心
+完整的企业级后台管理系统
+
+| 👥 用户权限管理 | 🔐 角色权限体系 |
+|----------------|----------------|
+| ![用户管理](images/user.png) | ![角色管理](images/role.png) |
+| • 用户信息管理<br>• 权限分配<br>• 登录日志 | • RBAC 权限模型<br>• 细粒度控制<br>• 权限继承 |
+
+| 📋 菜单路由管理 |
+|----------------|
+| ![菜单管理](images/menu.png) |
+| • 动态菜单配置<br>• 路由权限<br>• 菜单图标 |
+
+### 📚 知识库管理 (新增功能)
+- 📄 多格式文档上传 (PDF、Word、Markdown)
+- 🔍 智能文档解析和分块
+- 🧠 向量化存储和检索
+- 💡 知识库问答和引用
+- 📊 知识库使用统计
+- 🔄 版本管理和回滚
+
+### 🔄 工作流编排器 (新增功能)  
+- 🎨 可视化流程设计器
+- 🔀 条件分支和循环控制
+- 🤖 多 AI 模型协作
+- ⏰ 定时任务调度
+- 📊 执行监控和日志
+- 🔧 自定义节点开发
+
+---
+
+## 📸 截图更新任务清单
+
+**🚨 急需更新的截图**:
+
+### 核心功能截图
+- [ ] **对话界面** - 展示新版 UI、流式输出、模型切换
+- [ ] **AI 绘图** - 展示参数面板、ControlNet、批量生成
+- [ ] **知识库管理** - 文档上传、向量检索、问答界面
+- [ ] **工作流编排** - 可视化设计器、节点配置
+- [ ] **模型管理** - 多模型配置、性能监控面板
+
+### 系统管理截图  
+- [ ] **用户管理** - 新版用户列表、权限分配界面
+- [ ] **角色管理** - RBAC 权限树、角色配置
+- [ ] **菜单管理** - 动态菜单配置、路由管理
+- [ ] **系统监控** - 性能指标、使用统计
+
+### 移动端适配
+- [ ] **响应式设计** - 手机端对话界面
+- [ ] **移动端绘图** - 触屏操作优化
+- [ ] **移动端管理** - 简化版管理界面
+
+### 多语言界面
+- [ ] **英文界面** - 完整的英文版截图
+- [ ] **暗色主题** - Dark Mode 界面展示
+
+**建议截图规格**:
+- 分辨率: 1920x1080 或更高
+- 格式: PNG (保证清晰度)
+- 内容: 展示真实数据，避免空白界面
+- 标注: 重要功能点可添加标注说明
+
+## 📁 项目结构
+
+```
+lingmengcan/
+├── 📁 web/                    # 前端项目 (Vue 3 + TypeScript)
+│   ├── src/
+│   │   ├── api/              # API 接口层
+│   │   ├── components/       # 通用组件
+│   │   ├── views/            # 页面视图
+│   │   ├── store/            # 状态管理 (Pinia)
+│   │   ├── router/           # 路由配置
+│   │   └── utils/            # 工具函数
+│   └── package.json
+├── 📁 service/               # 后端服务 (NestJS + TypeScript)
+│   ├── src/
+│   │   ├── controllers/      # 控制器层
+│   │   ├── services/         # 业务逻辑层
+│   │   ├── entities/         # 数据模型
+│   │   ├── modules/          # 功能模块
+│   │   ├── dtos/             # 数据传输对象
+│   │   └── utils/            # 工具类
+│   └── package.json
+├── 📁 doc/                   # 项目文档
+│   ├── lingmengcan-ai.sql    # 数据库结构
+│   └── *.md                  # 说明文档
+├── 📁 images/                # 项目截图
+└── README.md
+```
+
+## 🔧 配置说明
+
+### 后端配置 (`service/config.development.yaml`)
+
+```yaml
+# 数据库配置
+database:
+  host: localhost
+  port: 3306
+  username: root
+  password: your_password
+  database: lingmengcan_ai
+
+# AI 模型配置
+llm:
+  openai:
+    apiKey: your_openai_key
+    baseURL: https://api.openai.com/v1
+  
+  ollama:
+    baseURL: http://localhost:11434
+
+# Stable Diffusion 配置
+stablediffusion:
+  apiUrl: http://localhost:7860
+```
+
+### 前端配置 (`web/.env.development`)
+
+```env
+# API 基础地址
+VITE_API_BASE_URL=http://localhost:3000
+
+# 应用标题
+VITE_APP_TITLE=Lingmengcan AI Platform
+```
+
+## 🤝 贡献指南
+
+我们欢迎所有形式的贡献！
+
+1. 🍴 Fork 本仓库
+2. 🌿 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 💾 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 📤 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 🔀 开启 Pull Request
+
+### 开发规范
+
+- 代码风格: 使用 ESLint + Prettier
+- 提交规范: 遵循 Conventional Commits
+- 测试覆盖: 新功能需要添加测试用例
+
+## 📄 许可证
+
+本项目基于 [MIT](LICENSE) 许可证开源
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=lingmengcan/lingmengcan&type=Date)](https://star-history.com/#lingmengcan/lingmengcan&Date)
+
+## 💬 社区交流
+
+- 💬 QQ 交流群: **651535270**
+- 📧 邮箱: lingmengcan@example.com
+- 🐛 问题反馈: [GitHub Issues](https://github.com/lingmengcan/lingmengcan/issues)
+
+## 🙏 致谢
+
+感谢以下开源项目的支持：
+
+- [Vue.js](https://vuejs.org/) - 渐进式 JavaScript 框架
+- [NestJS](https://nestjs.com/) - 企业级 Node.js 框架
+- [LangChain](https://langchain.com/) - AI 应用开发框架
+- [Stable Diffusion](https://github.com/AUTOMATIC1111/stable-diffusion-webui) - AI 图像生成
+- [TDesign](https://tdesign.tencent.com/) - Vue 3 组件库
+
+---
+
+<div align="center">
+  <p>⭐ 如果这个项目对你有帮助，请给我们一个 Star！</p>
+  <p>Made with ❤️ by Lingmengcan</p>
+</div>
