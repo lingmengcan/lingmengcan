@@ -242,39 +242,6 @@ Complete enterprise-level admin system
 - 📊 Execution monitoring and logs
 - 🔧 Custom node development
 
----
-
-## 📸 Screenshot Update Checklist
-
-**🚨 Urgent Screenshot Updates Needed**:
-
-### Core Feature Screenshots
-- [ ] **Chat Interface** - Show new UI, streaming output, model switching
-- [ ] **AI Drawing** - Show parameter panels, ControlNet, batch generation
-- [ ] **Knowledge Base** - Document upload, vector search, Q&A interface
-- [ ] **Workflow Designer** - Visual designer, node configuration
-- [ ] **Model Management** - Multi-model config, performance monitoring
-
-### System Management Screenshots
-- [ ] **User Management** - New user list, permission assignment interface
-- [ ] **Role Management** - RBAC permission tree, role configuration
-- [ ] **Menu Management** - Dynamic menu config, route management
-- [ ] **System Monitoring** - Performance metrics, usage statistics
-
-### Mobile Adaptation
-- [ ] **Responsive Design** - Mobile chat interface
-- [ ] **Mobile Drawing** - Touch-optimized interface
-- [ ] **Mobile Admin** - Simplified admin interface
-
-### Multi-language Interface
-- [ ] **English Interface** - Complete English version screenshots
-- [ ] **Dark Theme** - Dark mode interface showcase
-
-**Recommended Screenshot Specifications**:
-- Resolution: 1920x1080 or higher
-- Format: PNG (for clarity)
-- Content: Show real data, avoid empty interfaces
-- Annotations: Add callouts for important features
 
 ## 📁 Project Structure
 
