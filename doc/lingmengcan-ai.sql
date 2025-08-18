@@ -697,3 +697,46 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2024-09-24 11:25:08
+
+-- 工作流应用表
+DROP TABLE IF EXISTS `application`;
+CREATE TABLE `application` (
+  `app_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `app_name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `app_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `app_type_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '',
+  `version` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL DEFAULT '1.0.0',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0:草稿 1:已发布 2:运行中 3:已停止',
+  `workflow_config` json NOT NULL COMMENT '工作流配置',
+  `created_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `updated_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`app_id`) USING BTREE,
+  KEY `idx_app_name` (`app_name`) USING BTREE,
+  KEY `idx_app_type` (`app_type`) USING BTREE,
+  KEY `idx_status` (`status`) USING BTREE,
+  KEY `idx_created_user` (`created_user`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=DYNAMIC COMMENT='工作流应用表';
+
+-- 工作流执行记录表
+DROP TABLE IF EXISTS `workflow_execution`;
+CREATE TABLE `workflow_execution` (
+  `execution_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `app_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `inputs` json DEFAULT NULL COMMENT '输入参数',
+  `outputs` json DEFAULT NULL COMMENT '输出结果',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0:运行中 1:成功 2:失败 3:已停止',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT '错误信息',
+  `start_time` datetime NOT NULL,
+  `end_time` datetime DEFAULT NULL,
+  `duration` int DEFAULT NULL COMMENT '执行时长(秒)',
+  `created_user` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`execution_id`) USING BTREE,
+  KEY `idx_app_id` (`app_id`) USING BTREE,
+  KEY `idx_status` (`status`) USING BTREE,
+  KEY `idx_created_user` (`created_user`) USING BTREE,
+  KEY `idx_start_time` (`start_time`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=DYNAMIC COMMENT='工作流执行记录表';

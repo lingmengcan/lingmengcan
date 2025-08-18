@@ -1,13 +1,14 @@
 import { ApplicationController } from '@/controllers/application.controller';
-import { Knowledge } from '@/entities/knowledge.entity';
-import { KnowledgeService } from '@/services/knowledge.service';
+import { Application } from '@/entities/application.entity';
+import { WorkflowExecution } from '@/entities/workflow-execution.entity';
+import { ApplicationService } from '@/services/application.service';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Knowledge])],
+  imports: [TypeOrmModule.forFeature([Application, WorkflowExecution])],
   controllers: [ApplicationController],
-  providers: [KnowledgeService],
-  exports: [KnowledgeService],
+  providers: [ApplicationService],
+  exports: [ApplicationService],
 })
 export class ApplicationModule {}

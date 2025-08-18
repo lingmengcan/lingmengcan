@@ -13,3 +13,5 @@ export class KnowledgeListDto {
   @IsNotEmpty()
   pageSize: number;
 }
+
+export default KnowledgeListDto;

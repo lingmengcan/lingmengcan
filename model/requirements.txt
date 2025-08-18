@@ -1,4 +1,0 @@
-transformers
-datasets
-torch            # PyTorch，用于训练模型
-accelerate       # Hugging Face 的库，用于分布式训练和加速

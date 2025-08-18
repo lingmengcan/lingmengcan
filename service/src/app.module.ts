@@ -17,6 +17,7 @@ import { FileModule } from './modules/file.module';
 import { ModelModule } from './modules/model.module';
 import { MediaModule } from './modules/media.module';
 import { DrawModule } from './modules/draw.module';
+import { KnowledgeModule } from './modules/knowledge.module';
 import { ApplicationModule } from './modules/application.module';
 
 @Module({
@@ -51,6 +52,7 @@ import { ApplicationModule } from './modules/application.module';
     ModelModule,
     MediaModule,
     DrawModule,
+    KnowledgeModule,
     ApplicationModule,
   ],
   controllers: [AppController],
