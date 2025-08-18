@@ -1,4 +1,4 @@
-import { KnowledgeListDto } from '@/dtos/app.dto';
+import { KnowledgeListDto } from '@/dtos/knowledge.dto';
 import { Knowledge } from '@/entities/knowledge.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';

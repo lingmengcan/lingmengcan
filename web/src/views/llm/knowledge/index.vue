@@ -142,10 +142,10 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
-  import { Knowledge } from '@/models/app';
+  import { Knowledge } from '@/models/knowledge';
   import { useI18n } from 'vue-i18n';
   import { LoadingPlugin, MessagePlugin } from 'tdesign-vue-next';
-  import { addKnowledge, editKnowledge, getKnowledgeList } from '@/api/llm/app';
+  import { addKnowledge, editKnowledge, getKnowledgeList } from '@/api/llm/knowledge';
   import selectModel from '@/components/select/select-model.vue';
 
   const { t } = useI18n();

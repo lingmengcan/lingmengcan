@@ -11,7 +11,7 @@
       <t-form-item :label="$t('views.system.menu.menuName')" name="menuName">
         <t-input v-model:value="queryFormData.menuName" :placeholder="$t('views.system.menu.placeholder.menuName')" />
       </t-form-item>
-      <t-form-item :label="$t('common.status')" name="status">
+      <t-form-item name="status">
         <selectStatus v-model:status="queryFormData.status" />
       </t-form-item>
       <t-form-item>
