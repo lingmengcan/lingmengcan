@@ -11,8 +11,8 @@ import {
 import { successJson } from '@/utils/result';
 import { ApplicationService } from '@/services/application.service';
 
-@ApiTags('llm')
-@Controller('llm')
+@ApiTags('application')
+@Controller('application')
 export class ApplicationController {
   constructor(private readonly applicationService: ApplicationService) {}
 
@@ -20,7 +20,7 @@ export class ApplicationController {
    * 获取应用列表
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-list')
+  @Post('list')
   async getApplicationList(@Body() dto: ApplicationListDto) {
     return successJson(await this.applicationService.findAll(dto));
   }
@@ -29,7 +29,7 @@ export class ApplicationController {
    * 获取应用详情
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-detail')
+  @Post('detail')
   async getApplicationDetail(@Body() body: { appId: string }) {
     return successJson(await this.applicationService.findOne(body.appId));
   }
@@ -38,7 +38,7 @@ export class ApplicationController {
    * 新增应用
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-add')
+  @Post('add')
   async addApplication(@Body() dto: ApplicationDto, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.applicationService.create(dto, userName));
@@ -48,7 +48,7 @@ export class ApplicationController {
    * 编辑应用
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-edit')
+  @Post('edit')
   async editApplication(@Body() dto: ApplicationDto, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.applicationService.update(dto, userName));
@@ -58,7 +58,7 @@ export class ApplicationController {
    * 删除应用
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-delete')
+  @Post('delete')
   async deleteApplication(@Body() body: { appId: string }) {
     return successJson(await this.applicationService.remove(body.appId));
   }
@@ -67,7 +67,7 @@ export class ApplicationController {
    * 复制应用
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-copy')
+  @Post('copy')
   async copyApplication(@Body() body: ApplicationCopyDto, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.applicationService.copy(body.appId, body.newName, userName));
@@ -77,7 +77,7 @@ export class ApplicationController {
    * 发布应用
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-publish')
+  @Post('publish')
   async publishApplication(@Body() body: { appId: string }, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.applicationService.publish(body.appId, userName));
@@ -87,37 +87,9 @@ export class ApplicationController {
    * 取消发布应用
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('application-unpublish')
+  @Post('unpublish')
   async unpublishApplication(@Body() body: { appId: string }, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.applicationService.unpublish(body.appId, userName));
-  }
-
-  /**
-   * 执行应用
-   */
-  @UseGuards(AuthGuard('jwt'))
-  @Post('application-execute')
-  async executeApplication(@Body() dto: ApplicationExecuteDto, @Request() req: any) {
-    const userName = req.user.userName;
-    return successJson(await this.applicationService.execute(dto, userName));
-  }
-
-  /**
-   * 获取应用执行历史
-   */
-  @UseGuards(AuthGuard('jwt'))
-  @Post('application-executions')
-  async getApplicationExecutions(@Body() dto: ApplicationExecutionListDto) {
-    return successJson(await this.applicationService.getExecutions(dto));
-  }
-
-  /**
-   * 停止应用执行
-   */
-  @UseGuards(AuthGuard('jwt'))
-  @Post('application-execution-stop')
-  async stopApplicationExecution(@Body() body: { executionId: string }) {
-    return successJson(await this.applicationService.stopExecution(body.executionId));
   }
 }

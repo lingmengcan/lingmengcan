@@ -8,7 +8,7 @@ export class WorkflowExecution {
 
   @Column({ type: 'varchar', length: 36 })
   @IsNotEmpty()
-  appId: string;
+  workflowId: string;
 
   @Column({ type: 'json', nullable: true })
   @IsOptional()

@@ -1,16 +1,17 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue';
-import { useI18n } from 'vue-i18n';
 import { WorkflowNode } from '@/models/workflow';
-
-const { t } = useI18n();
 
 interface Props {
   node: WorkflowNode;
 }
 
+// 移除未使用的接口定义，使用内联类型
+
 const props = defineProps<Props>();
-const emit = defineEmits(['update:node']);
+const emit = defineEmits<{
+  'update:node': [node: WorkflowNode];
+}>();
 
 const nodeData = ref({ ...props.node });
 
@@ -145,10 +146,10 @@ const setConfigValue = (key: string, value: any) => {
 // 添加输入端口
 const addInputPort = () => {
   const newPort = {
-    id: `input_${Date.now()}`,
     name: `输入${nodeData.value.data.inputs.length + 1}`,
     type: 'any',
     required: false,
+    description: '',
   };
   nodeData.value.data.inputs.push(newPort);
   updateNode();
@@ -163,10 +164,9 @@ const removeInputPort = (index: number) => {
 // 添加输出端口
 const addOutputPort = () => {
   const newPort = {
-    id: `output_${Date.now()}`,
     name: `输出${nodeData.value.data.outputs.length + 1}`,
     type: 'any',
-    required: false,
+    description: '',
   };
   nodeData.value.data.outputs.push(newPort);
   updateNode();
@@ -306,7 +306,7 @@ const removeOutputPort = (index: number) => {
       <div class="space-y-3">
         <div
           v-for="(input, index) in nodeData.data.inputs"
-          :key="input.id"
+          :key="index"
           class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
         >
           <div class="flex-1">
@@ -366,7 +366,7 @@ const removeOutputPort = (index: number) => {
       <div class="space-y-3">
         <div
           v-for="(output, index) in nodeData.data.outputs"
-          :key="output.id"
+          :key="index"
           class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
         >
           <div class="flex-1">

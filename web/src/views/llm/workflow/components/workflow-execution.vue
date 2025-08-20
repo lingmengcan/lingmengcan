@@ -1,13 +1,10 @@
 <script lang="ts" setup>
   import { ref, onMounted, computed } from 'vue';
   import { useRoute } from 'vue-router';
-  import { useI18n } from 'vue-i18n';
   import { MessagePlugin } from 'tdesign-vue-next';
-  import { getWorkflowExecutions, stopWorkflowExecution } from '@/api/llm/application';
+  import { getWorkflowExecutions, stopWorkflowExecution } from '@/api/llm/app';
   import { WorkflowExecution } from '@/models/workflow';
-  import { formatDateTime } from '@/utils';
 
-  const { t } = useI18n();
   const route = useRoute();
 
   const appId = computed(() => route.query.appId as string);
@@ -17,6 +14,12 @@
   const executions = ref<WorkflowExecution[]>([]);
   const selectedExecution = ref<WorkflowExecution | null>(null);
   const showLogDrawer = ref(false);
+  const showResultDialog = ref(false);
+
+  // 格式化日期时间
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('zh-CN');
+  };
 
   const pagination = ref({
     current: 1,
@@ -44,11 +47,11 @@
       width: 100,
       align: 'center',
       cell: (h: any, { row }: any) => {
-        const statusMap = {
-          running: { text: t('views.llm.app.workflow.status.running'), theme: 'warning' },
-          completed: { text: t('views.llm.app.workflow.status.completed'), theme: 'success' },
-          failed: { text: t('views.llm.app.workflow.status.failed'), theme: 'danger' },
-          cancelled: { text: t('views.llm.app.workflow.status.cancelled'), theme: 'default' },
+        const statusMap: Record<string, { text: string; theme: string }> = {
+          running: { text: '运行中', theme: 'warning' },
+          completed: { text: '已完成', theme: 'success' },
+          failed: { text: '失败', theme: 'danger' },
+          cancelled: { text: '已取消', theme: 'default' },
         };
         const status = statusMap[row.status] || statusMap.running;
         return h('t-tag', { theme: status.theme, size: 'small' }, status.text);
@@ -211,7 +214,7 @@
               停止执行
             </t-button>
 
-            <t-button v-if="row.result" size="small" theme="default" @click="viewResult(row)">
+            <t-button v-if="row.result" size="small" theme="default" @click="selectedExecution = row; showResultDialog = true">
               <template #icon>
                 <t-icon name="file-text" />
               </template>
@@ -239,18 +242,18 @@
               <span class="text-sm text-gray-600">状态:</span>
               <t-tag
                 :theme="
-                  selectedExecution.status === 'completed'
+                  selectedExecution.status === 1
                     ? 'success'
-                    : selectedExecution.status === 'failed'
+                    : selectedExecution.status === 2
                       ? 'danger'
-                      : selectedExecution.status === 'running'
+                      : selectedExecution.status === 0
                         ? 'warning'
                         : 'default'
                 "
                 size="small"
                 class="ml-2"
               >
-                {{ $t(`views.llm.app.workflow.status.${selectedExecution.status}`) }}
+                {{ selectedExecution.status === 1 ? '已完成' : selectedExecution.status === 2 ? '失败' : selectedExecution.status === 0 ? '运行中' : '已取消' }}
               </t-tag>
             </div>
             <div>
@@ -272,7 +275,7 @@
         <div class="flex-1 overflow-hidden">
           <h5 class="font-medium mb-3">{{ $t('views.llm.app.workflow.logs') }}</h5>
           <div class="h-full overflow-y-auto bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
-            <div v-for="(log, index) in selectedExecution.logs" :key="index" class="mb-2 flex items-start space-x-2">
+            <div v-for="(log, index) in selectedExecution.logs || []" :key="index" class="mb-2 flex items-start space-x-2">
               <span class="text-gray-500 text-xs whitespace-nowrap">
                 {{ formatDateTime(log.timestamp) }}
               </span>
@@ -281,7 +284,7 @@
               <span class="flex-1">{{ log.message }}</span>
             </div>
 
-            <div v-if="selectedExecution.logs.length === 0" class="text-center text-gray-500 py-8">暂无日志记录</div>
+            <div v-if="!selectedExecution.logs || selectedExecution.logs.length === 0" class="text-center text-gray-500 py-8">暂无日志记录</div>
           </div>
         </div>
       </div>
@@ -296,14 +299,6 @@
   </div>
 </template>
 
-<script>
-  const showResultDialog = ref(false);
-
-  const viewResult = (execution) => {
-    selectedExecution.value = execution;
-    showResultDialog.value = true;
-  };
-</script>
 
 <style scoped>
   .t-card {

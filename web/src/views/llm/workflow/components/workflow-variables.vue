@@ -1,22 +1,29 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import { useI18n } from 'vue-i18n';
+import { ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { WorkflowVariable } from '@/models/workflow';
-
-const { t } = useI18n();
 
 interface Props {
   modelValue: WorkflowVariable[];
 }
 
+// 移除未使用的接口定义
+
 const props = defineProps<Props>();
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  'update:modelValue': [variables: WorkflowVariable[]];
+}>();
 
 const showAddDialog = ref(false);
 const editingVariable = ref<WorkflowVariable | null>(null);
 
-const variableForm = ref({
+const variableForm = ref<{
+  id: string;
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'json';
+  value: any;
+  description?: string;
+}>({
   id: '',
   name: '',
   type: 'string',
@@ -28,8 +35,7 @@ const variableTypes = [
   { value: 'string', label: '字符串' },
   { value: 'number', label: '数字' },
   { value: 'boolean', label: '布尔值' },
-  { value: 'array', label: '数组' },
-  { value: 'object', label: '对象' },
+  { value: 'json', label: 'JSON' },
 ];
 
 const columns = [
@@ -122,17 +128,17 @@ const saveVariable = () => {
   try {
     switch (variableForm.value.type) {
       case 'number':
-        value = Number(value);
-        if (isNaN(value)) {
+        const numValue = Number(value);
+        if (isNaN(numValue)) {
           MessagePlugin.error('数字类型的值格式不正确');
           return;
         }
+        value = numValue;
         break;
       case 'boolean':
-        value = value === 'true' || value === true;
+        value = String(value) === 'true';
         break;
-      case 'array':
-      case 'object':
+      case 'json':
         if (typeof value === 'string') {
           value = JSON.parse(value);
         }
@@ -147,6 +153,7 @@ const saveVariable = () => {
     ...variableForm.value,
     id: variableForm.value.id || `var_${Date.now()}`,
     value,
+    description: variableForm.value.description || '',
   };
 
   let newVariables;
@@ -167,7 +174,7 @@ const saveVariable = () => {
 
 // 获取值的显示格式
 const getValueDisplay = (variable: WorkflowVariable) => {
-  if (variable.type === 'array' || variable.type === 'object') {
+  if (variable.type === 'json') {
     return JSON.stringify(variable.value, null, 2);
   }
   return String(variable.value);
@@ -284,12 +291,12 @@ const setVariableValue = (value: string) => {
             <t-option value="false" label="false" />
           </t-select>
           
-          <!-- 数组/对象类型 -->
+          <!-- JSON类型 -->
           <t-textarea
             v-else
             :model-value="getValueDisplay({ ...variableForm, value: variableForm.value })"
             @update:model-value="setVariableValue"
-            :placeholder="variableForm.type === 'array' ? '请输入JSON数组，如：[1, 2, 3]' : '请输入JSON对象，如：{key: value}'"
+            placeholder="请输入JSON格式数据，如：{key: value} 或 [1, 2, 3]"
             :autosize="{ minRows: 3, maxRows: 8 }"
           />
         </div>

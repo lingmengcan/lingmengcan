@@ -4,7 +4,7 @@ const llmRoutes: RouteRecordRaw[] = [
   {
     path: '/llm',
     name: 'LLM',
-    redirect: '/llm/model',
+    redirect: '/llm/workflow-designer',
     meta: {
       title: 'LLM管理',
       icon: 'brain',
@@ -12,27 +12,9 @@ const llmRoutes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: '/llm/model',
-        name: 'LLMModel',
-        component: () => import('@/views/llm/model/index.vue'),
-        meta: {
-          title: '模型管理',
-          icon: 'server',
-        },
-      },
-      {
-        path: '/llm/app',
-        name: 'LLMApp',
-        component: () => import('@/views/llm/app/index.vue'),
-        meta: {
-          title: 'AI工作流应用',
-          icon: 'flow',
-        },
-      },
-      {
         path: '/llm/workflow-designer',
         name: 'WorkflowDesigner',
-        component: () => import('@/views/llm/workflow-designer.vue'),
+        component: () => import('@/views/llm/workflow/designer.vue'),
         meta: {
           title: '工作流设计器',
           icon: 'edit-1',
@@ -42,7 +24,7 @@ const llmRoutes: RouteRecordRaw[] = [
       {
         path: '/llm/workflow-execution',
         name: 'WorkflowExecution',
-        component: () => import('@/views/llm/app/components/workflow-execution.vue'),
+        component: () => import('@/views/llm/workflow/components/workflow-execution.vue'),
         meta: {
           title: '执行历史',
           icon: 'time',

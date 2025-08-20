@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Application } from '@/entities/application.entity';
-import { WorkflowExecution } from '@/entities/workflow-execution.entity';
+
 import {
   ApplicationListDto,
   ApplicationDto,
@@ -16,8 +16,6 @@ export class ApplicationService {
   constructor(
     @InjectRepository(Application)
     private readonly applicationRepository: Repository<Application>,
-    @InjectRepository(WorkflowExecution)
-    private readonly workflowExecutionRepository: Repository<WorkflowExecution>,
   ) {}
 
   /**
@@ -79,6 +77,8 @@ export class ApplicationService {
     app.workflowConfig = dto.workflowConfig || { nodes: [], edges: [], variables: [] };
     app.createdUser = userName;
     app.updatedUser = userName;
+    app.createdAt = new Date();
+    app.updatedAt = new Date();
 
     return await this.applicationRepository.save(app);
   }
@@ -100,6 +100,7 @@ export class ApplicationService {
     app.status = dto.status !== undefined ? dto.status : app.status;
     app.workflowConfig = dto.workflowConfig || app.workflowConfig;
     app.updatedUser = userName;
+    app.updatedAt = new Date();
 
     return await this.applicationRepository.save(app);
   }
@@ -165,85 +166,6 @@ export class ApplicationService {
     app.updatedUser = userName;
 
     await this.applicationRepository.save(app);
-    return true;
-  }
-
-  /**
-   * 执行应用
-   */
-  async execute(dto: ApplicationExecuteDto, userName: string): Promise<WorkflowExecution> {
-    const app = await this.findOne(dto.appId);
-    if (!app) {
-      throw new Error('应用不存在');
-    }
-
-    if (app.status !== 1) {
-      throw new Error('应用未发布，无法执行');
-    }
-
-    const execution = new WorkflowExecution();
-    execution.executionId = uuidv4();
-    execution.appId = dto.appId;
-    execution.inputs = dto.inputs;
-    execution.status = 0; // 运行中
-    execution.startTime = new Date();
-    execution.createdUser = userName;
-
-    // 这里应该实现实际的工作流执行逻辑
-    // 暂时模拟执行成功
-    setTimeout(async () => {
-      execution.status = 1; // 成功
-      execution.endTime = new Date();
-      execution.duration = Math.floor((execution.endTime.getTime() - execution.startTime.getTime()) / 1000);
-      execution.outputs = { result: '执行成功' };
-      await this.workflowExecutionRepository.save(execution);
-    }, 2000);
-
-    return await this.workflowExecutionRepository.save(execution);
-  }
-
-  /**
-   * 获取应用执行历史
-   */
-  async getExecutions(dto: ApplicationExecutionListDto) {
-    const { appId, page, pageSize } = dto;
-
-    const [list, count] = await this.workflowExecutionRepository.findAndCount({
-      where: { appId },
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-
-    return {
-      list,
-      count,
-      page,
-      pageSize,
-    };
-  }
-
-  /**
-   * 停止应用执行
-   */
-  async stopExecution(executionId: string): Promise<boolean> {
-    const execution = await this.workflowExecutionRepository.findOne({
-      where: { executionId },
-    });
-
-    if (!execution) {
-      throw new Error('执行记录不存在');
-    }
-
-    if (execution.status !== 0) {
-      throw new Error('执行已结束，无法停止');
-    }
-
-    execution.status = 3; // 已停止
-    execution.endTime = new Date();
-    execution.duration = Math.floor((execution.endTime.getTime() - execution.startTime.getTime()) / 1000);
-
-    await this.workflowExecutionRepository.save(execution);
     return true;
   }
 }

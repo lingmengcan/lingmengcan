@@ -1,14 +1,11 @@
 <script lang="ts" setup>
   import { ref, onMounted, computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { useI18n } from 'vue-i18n';
   import { MessagePlugin, LoadingPlugin } from 'tdesign-vue-next';
   import { getApplicationDetail, editApplication, executeWorkflow } from '@/api/llm/app';
   import { Application } from '@/models/workflow';
-  import WorkflowDesigner from '../app/components/workflow-designer.vue';
-  import NodeConfig from '../app/components/node-config.vue';
+  import WorkflowDesigner from './components/workflow-designer.vue';
 
-  const { t } = useI18n();
   const route = useRoute();
   const router = useRouter();
 
@@ -88,15 +85,71 @@
     }
   };
 
-  // 返回应用列表
+  // 返回上一页
   const goBack = () => {
-    router.push('/llm/app');
+    // 使用 router.back() 返回到来源路由
+    router.back();
   };
 
   // 更新工作流配置
   const updateWorkflowConfig = (config: any) => {
     if (app.value) {
       app.value.workflowConfig = config;
+    }
+  };
+
+  // 导出工作流
+  const exportWorkflow = () => {
+    if (!app.value) return;
+
+    const dataStr = JSON.stringify(app.value.workflowConfig, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${app.value.appName}_workflow.json`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+    MessagePlugin.success('工作流导出成功');
+  };
+
+  // 导入工作流
+  const importWorkflow = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        try {
+          const result = e.target?.result as string;
+          const config = JSON.parse(result);
+          if (app.value) {
+            app.value.workflowConfig = config;
+            MessagePlugin.success('工作流导入成功');
+          }
+        } catch (error) {
+          MessagePlugin.error('工作流文件格式错误');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  // 查看执行历史
+  const viewExecutionHistory = () => {
+    if (app.value) {
+      router.push({
+        path: '/llm/workflow-execution',
+        query: { appId: app.value.appId },
+      });
     }
   };
 
@@ -108,33 +161,38 @@
 <template>
   <div class="workflow-designer-page h-full flex flex-col">
     <!-- 顶部工具栏 -->
-    <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="bg-white border-b border-gray-200 px-6 py-2">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <t-button variant="text" @click="goBack">
+          <t-button variant="text" @click="goBack" size="small">
             <template #icon>
               <t-icon name="chevron-left" />
             </template>
             返回
           </t-button>
 
-          <div class="h-6 w-px bg-gray-300"></div>
+          <div class="h-5 w-px bg-gray-300"></div>
 
           <div>
-            <h1 class="text-xl font-semibold">{{ app?.appName || '工作流设计器' }}</h1>
-            <p class="text-sm text-gray-500">{{ app?.description || '设计和配置您的AI工作流' }}</p>
+            <h1 class="text-base font-medium">{{ app?.appName || '工作流设计器' }}</h1>
+            <p class="text-xs text-gray-500">{{ app?.description || '设计和配置您的AI工作流' }}</p>
           </div>
         </div>
 
         <div class="flex items-center space-x-3">
-          <t-button theme="default" :loading="saving" @click="saveWorkflow">
+          <t-button theme="default" :loading="saving" @click="saveWorkflow" size="small">
             <template #icon>
               <t-icon name="save" />
             </template>
             保存
           </t-button>
 
-          <t-button theme="primary" @click="testWorkflow" :disabled="!app || app.workflowConfig.nodes.length === 0">
+          <t-button
+            theme="primary"
+            @click="testWorkflow"
+            :disabled="!app || app.workflowConfig.nodes.length === 0"
+            size="small"
+          >
             <template #icon>
               <t-icon name="play-circle" />
             </template>
@@ -142,7 +200,7 @@
           </t-button>
 
           <t-dropdown>
-            <t-button theme="default">
+            <t-button theme="default" size="small">
               <template #icon>
                 <t-icon name="more" />
               </template>
@@ -202,61 +260,6 @@
     </div>
   </div>
 </template>
-
-<script>
-  // 导出工作流
-  const exportWorkflow = () => {
-    if (!app.value) return;
-
-    const dataStr = JSON.stringify(app.value.workflowConfig, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${app.value.appName}_workflow.json`;
-    link.click();
-
-    URL.revokeObjectURL(url);
-    MessagePlugin.success('工作流导出成功');
-  };
-
-  // 导入工作流
-  const importWorkflow = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const config = JSON.parse(e.target.result);
-          if (app.value) {
-            app.value.workflowConfig = config;
-            MessagePlugin.success('工作流导入成功');
-          }
-        } catch (error) {
-          MessagePlugin.error('工作流文件格式错误');
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
-
-  // 查看执行历史
-  const viewExecutionHistory = () => {
-    if (app.value) {
-      router.push({
-        path: '/llm/workflow-execution',
-        query: { appId: app.value.appId },
-      });
-    }
-  };
-</script>
 
 <style scoped>
   .workflow-designer-page {

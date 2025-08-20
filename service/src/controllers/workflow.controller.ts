@@ -2,96 +2,103 @@ import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags } from '@nestjs/swagger';
 import { WorkflowService } from '@/services/workflow.service';
-import { WorkflowAppListDto, WorkflowAppDto, WorkflowExecuteDto, WorkflowExecutionListDto, WorkflowAppCopyDto } from '@/dtos/workflow.dto';
+import { 
+  WorkflowListDto, 
+  WorkflowDto, 
+  WorkflowExecuteDto, 
+  WorkflowExecutionListDto, 
+  WorkflowCopyDto,
+  NodeTypeListDto
+} from '@/dtos/workflow.dto';
 import { successJson } from '@/utils/result';
 
-@ApiTags('llm')
-@Controller('llm')
+@ApiTags('workflow')
+@Controller('workflow')
 export class WorkflowController {
   constructor(private readonly workflowService: WorkflowService) {}
 
   /**
-   * 获取工作流应用列表
+   * 获取工作流列表
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-list')
-  async getWorkflowAppList(@Body() dto: WorkflowAppListDto) {
+  @Post('list')
+  async getWorkflowList(@Body() dto: WorkflowListDto) {
     return successJson(await this.workflowService.findAll(dto));
   }
 
   /**
-   * 获取工作流应用详情
+   * 获取工作流详情
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-detail')
-  async getWorkflowAppDetail(@Body() body: { appId: string }) {
-    return successJson(await this.workflowService.findOne(body.appId));
+  @Post('detail')
+  async getWorkflowDetail(@Body() body: { workflowId: string }) {
+    return successJson(await this.workflowService.findOne(body.workflowId));
   }
 
   /**
-   * 新增工作流应用
+   * 新增工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-add')
-  async addWorkflowApp(@Body() dto: WorkflowAppDto, @Request() req: any) {
+  @Post('add')
+  async addWorkflow(@Body() dto: WorkflowDto, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.workflowService.create(dto, userName));
   }
 
   /**
-   * 编辑工作流应用
+   * 编辑工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-edit')
-  async editWorkflowApp(@Body() dto: WorkflowAppDto, @Request() req: any) {
+  @Post('edit')
+  async editWorkflow(@Body() dto: WorkflowDto, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.workflowService.update(dto, userName));
   }
 
   /**
-   * 删除工作流应用
+   * 删除工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-delete')
-  async deleteWorkflowApp(@Body() body: { appId: string }) {
-    return successJson(await this.workflowService.remove(body.appId));
+  @Post('delete')
+  async deleteWorkflow(@Body() body: { workflowId: string }) {
+    return successJson(await this.workflowService.remove(body.workflowId));
   }
 
   /**
-   * 复制工作流应用
+   * 复制工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-copy')
-  async copyWorkflowApp(@Body() body: WorkflowAppCopyDto, @Request() req: any) {
+  @Post('copy')
+  async copyWorkflow(@Body() body: WorkflowCopyDto, @Request() req: any) {
     const userName = req.user.userName;
-    return successJson(await this.workflowService.copy(body.appId, body.newName, userName));
+    return successJson(await this.workflowService.copy(body, userName));
   }
 
   /**
-   * 发布工作流应用
+   * 发布工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-publish')
-  async publishWorkflowApp(@Body() body: { appId: string }, @Request() req: any) {
+  @Post('publish')
+  async publishWorkflow(@Body() body: { workflowId: string }, @Request() req: any) {
     const userName = req.user.userName;
-    return successJson(await this.workflowService.publish(body.appId, userName));
+    return successJson(await this.workflowService.publish(body.workflowId, userName));
   }
 
   /**
-   * 取消发布工作流应用
+   * 取消发布工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-app-unpublish')
-  async unpublishWorkflowApp(@Body() body: { appId: string }, @Request() req: any) {
+  @Post('unpublish')
+  async unpublishWorkflow(@Body() body: { workflowId: string }, @Request() req: any) {
     const userName = req.user.userName;
-    return successJson(await this.workflowService.unpublish(body.appId, userName));
+    return successJson(await this.workflowService.unpublish(body.workflowId, userName));
   }
 
   /**
    * 执行工作流
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-execute')
+  @Post('execute')
   async executeWorkflow(@Body() dto: WorkflowExecuteDto, @Request() req: any) {
     const userName = req.user.userName;
     return successJson(await this.workflowService.execute(dto, userName));
@@ -101,7 +108,7 @@ export class WorkflowController {
    * 获取工作流执行历史
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-executions')
+  @Post('executions')
   async getWorkflowExecutions(@Body() dto: WorkflowExecutionListDto) {
     return successJson(await this.workflowService.getExecutions(dto));
   }
@@ -110,8 +117,17 @@ export class WorkflowController {
    * 停止工作流执行
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('workflow-execution-stop')
+  @Post('execution-stop')
   async stopWorkflowExecution(@Body() body: { executionId: string }) {
     return successJson(await this.workflowService.stopExecution(body.executionId));
+  }
+
+  /**
+   * 获取节点类型列表
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Post('node-types')
+  async getNodeTypes(@Body() dto: NodeTypeListDto) {
+    return successJson(await this.workflowService.getNodeTypes(dto));
   }
 }

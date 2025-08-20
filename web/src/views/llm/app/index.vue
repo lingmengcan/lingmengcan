@@ -11,7 +11,6 @@
     copyApplication,
     publishApplication,
     unpublishApplication,
-    executeWorkflow,
   } from '@/api/llm/app';
   import { Application, ApplicationParams } from '@/models/workflow';
   import selectStatus from '@/components/select/select-status.vue';
@@ -129,7 +128,7 @@
   // 设计工作流
   const handleDesign = (row: Application) => {
     router.push({
-      path: '/llm/workflow-designer',
+      path: '/canvas/llm-workflow/design',
       query: { appId: row.appId },
     });
   };
@@ -334,7 +333,7 @@
                     <template #icon>
                       <t-icon name="edit-1" />
                     </template>
-                    设计
+                    {{ $t('views.llm.app.design') }}
                   </t-button>
                   <t-dropdown>
                     <t-button size="small" variant="outline">
@@ -345,27 +344,27 @@
                     <t-dropdown-menu>
                       <t-dropdown-item @click="handleEdit(item)">
                         <t-icon name="edit" class="mr-1" />
-                        编辑
+                        {{ $t('views.llm.app.edit') }}
                       </t-dropdown-item>
                       <t-dropdown-item @click="handleExecute(item)" :disabled="item.status !== 1">
                         <t-icon name="play-circle" class="mr-1" />
-                        执行
+                        {{ $t('views.llm.app.execute') }}
                       </t-dropdown-item>
                       <t-dropdown-item @click="handleCopy(item)">
                         <t-icon name="file-copy" class="mr-1" />
-                        复制
+                        {{ $t('views.llm.app.copy') }}
                       </t-dropdown-item>
                       <t-dropdown-item v-if="item.status === 0" @click="handlePublish(item, true)">
                         <t-icon name="upload" class="mr-1" />
-                        发布
+                        {{ $t('views.llm.app.publish') }}
                       </t-dropdown-item>
                       <t-dropdown-item v-if="item.status === 1" @click="handlePublish(item, false)">
                         <t-icon name="download" class="mr-1" />
-                        取消发布
+                        {{ $t('views.llm.app.unpublish') }}
                       </t-dropdown-item>
                       <t-dropdown-item @click="handleDelete(item)" theme="danger">
                         <t-icon name="delete" class="mr-1" />
-                        删除
+                        {{ $t('views.llm.app.delete') }}
                       </t-dropdown-item>
                     </t-dropdown-menu>
                   </t-dropdown>

@@ -1,16 +1,12 @@
-import { IsNotEmpty, IsOptional, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsNumber, IsString, IsArray, IsObject } from 'class-validator';
 
 /**
- * 工作流应用列表查询 DTO
+ * 工作流列表查询 DTO
  */
-export class WorkflowAppListDto {
+export class WorkflowListDto {
   @IsOptional()
   @IsString()
-  appName?: string;
-
-  @IsOptional()
-  @IsString()
-  appType?: string;
+  workflowName?: string;
 
   @IsOptional()
   @IsNumber()
@@ -26,24 +22,16 @@ export class WorkflowAppListDto {
 }
 
 /**
- * 工作流应用创建/更新 DTO
+ * 工作流创建/更新 DTO
  */
-export class WorkflowAppDto {
+export class WorkflowDto {
   @IsOptional()
   @IsString()
-  appId?: string;
+  workflowId?: string;
 
   @IsNotEmpty()
   @IsString()
-  appName: string;
-
-  @IsNotEmpty()
-  @IsString()
-  appType: string;
-
-  @IsNotEmpty()
-  @IsString()
-  appTypeName: string;
+  workflowName: string;
 
   @IsOptional()
   @IsString()
@@ -58,7 +46,8 @@ export class WorkflowAppDto {
   status?: number;
 
   @IsOptional()
-  workflowConfig?: any;
+  @IsObject()
+  config?: any;
 }
 
 /**
@@ -67,9 +56,10 @@ export class WorkflowAppDto {
 export class WorkflowExecuteDto {
   @IsNotEmpty()
   @IsString()
-  appId: string;
+  workflowId: string;
 
   @IsOptional()
+  @IsObject()
   inputs?: any;
 }
 
@@ -79,7 +69,7 @@ export class WorkflowExecuteDto {
 export class WorkflowExecutionListDto {
   @IsNotEmpty()
   @IsString()
-  appId: string;
+  workflowId: string;
 
   @IsNotEmpty()
   @IsNumber()
@@ -91,14 +81,23 @@ export class WorkflowExecutionListDto {
 }
 
 /**
- * 应用复制 DTO
+ * 工作流复制 DTO
  */
-export class WorkflowAppCopyDto {
+export class WorkflowCopyDto {
   @IsNotEmpty()
   @IsString()
-  appId: string;
+  workflowId: string;
 
   @IsNotEmpty()
   @IsString()
   newName: string;
+}
+
+/**
+ * 节点类型查询 DTO
+ */
+export class NodeTypeListDto {
+  @IsOptional()
+  @IsString()
+  category?: string;
 }

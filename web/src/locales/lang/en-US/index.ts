@@ -23,7 +23,7 @@ export default {
     alert: 'Alert',
     success: 'Success',
     status: 'status',
-    select: 'Please Select',
+    select: 'Please Select ',
     enable: 'Enable',
     disable: 'Disable',
     upload: 'Upload File',

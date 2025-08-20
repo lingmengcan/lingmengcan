@@ -2,41 +2,47 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { Application } from '@/entities/application.entity';
+import { Workflow } from '@/entities/workflow.entity';
 import { WorkflowExecution } from '@/entities/workflow-execution.entity';
-import { WorkflowAppListDto, WorkflowAppDto, WorkflowExecuteDto, WorkflowExecutionListDto } from '@/dtos/workflow.dto';
+import { WorkflowNodeType } from '@/entities/workflow-node-type.entity';
+import { 
+  WorkflowListDto, 
+  WorkflowDto, 
+  WorkflowExecuteDto, 
+  WorkflowExecutionListDto,
+  WorkflowCopyDto,
+  NodeTypeListDto
+} from '@/dtos/workflow.dto';
 
 @Injectable()
 export class WorkflowService {
   constructor(
-    @InjectRepository(Application)
-    private readonly workflowAppRepository: Repository<Application>,
+    @InjectRepository(Workflow)
+    private readonly workflowRepository: Repository<Workflow>,
     @InjectRepository(WorkflowExecution)
     private readonly workflowExecutionRepository: Repository<WorkflowExecution>,
+    @InjectRepository(WorkflowNodeType)
+    private readonly workflowNodeTypeRepository: Repository<WorkflowNodeType>,
   ) {}
 
   /**
-   * 获取工作流应用列表
+   * 获取工作流列表
    */
-  async findAll(dto: WorkflowAppListDto) {
-    const { appName, appType, status, page, pageSize } = dto;
+  async findAll(dto: WorkflowListDto) {
+    const { workflowName, status, page, pageSize } = dto;
     
-    const queryBuilder = this.workflowAppRepository.createQueryBuilder('app');
+    const queryBuilder = this.workflowRepository.createQueryBuilder('workflow');
     
-    if (appName) {
-      queryBuilder.andWhere('app.appName LIKE :appName', { appName: `%${appName}%` });
-    }
-    
-    if (appType) {
-      queryBuilder.andWhere('app.appType = :appType', { appType });
+    if (workflowName) {
+      queryBuilder.andWhere('workflow.workflowName LIKE :workflowName', { workflowName: `%${workflowName}%` });
     }
     
     if (status !== undefined && status !== null) {
-      queryBuilder.andWhere('app.status = :status', { status });
+      queryBuilder.andWhere('workflow.status = :status', { status });
     }
     
     queryBuilder
-      .orderBy('app.updatedAt', 'DESC')
+      .orderBy('workflow.updatedAt', 'DESC')
       .skip((page - 1) * pageSize)
       .take(pageSize);
     
@@ -51,115 +57,109 @@ export class WorkflowService {
   }
 
   /**
-   * 根据ID获取工作流应用详情
+   * 根据ID获取工作流详情
    */
-  async findOne(appId: string): Promise<Application> {
-    return await this.workflowAppRepository.findOne({
-      where: { appId },
+  async findOne(workflowId: string): Promise<Workflow> {
+    return await this.workflowRepository.findOne({
+      where: { workflowId },
     });
   }
 
   /**
-   * 创建工作流应用
+   * 创建工作流
    */
-  async create(dto: WorkflowAppDto, userName: string): Promise<Application> {
-    const app = new Application();
-    app.appId = uuidv4();
-    app.appName = dto.appName;
-    app.appType = dto.appType;
-    app.appTypeName = dto.appTypeName;
-    app.description = dto.description || '';
-    app.version = dto.version || '1.0.0';
-    app.status = dto.status || 0;
-    app.workflowConfig = dto.workflowConfig || { nodes: [], edges: [], variables: [] };
-    app.createdUser = userName;
-    app.updatedUser = userName;
+  async create(dto: WorkflowDto, userName: string): Promise<Workflow> {
+    const workflow = new Workflow();
+    workflow.workflowId = uuidv4();
+    workflow.workflowName = dto.workflowName;
+    workflow.description = dto.description || '';
+    workflow.version = dto.version || '1.0.0';
+    workflow.status = dto.status || 0;
+    workflow.config = dto.config || { nodes: [], edges: [], variables: [] };
+    workflow.createdUser = userName;
+    workflow.updatedUser = userName;
 
-    return await this.workflowAppRepository.save(app);
+    return await this.workflowRepository.save(workflow);
   }
 
   /**
-   * 更新工作流应用
+   * 更新工作流
    */
-  async update(dto: WorkflowAppDto, userName: string): Promise<Application> {
-    const app = await this.findOne(dto.appId);
-    if (!app) {
-      throw new Error('应用不存在');
+  async update(dto: WorkflowDto, userName: string): Promise<Workflow> {
+    const workflow = await this.findOne(dto.workflowId);
+    if (!workflow) {
+      throw new Error('工作流不存在');
     }
 
-    app.appName = dto.appName;
-    app.appType = dto.appType;
-    app.appTypeName = dto.appTypeName;
-    app.description = dto.description || app.description;
-    app.version = dto.version || app.version;
-    app.status = dto.status !== undefined ? dto.status : app.status;
-    app.workflowConfig = dto.workflowConfig || app.workflowConfig;
-    app.updatedUser = userName;
+    workflow.workflowName = dto.workflowName;
+    workflow.description = dto.description || workflow.description;
+    workflow.version = dto.version || workflow.version;
+    workflow.status = dto.status !== undefined ? dto.status : workflow.status;
+    workflow.config = dto.config || workflow.config;
+    workflow.updatedUser = userName;
 
-    return await this.workflowAppRepository.save(app);
+    return await this.workflowRepository.save(workflow);
   }
 
   /**
-   * 删除工作流应用
+   * 删除工作流
    */
-  async remove(appId: string): Promise<boolean> {
-    const result = await this.workflowAppRepository.delete({ appId });
+  async remove(workflowId: string): Promise<boolean> {
+    const result = await this.workflowRepository.delete({ workflowId });
     return result.affected > 0;
   }
 
   /**
-   * 复制工作流应用
+   * 复制工作流
    */
-  async copy(appId: string, newName: string, userName: string): Promise<Application> {
-    const originalApp = await this.findOne(appId);
-    if (!originalApp) {
-      throw new Error('原应用不存在');
+  async copy(dto: WorkflowCopyDto, userName: string): Promise<Workflow> {
+    const originalWorkflow = await this.findOne(dto.workflowId);
+    if (!originalWorkflow) {
+      throw new Error('原工作流不存在');
     }
 
-    const newApp = new Application();
-    newApp.appId = uuidv4();
-    newApp.appName = newName;
-    newApp.appType = originalApp.appType;
-    newApp.appTypeName = originalApp.appTypeName;
-    newApp.description = originalApp.description;
-    newApp.version = originalApp.version;
-    newApp.status = 0; // 复制的应用默认为草稿状态
-    newApp.workflowConfig = originalApp.workflowConfig;
-    newApp.createdUser = userName;
-    newApp.updatedUser = userName;
+    const newWorkflow = new Workflow();
+    newWorkflow.workflowId = uuidv4();
+    newWorkflow.workflowName = dto.newName;
+    newWorkflow.description = originalWorkflow.description;
+    newWorkflow.version = originalWorkflow.version;
+    newWorkflow.status = 0; // 复制的工作流默认为草稿状态
+    newWorkflow.config = originalWorkflow.config;
+    newWorkflow.createdUser = userName;
+    newWorkflow.updatedUser = userName;
 
-    return await this.workflowAppRepository.save(newApp);
+    return await this.workflowRepository.save(newWorkflow);
   }
 
   /**
-   * 发布工作流应用
+   * 发布工作流
    */
-  async publish(appId: string, userName: string): Promise<boolean> {
-    const app = await this.findOne(appId);
-    if (!app) {
-      throw new Error('应用不存在');
+  async publish(workflowId: string, userName: string): Promise<boolean> {
+    const workflow = await this.findOne(workflowId);
+    if (!workflow) {
+      throw new Error('工作流不存在');
     }
 
-    app.status = 1; // 已发布
-    app.updatedUser = userName;
+    workflow.status = 1; // 已发布
+    workflow.updatedUser = userName;
     
-    await this.workflowAppRepository.save(app);
+    await this.workflowRepository.save(workflow);
     return true;
   }
 
   /**
-   * 取消发布工作流应用
+   * 取消发布工作流
    */
-  async unpublish(appId: string, userName: string): Promise<boolean> {
-    const app = await this.findOne(appId);
-    if (!app) {
-      throw new Error('应用不存在');
+  async unpublish(workflowId: string, userName: string): Promise<boolean> {
+    const workflow = await this.findOne(workflowId);
+    if (!workflow) {
+      throw new Error('工作流不存在');
     }
 
-    app.status = 0; // 草稿
-    app.updatedUser = userName;
+    workflow.status = 0; // 草稿
+    workflow.updatedUser = userName;
     
-    await this.workflowAppRepository.save(app);
+    await this.workflowRepository.save(workflow);
     return true;
   }
 
@@ -167,18 +167,18 @@ export class WorkflowService {
    * 执行工作流
    */
   async execute(dto: WorkflowExecuteDto, userName: string): Promise<WorkflowExecution> {
-    const app = await this.findOne(dto.appId);
-    if (!app) {
-      throw new Error('应用不存在');
+    const workflow = await this.findOne(dto.workflowId);
+    if (!workflow) {
+      throw new Error('工作流不存在');
     }
 
-    if (app.status !== 1) {
-      throw new Error('应用未发布，无法执行');
+    if (workflow.status !== 1) {
+      throw new Error('工作流未发布，无法执行');
     }
 
     const execution = new WorkflowExecution();
     execution.executionId = uuidv4();
-    execution.appId = dto.appId;
+    execution.workflowId = dto.workflowId;
     execution.inputs = dto.inputs;
     execution.status = 0; // 运行中
     execution.startTime = new Date();
@@ -201,10 +201,10 @@ export class WorkflowService {
    * 获取工作流执行历史
    */
   async getExecutions(dto: WorkflowExecutionListDto) {
-    const { appId, page, pageSize } = dto;
+    const { workflowId, page, pageSize } = dto;
     
     const [list, count] = await this.workflowExecutionRepository.findAndCount({
-      where: { appId },
+      where: { workflowId },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -240,5 +240,22 @@ export class WorkflowService {
     
     await this.workflowExecutionRepository.save(execution);
     return true;
+  }
+
+  /**
+   * 获取节点类型列表
+   */
+  async getNodeTypes(dto: NodeTypeListDto) {
+    const { category } = dto;
+    
+    const queryBuilder = this.workflowNodeTypeRepository.createQueryBuilder('nodeType');
+    
+    if (category) {
+      queryBuilder.andWhere('nodeType.category = :category', { category });
+    }
+    
+    queryBuilder.orderBy('nodeType.nodeName', 'ASC');
+    
+    return await queryBuilder.getMany();
   }
 }
