@@ -2,7 +2,7 @@
   import { ref, onMounted, computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { MessagePlugin } from 'tdesign-vue-next';
-  import { getWorkflowExecutions, stopWorkflowExecution } from '@/api/llm/app';
+  import { getWorkflowExecutions, stopWorkflowExecution } from '@/api/llm/workflow';
   import { WorkflowExecution } from '@/models/workflow';
 
   const route = useRoute();
@@ -214,7 +214,15 @@
               停止执行
             </t-button>
 
-            <t-button v-if="row.result" size="small" theme="default" @click="selectedExecution = row; showResultDialog = true">
+            <t-button
+              v-if="row.result"
+              size="small"
+              theme="default"
+              @click="
+                selectedExecution = row;
+                showResultDialog = true;
+              "
+            >
               <template #icon>
                 <t-icon name="file-text" />
               </template>
@@ -253,7 +261,15 @@
                 size="small"
                 class="ml-2"
               >
-                {{ selectedExecution.status === 1 ? '已完成' : selectedExecution.status === 2 ? '失败' : selectedExecution.status === 0 ? '运行中' : '已取消' }}
+                {{
+                  selectedExecution.status === 1
+                    ? '已完成'
+                    : selectedExecution.status === 2
+                      ? '失败'
+                      : selectedExecution.status === 0
+                        ? '运行中'
+                        : '已取消'
+                }}
               </t-tag>
             </div>
             <div>
@@ -275,7 +291,11 @@
         <div class="flex-1 overflow-hidden">
           <h5 class="font-medium mb-3">{{ $t('views.llm.app.workflow.logs') }}</h5>
           <div class="h-full overflow-y-auto bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
-            <div v-for="(log, index) in selectedExecution.logs || []" :key="index" class="mb-2 flex items-start space-x-2">
+            <div
+              v-for="(log, index) in selectedExecution.logs || []"
+              :key="index"
+              class="mb-2 flex items-start space-x-2"
+            >
               <span class="text-gray-500 text-xs whitespace-nowrap">
                 {{ formatDateTime(log.timestamp) }}
               </span>
@@ -284,7 +304,12 @@
               <span class="flex-1">{{ log.message }}</span>
             </div>
 
-            <div v-if="!selectedExecution.logs || selectedExecution.logs.length === 0" class="text-center text-gray-500 py-8">暂无日志记录</div>
+            <div
+              v-if="!selectedExecution.logs || selectedExecution.logs.length === 0"
+              class="text-center text-gray-500 py-8"
+            >
+              暂无日志记录
+            </div>
           </div>
         </div>
       </div>
@@ -298,7 +323,6 @@
     </t-dialog>
   </div>
 </template>
-
 
 <style scoped>
   .t-card {

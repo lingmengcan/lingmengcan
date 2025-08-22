@@ -1,6 +1,6 @@
 import { Method } from '@/utils/http/axiosplus';
 import http, { Result } from '@/utils/http';
-import { Application, ApplicationList, ApplicationParams } from '@/models/workflow';
+import { Application, ApplicationList, ApplicationParams } from '@/models/app';
 
 // 获取应用列表
 export const getApplicationList = (data: ApplicationParams) =>

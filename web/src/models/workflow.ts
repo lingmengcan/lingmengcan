@@ -105,39 +105,3 @@ export interface NodeOutput {
   description: string;
 }
 
-// 应用接口 (保留原有的应用接口，以保持兼容性)
-export interface Application {
-  appId: string;
-  appName: string;
-  appType: string;
-  appTypeName: string;
-  description: string;
-  version: string;
-  status: number;
-  workflowConfig: {
-    nodes: any[];
-    edges: any[];
-    variables: any[];
-  };
-  createdUser?: string;
-  updatedUser?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// 应用查询参数
-export interface ApplicationParams {
-  appName?: string;
-  appType?: string;
-  status?: number;
-  page: number;
-  pageSize: number;
-}
-
-// 应用列表响应
-export interface ApplicationList {
-  list: Application[];
-  count: number;
-  page: number;
-  pageSize: number;
-}

@@ -1,11 +1,11 @@
 <script lang="ts" setup>
-  import { ref, watch, nextTick, markRaw } from 'vue';
-  import { VueFlow, useVueFlow, Panel, PanelPosition } from '@vue-flow/core';
+  import { ref, watch, nextTick, markRaw, onMounted } from 'vue';
+  import { VueFlow, useVueFlow } from '@vue-flow/core';
   import { Background } from '@vue-flow/background';
   import { Controls } from '@vue-flow/controls';
   import { MiniMap } from '@vue-flow/minimap';
   import { MessagePlugin } from 'tdesign-vue-next';
-  
+
   // 导入自定义节点组件
   import InputNode from './nodes/input-node.vue';
   import OutputNode from './nodes/output-node.vue';
@@ -28,6 +28,7 @@
       label: string;
       config: Record<string, any>;
     };
+    selected?: boolean;
   }
 
   interface WorkflowEdge {
@@ -51,10 +52,11 @@
   const emit = defineEmits<{
     'update:modelValue': [value: WorkflowConfig];
     'node-selected': [node: any];
+    'test-workflow': [data: any];
   }>();
 
   // Vue Flow 实例
-  const { onConnect, addEdges, onNodesChange, onEdgesChange, onNodeClick, fitView } = useVueFlow();
+  const { onConnect, addEdges, onNodesChange, onEdgesChange, onNodeClick, fitView, zoomTo, getViewport } = useVueFlow();
 
   // 节点和边的响应式数据
   const nodes = ref(props.modelValue.nodes || []);
@@ -62,14 +64,14 @@
   const variables = ref(props.modelValue.variables || []);
 
   // 节点类型定义
-const nodeTypes = markRaw({
-  input: InputNode,
-  output: OutputNode,
-  llm: LlmNode,
-  prompt: PromptNode,
-  condition: ConditionNode,
-  http: HttpNode,
-}) as any;
+  const nodeTypes = markRaw({
+    input: InputNode,
+    output: OutputNode,
+    llm: LlmNode,
+    prompt: PromptNode,
+    condition: ConditionNode,
+    http: HttpNode,
+  }) as any;
 
   // 可用的节点类型
   const availableNodeTypes = [
@@ -81,46 +83,62 @@ const nodeTypes = markRaw({
     { type: 'http', label: 'HTTP请求', icon: 'internet', color: '#06b6d4' },
   ];
 
-  // 侧边栏显示状态
-  const showSidebar = ref(true);
+  // 节点选择弹窗状态
+  const showNodeSelector = ref(false);
   const selectedNode = ref<any>(null);
+  const zoomLevel = ref(100); // 初始化为100%，与default-viewport的1.0对应
+  const zoomFormat = (value: number) => `${value}%`;
+
+  // 交互模式状态
+  const interactionMode = ref<'mouse' | 'trackpad'>('trackpad'); // 默认触控板友好模式
+  const showInteractionModeDialog = ref(false);
 
   // 监听节点和边的变化
-  watch([nodes, edges, variables], () => {
-    emit('update:modelValue', {
-      nodes: nodes.value,
-      edges: edges.value,
-      variables: variables.value,
-    });
-  }, { deep: true });
+  watch(
+    [nodes, edges, variables],
+    () => {
+      emit('update:modelValue', {
+        nodes: nodes.value,
+        edges: edges.value,
+        variables: variables.value,
+      });
+    },
+    { deep: true },
+  );
 
   // 监听外部数据变化
-  watch(() => props.modelValue, (newValue) => {
-    nodes.value = newValue.nodes || [];
-    edges.value = newValue.edges || [];
-    variables.value = newValue.variables || [];
-  }, { deep: true });
+  watch(
+    () => props.modelValue,
+    (newValue) => {
+      nodes.value = newValue.nodes || [];
+      edges.value = newValue.edges || [];
+      variables.value = newValue.variables || [];
+    },
+    { deep: true },
+  );
 
   // 连接处理
   onConnect((connection) => {
-    addEdges([{
-      id: `edge-${Date.now()}`,
-      ...connection,
-      type: 'smoothstep',
-      animated: true,
-    }]);
+    addEdges([
+      {
+        id: `edge-${Date.now()}`,
+        ...connection,
+        type: 'smoothstep',
+        animated: true,
+      },
+    ]);
   });
 
   // 节点变化处理
   onNodesChange((changes) => {
     changes.forEach((change) => {
       if (change.type === 'position' && change.position) {
-        const node = nodes.value.find(n => n.id === change.id);
+        const node = nodes.value.find((n) => n.id === change.id);
         if (node) {
           node.position = change.position;
         }
       } else if (change.type === 'remove') {
-        nodes.value = nodes.value.filter(n => n.id !== change.id);
+        nodes.value = nodes.value.filter((n) => n.id !== change.id);
       }
     });
   });
@@ -129,7 +147,7 @@ const nodeTypes = markRaw({
   onEdgesChange((changes) => {
     changes.forEach((change) => {
       if (change.type === 'remove') {
-        edges.value = edges.value.filter(e => e.id !== change.id);
+        edges.value = edges.value.filter((e) => e.id !== change.id);
       }
     });
   });
@@ -138,7 +156,28 @@ const nodeTypes = markRaw({
   onNodeClick((event) => {
     selectedNode.value = event.node;
     emit('node-selected', event.node);
+
+    // 更新节点选中状态
+    nodes.value.forEach((node) => {
+      node.selected = node.id === event.node.id;
+    });
   });
+
+  // 画布点击处理
+  const handlePaneClick = () => {
+    selectedNode.value = null;
+    emit('node-selected', null);
+
+    // 清除所有节点选中状态
+    nodes.value.forEach((node) => {
+      node.selected = false;
+    });
+  };
+
+  // 显示节点选择器
+  const showAddNodeDialog = () => {
+    showNodeSelector.value = true;
+  };
 
   // 添加节点
   const addNode = (nodeType: string) => {
@@ -147,12 +186,13 @@ const nodeTypes = markRaw({
       type: nodeType,
       position: { x: Math.random() * 400, y: Math.random() * 400 },
       data: {
-        label: availableNodeTypes.find(t => t.type === nodeType)?.label || nodeType,
+        label: availableNodeTypes.find((t) => t.type === nodeType)?.label || nodeType,
         config: getDefaultNodeConfig(nodeType),
       },
     };
 
     nodes.value.push(newNode);
+    showNodeSelector.value = false;
     MessagePlugin.success(`已添加${newNode.data.label}`);
   };
 
@@ -169,186 +209,258 @@ const nodeTypes = markRaw({
     return configs[nodeType] || {};
   };
 
-  // 清空画布
-  const clearCanvas = () => {
-    nodes.value = [];
-    edges.value = [];
-    MessagePlugin.success('画布已清空');
-  };
-
-  // 自动布局
-  const autoLayout = () => {
-    // 简单的自动布局算法
-    nodes.value.forEach((node, index) => {
-      const row = Math.floor(index / 3);
-      const col = index % 3;
-      node.position = {
-        x: col * 300 + 100,
-        y: row * 200 + 100,
-      };
-    });
-    
-    nextTick(() => {
-      fitView();
-    });
-    
-    MessagePlugin.success('自动布局完成');
-  };
-
-  // 缩放适应
-  const handleFitView = () => {
+  // 适应画布
+  const fitToScreen = () => {
     fitView();
+    MessagePlugin.info('适应画布');
   };
 
-  // 移除未使用的导出导入方法
+  // 居中显示
+  const centerView = () => {
+    fitView();
+    MessagePlugin.info('居中显示');
+  };
+
+  // 获取节点描述
+  const getNodeDescription = (nodeType: string) => {
+    const descriptions: Record<string, string> = {
+      input: '接收外部输入数据',
+      output: '输出处理结果',
+      llm: '使用大语言模型处理文本',
+      prompt: '构建提示词模板',
+      condition: '根据条件进行分支处理',
+      http: '发送HTTP请求获取数据',
+    };
+    return descriptions[nodeType] || '';
+  };
+
+  // 交互模式切换
+  const toggleInteractionMode = () => {
+    showInteractionModeDialog.value = true;
+  };
+
+  const selectInteractionMode = (mode: 'mouse' | 'trackpad') => {
+    interactionMode.value = mode;
+    showInteractionModeDialog.value = false;
+    MessagePlugin.success(`已切换到${mode === 'mouse' ? '鼠标友好模式' : '触控板友好模式'}`);
+  };
+
+  // 获取交互模式图标
+  const getInteractionModeIcon = () => {
+    return interactionMode.value === 'mouse' ? 'mouse' : 'laptop';
+  };
+
+  // 获取交互模式标题
+  const getInteractionModeTitle = () => {
+    return interactionMode.value === 'mouse' ? '鼠标友好模式' : '触控板友好模式';
+  };
+
+  // 同步缩放级别
+  const syncZoomLevel = () => {
+    try {
+      const viewport = getViewport();
+      if (viewport && viewport.zoom) {
+        zoomLevel.value = Math.round(viewport.zoom * 100);
+      }
+    } catch (error) {
+      // 如果获取失败，保持默认值
+      console.warn('Failed to sync zoom level:', error);
+    }
+  };
+
+  // 组件挂载后同步缩放级别
+  // 处理缩放级别变化
+  const handleZoomChange = (value: number) => {
+    if (value && value >= 20 && value <= 200) {
+      const zoomValue = value / 100;
+      zoomTo(zoomValue);
+      zoomLevel.value = value;
+    }
+  };
+
+  // 组件挂载后同步缩放级别
+  onMounted(() => {
+    nextTick(() => {
+      syncZoomLevel();
+    });
+  });
 </script>
 
 <template>
-  <div class="workflow-designer h-full flex">
-    <!-- 左侧工具栏 -->
-    <div v-show="showSidebar" class="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <!-- 节点库 -->
-      <div class="p-4 border-b border-gray-200">
-        <h3 class="text-sm font-medium text-gray-900 mb-3">节点库</h3>
-        <div class="space-y-2">
-          <div
-            v-for="nodeType in availableNodeTypes"
-            :key="nodeType.type"
-            class="flex items-center p-2 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
-            @click="addNode(nodeType.type)"
-          >
-            <div
-              class="w-8 h-8 rounded flex items-center justify-center mr-3"
-              :style="{ backgroundColor: nodeType.color + '20', color: nodeType.color }"
-            >
-              <t-icon :name="nodeType.icon" size="16" />
-            </div>
-            <span class="text-sm text-gray-700">{{ nodeType.label }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 变量管理 -->
-      <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-medium text-gray-900">全局变量</h3>
-          <t-button size="small" theme="primary" variant="text">
-            <template #icon>
-              <t-icon name="add" />
-            </template>
-          </t-button>
-        </div>
-        <div class="space-y-2">
-          <div
-            v-for="variable in variables"
-            :key="variable.name"
-            class="flex items-center justify-between p-2 bg-gray-50 rounded"
-          >
-            <span class="text-sm text-gray-700">{{ variable.name }}</span>
-            <t-button size="small" theme="danger" variant="text">
-              <t-icon name="delete" size="14" />
-            </t-button>
-          </div>
-          <div v-if="variables.length === 0" class="text-sm text-gray-500 text-center py-4">
-            暂无变量
-          </div>
-        </div>
-      </div>
-
-      <!-- 操作按钮 -->
-      <div class="p-4 mt-auto">
-        <div class="space-y-2">
-          <t-button block theme="default" @click="autoLayout">
-            <template #icon>
-              <t-icon name="auto-width" />
-            </template>
-            自动布局
-          </t-button>
-          <t-button block theme="default" @click="handleFitView">
-            <template #icon>
-              <t-icon name="fullscreen" />
-            </template>
-            适应画布
-          </t-button>
-          <t-button block theme="danger" variant="outline" @click="clearCanvas">
-            <template #icon>
-              <t-icon name="clear" />
-            </template>
-            清空画布
-          </t-button>
-        </div>
-      </div>
-    </div>
-
+  <div class="w-full h-[calc(100vh-60px)] relative">
     <!-- 主画布区域 -->
-    <div class="flex-1 relative">
+    <div class="w-full h-full relative">
       <VueFlow
         v-model:nodes="nodes"
         v-model:edges="edges"
         :node-types="nodeTypes"
-        class="vue-flow-container"
-        :default-viewport="{ zoom: 1 }"
+        class="w-full h-full bg-slate-50"
+        :default-viewport="{ zoom: 1.0 }"
         :min-zoom="0.2"
-        :max-zoom="4"
+        :max-zoom="2"
+        :pan-on-drag="interactionMode === 'mouse'"
+        :zoom-on-scroll="interactionMode === 'mouse'"
+        :zoom-on-pinch="interactionMode === 'trackpad'"
+        :pan-on-scroll="interactionMode === 'trackpad'"
+        :zoom-on-double-click="false"
+        :selection-key-code="null"
+        :multi-selection-key-code="null"
+        :delete-key-code="['Backspace', 'Delete']"
+        :zoom-activation-key-code="null"
+        :pan-activation-key-code="interactionMode === 'mouse' ? 'Space' : null"
         fit-view-on-init
+        @pane-click="handlePaneClick"
       >
         <!-- 背景 -->
         <Background pattern-color="#aaa" :gap="20" />
-        
-        <!-- 控制器 -->
-        <Controls />
-        
+
         <!-- 小地图 -->
         <MiniMap />
-
-        <!-- 顶部面板 -->
-        <Panel :position="PanelPosition.TopRight" class="flex items-center space-x-2">
-          <t-button
-            size="small"
-            theme="default"
-            @click="showSidebar = !showSidebar"
-          >
-            <template #icon>
-              <t-icon :name="showSidebar ? 'view-list' : 'menu'" />
-            </template>
-          </t-button>
-        </Panel>
       </VueFlow>
 
       <!-- 空状态 -->
-      <div
-        v-if="nodes.length === 0"
-        class="absolute inset-0 flex items-center justify-center pointer-events-none"
-      >
+      <div v-if="nodes.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div class="text-center">
           <t-icon name="flow" size="48" class="text-gray-300 mb-4" />
           <p class="text-gray-500 text-lg mb-2">开始构建您的工作流</p>
-          <p class="text-gray-400 text-sm">从左侧节点库拖拽节点到画布中</p>
+          <p class="text-gray-400 text-sm">点击下方"添加节点"按钮开始</p>
+        </div>
+      </div>
+
+      <!-- 浮动工具栏 -->
+      <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
+        <div class="flex items-center gap-3 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 backdrop-blur-sm">
+          <!-- 交互模式切换 -->
+          <t-popup v-model:visible="showInteractionModeDialog" placement="top" :show-arrow="false">
+            <t-button
+              variant="text"
+              size="small"
+              @click="toggleInteractionMode"
+              :title="getInteractionModeTitle()"
+              class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all"
+            >
+              <t-icon :name="getInteractionModeIcon()" size="16px" />
+            </t-button>
+            <template #content>
+              <div class="p-4 min-w-[280px]">
+                <h4 class="text-sm font-semibold text-gray-800 mb-3 text-center">交互模式</h4>
+                <div class="flex flex-col gap-2">
+                  <!-- 鼠标友好模式 -->
+                  <div
+                    class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border"
+                    :class="interactionMode === 'mouse' ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'"
+                    @click="selectInteractionMode('mouse')"
+                  >
+                    <t-icon name="mouse" size="20" />
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-sm font-medium text-gray-800">鼠标友好模式</span>
+                      <span class="text-xs text-gray-600 leading-tight">鼠标左键拖动画布，滚轮缩放</span>
+                    </div>
+                  </div>
+
+                  <!-- 触控板友好模式 -->
+                  <div
+                    class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border"
+                    :class="interactionMode === 'trackpad' ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'"
+                    @click="selectInteractionMode('trackpad')"
+                  >
+                    <t-icon name="laptop" size="20" />
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-sm font-medium text-gray-800">触控板友好模式</span>
+                      <span class="text-xs text-gray-600 leading-tight">双指同向移动拖动，双指张开捏合缩放</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </t-popup>
+
+          <!-- 分隔线 -->
+          <div class="h-6 w-px bg-gray-300"></div>
+          
+          <!-- 缩放控制 -->
+          <div class="flex items-center gap-1 bg-gray-100 rounded-full px-2 py-1">
+            <t-input-number
+              v-model="zoomLevel"
+              :min="20"
+              :max="200"
+              :step="10"
+              size="small"
+              :format="zoomFormat"
+              @change="handleZoomChange"
+              auto-width
+            />
+          </div>
+
+          <!-- 视图控制 -->
+          <div class="flex items-center gap-1">
+            <t-button variant="text" size="small" @click="fitToScreen" title="适应画布" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
+              <t-icon name="fullscreen" size="16px" />
+            </t-button>
+            <t-button variant="text" size="small" @click="centerView" title="居中显示" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
+              <t-icon name="view-module" size="16px" />
+            </t-button>
+            <t-button variant="text" size="small" title="全屏" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
+              <t-icon name="fullscreen-1" size="16px" />
+            </t-button>
+            <t-button variant="text" size="small" title="网格" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
+              <t-icon name="edit" size="16px" />
+            </t-button>
+          </div>
+
+          <!-- 分隔线 -->
+          <div class="h-6 w-px bg-gray-300"></div>
+
+          <!-- 添加节点 -->
+          <t-button theme="primary" size="small" @click="showAddNodeDialog" class="rounded-full transition-all hover:-translate-y-0.5">
+            <template #icon>
+              <t-icon name="add" />
+            </template>
+            添加节点
+          </t-button>
+
+          <!-- 分隔线 -->
+          <div class="h-6 w-px bg-gray-300"></div>
+
+          <!-- 运行按钮 -->
+          <t-button theme="success" size="small" @click="$emit('test-workflow', {})" class="rounded-full transition-all hover:-translate-y-0.5">
+            <template #icon>
+              <t-icon name="play-circle-stroke" />
+            </template>
+            试运行
+          </t-button>
         </div>
       </div>
     </div>
+
+    <!-- 节点选择弹窗 -->
+    <t-dialog v-model:visible="showNodeSelector" header="选择节点类型" width="600px" :footer="false">
+      <div class="grid grid-cols-2 gap-4">
+        <div
+          v-for="nodeType in availableNodeTypes"
+          :key="nodeType.type"
+          class="flex items-center p-4 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all"
+          @click="addNode(nodeType.type)"
+        >
+          <div
+            class="w-12 h-12 rounded-lg flex items-center justify-center mr-4"
+            :style="{ backgroundColor: nodeType.color + '20', color: nodeType.color }"
+          >
+            <t-icon :name="nodeType.icon" size="24" />
+          </div>
+          <div>
+            <h4 class="text-sm font-medium text-gray-900">{{ nodeType.label }}</h4>
+            <p class="text-xs text-gray-500 mt-1">{{ getNodeDescription(nodeType.type) }}</p>
+          </div>
+        </div>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
 <style>
   @import '@vue-flow/core/dist/style.css';
   @import '@vue-flow/core/dist/theme-default.css';
-  @import '@vue-flow/controls/dist/style.css';
-  @import '@vue-flow/minimap/dist/style.css';
-
-  .vue-flow-container {
-    background: #f8fafc;
-  }
-
-  .vue-flow__node {
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 2px solid transparent;
-  }
-
-  .vue-flow__node.selected {
-    border-color: #3b82f6;
-  }
 
   .vue-flow__edge {
     stroke-width: 2;
@@ -380,5 +492,25 @@ const nodeTypes = markRaw({
 
   .vue-flow__handle-right {
     right: -4px;
+  }
+
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .absolute.bottom-6 {
+      bottom: 1rem;
+      left: 1rem;
+      right: 1rem;
+      transform: none;
+    }
+
+    .flex.items-center.gap-3 {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .grid-cols-2 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
   }
 </style>

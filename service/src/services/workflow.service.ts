@@ -5,13 +5,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { Workflow } from '@/entities/workflow.entity';
 import { WorkflowExecution } from '@/entities/workflow-execution.entity';
 import { WorkflowNodeType } from '@/entities/workflow-node-type.entity';
-import { 
-  WorkflowListDto, 
-  WorkflowDto, 
-  WorkflowExecuteDto, 
+import {
+  WorkflowListDto,
+  WorkflowDto,
+  WorkflowExecuteDto,
   WorkflowExecutionListDto,
   WorkflowCopyDto,
-  NodeTypeListDto
+  NodeTypeListDto,
 } from '@/dtos/workflow.dto';
 
 @Injectable()
@@ -30,24 +30,24 @@ export class WorkflowService {
    */
   async findAll(dto: WorkflowListDto) {
     const { workflowName, status, page, pageSize } = dto;
-    
+
     const queryBuilder = this.workflowRepository.createQueryBuilder('workflow');
-    
+
     if (workflowName) {
       queryBuilder.andWhere('workflow.workflowName LIKE :workflowName', { workflowName: `%${workflowName}%` });
     }
-    
+
     if (status !== undefined && status !== null) {
       queryBuilder.andWhere('workflow.status = :status', { status });
     }
-    
+
     queryBuilder
       .orderBy('workflow.updatedAt', 'DESC')
       .skip((page - 1) * pageSize)
       .take(pageSize);
-    
+
     const [list, count] = await queryBuilder.getManyAndCount();
-    
+
     return {
       list,
       count,
@@ -142,7 +142,7 @@ export class WorkflowService {
 
     workflow.status = 1; // 已发布
     workflow.updatedUser = userName;
-    
+
     await this.workflowRepository.save(workflow);
     return true;
   }
@@ -158,7 +158,7 @@ export class WorkflowService {
 
     workflow.status = 0; // 草稿
     workflow.updatedUser = userName;
-    
+
     await this.workflowRepository.save(workflow);
     return true;
   }
@@ -167,7 +167,7 @@ export class WorkflowService {
    * 执行工作流
    */
   async execute(dto: WorkflowExecuteDto, userName: string): Promise<WorkflowExecution> {
-    const workflow = await this.findOne(dto.workflowId);
+    const workflow = await this.workflowRepository.findOneBy({ workflowId: dto.workflowId });
     if (!workflow) {
       throw new Error('工作流不存在');
     }
@@ -202,14 +202,14 @@ export class WorkflowService {
    */
   async getExecutions(dto: WorkflowExecutionListDto) {
     const { workflowId, page, pageSize } = dto;
-    
+
     const [list, count] = await this.workflowExecutionRepository.findAndCount({
       where: { workflowId },
-      order: { createdAt: 'DESC' },
+      order: { startTime: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
-    
+
     return {
       list,
       count,
@@ -225,7 +225,7 @@ export class WorkflowService {
     const execution = await this.workflowExecutionRepository.findOne({
       where: { executionId },
     });
-    
+
     if (!execution) {
       throw new Error('执行记录不存在');
     }
@@ -237,7 +237,7 @@ export class WorkflowService {
     execution.status = 3; // 已停止
     execution.endTime = new Date();
     execution.duration = Math.floor((execution.endTime.getTime() - execution.startTime.getTime()) / 1000);
-    
+
     await this.workflowExecutionRepository.save(execution);
     return true;
   }
@@ -247,15 +247,15 @@ export class WorkflowService {
    */
   async getNodeTypes(dto: NodeTypeListDto) {
     const { category } = dto;
-    
-    const queryBuilder = this.workflowNodeTypeRepository.createQueryBuilder('nodeType');
-    
+
+    const queryBuilder = this.workflowNodeTypeRepository.createQueryBuilder('workflowNodeType');
+
     if (category) {
-      queryBuilder.andWhere('nodeType.category = :category', { category });
+      queryBuilder.andWhere('workflowNodeType.category = :category', { category });
     }
-    
-    queryBuilder.orderBy('nodeType.nodeName', 'ASC');
-    
+
+    queryBuilder.orderBy('workflowNodeType.nodeName', 'ASC');
+
     return await queryBuilder.getMany();
   }
 }

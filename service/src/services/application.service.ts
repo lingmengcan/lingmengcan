@@ -74,7 +74,6 @@ export class ApplicationService {
     app.description = dto.description || '';
     app.version = dto.version || '1.0.0';
     app.status = dto.status || 0;
-    app.workflowConfig = dto.workflowConfig || { nodes: [], edges: [], variables: [] };
     app.createdUser = userName;
     app.updatedUser = userName;
     app.createdAt = new Date();
@@ -98,7 +97,6 @@ export class ApplicationService {
     app.description = dto.description || app.description;
     app.version = dto.version || app.version;
     app.status = dto.status !== undefined ? dto.status : app.status;
-    app.workflowConfig = dto.workflowConfig || app.workflowConfig;
     app.updatedUser = userName;
     app.updatedAt = new Date();
 
@@ -130,7 +128,6 @@ export class ApplicationService {
     newApp.description = originalApp.description;
     newApp.version = originalApp.version;
     newApp.status = 0; // 复制的应用默认为草稿状态
-    newApp.workflowConfig = originalApp.workflowConfig;
     newApp.createdUser = userName;
     newApp.updatedUser = userName;
 

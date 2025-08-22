@@ -19,6 +19,7 @@ import { MediaModule } from './modules/media.module';
 import { DrawModule } from './modules/draw.module';
 import { KnowledgeModule } from './modules/knowledge.module';
 import { ApplicationModule } from './modules/application.module';
+import { WorkflowModule } from './modules/workflow.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { ApplicationModule } from './modules/application.module';
     DrawModule,
     KnowledgeModule,
     ApplicationModule,
+    WorkflowModule,
   ],
   controllers: [AppController],
   providers: [AppService],

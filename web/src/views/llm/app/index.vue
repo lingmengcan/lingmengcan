@@ -12,7 +12,7 @@
     publishApplication,
     unpublishApplication,
   } from '@/api/llm/app';
-  import { Application, ApplicationParams } from '@/models/workflow';
+  import { Application, ApplicationParams } from '@/models/app';
   import selectStatus from '@/components/select/select-status.vue';
   import selectDict from '@/components/select/select-dict.vue';
 
@@ -33,11 +33,6 @@
     description: '',
     version: '1.0.0',
     status: 0,
-    workflowConfig: {
-      nodes: [],
-      edges: [],
-      variables: [],
-    },
   };
 
   const drawerFormData = ref({ ...appInitData });
@@ -127,10 +122,16 @@
 
   // 设计工作流
   const handleDesign = (row: Application) => {
-    router.push({
-      path: '/canvas/llm-workflow/design',
-      query: { appId: row.appId },
-    });
+    // 如果应用有关联的工作流ID，跳转到工作流设计页面
+    if (row.workflowId) {
+      router.push({
+        path: '/canvas/llm-workflow/design',
+        query: { workflowId: row.workflowId },
+      });
+    } else {
+      // 如果没有关联工作流，提示用户先创建工作流
+      MessagePlugin.warning('该应用尚未关联工作流，请先创建工作流');
+    }
   };
 
   // 复制应用
@@ -204,24 +205,6 @@
         }
       },
     });
-  };
-
-  // 执行工作流
-  const handleExecute = async (row: Application) => {
-    try {
-      LoadingPlugin(true);
-      const res = await executeWorkflow(row.appId);
-      if (res?.code === 0) {
-        MessagePlugin.success(t('views.llm.app.executeSuccess'));
-        // 可以跳转到执行结果页面
-        router.push({
-          path: '/llm/workflow-execution',
-          query: { executionId: res.data?.executionId },
-        });
-      }
-    } finally {
-      LoadingPlugin(false);
-    }
   };
 
   // 提交新增/编辑
@@ -345,10 +328,6 @@
                       <t-dropdown-item @click="handleEdit(item)">
                         <t-icon name="edit" class="mr-1" />
                         {{ $t('views.llm.app.edit') }}
-                      </t-dropdown-item>
-                      <t-dropdown-item @click="handleExecute(item)" :disabled="item.status !== 1">
-                        <t-icon name="play-circle" class="mr-1" />
-                        {{ $t('views.llm.app.execute') }}
                       </t-dropdown-item>
                       <t-dropdown-item @click="handleCopy(item)">
                         <t-icon name="file-copy" class="mr-1" />

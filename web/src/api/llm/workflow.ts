@@ -17,7 +17,7 @@ export const getWorkflowDetail = (workflowId: string) =>
   http.request<Result<Workflow>>('workflow/detail', Method.POST, { workflowId });
 
 // 新增工作流
-export const addWorkflow = (data: Workflow) =>
+export const addWorkflow = (data: Omit<Workflow, 'workflowId'>) =>
   http.request<Result<Workflow>>('workflow/add', Method.POST, data);
 
 // 编辑工作流

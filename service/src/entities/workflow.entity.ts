@@ -3,25 +3,25 @@ import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } fro
 
 @Entity({ name: 'workflow' })
 export class Workflow {
-  @PrimaryColumn({ type: 'varchar', length: 36 })
+  @PrimaryColumn({ type: 'varchar', length: 36, name: 'workflow_id' })
   workflowId: string;
 
-  @Column({ type: 'varchar', length: 128 })
+  @Column({ type: 'varchar', length: 128, name: 'workflow_name' })
   @IsNotEmpty()
   workflowName: string;
 
-  @Column({ type: 'varchar', length: 512, default: '' })
+  @Column({ type: 'varchar', length: 512, default: '', name: 'description' })
   @IsOptional()
   description: string;
 
-  @Column({ type: 'varchar', length: 32, default: '1.0.0' })
+  @Column({ type: 'varchar', length: 32, default: '1.0.0', name: 'version' })
   @IsOptional()
   version: string;
 
-  @Column({ type: 'tinyint', width: 1, default: 0 })
+  @Column({ type: 'tinyint', width: 1, default: 0, name: 'status' })
   status: number;
 
-  @Column({ type: 'json' })
+  @Column({ type: 'json', name: 'config' })
   @IsOptional()
   config: any;
 

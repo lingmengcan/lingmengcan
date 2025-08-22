@@ -29,9 +29,9 @@ export class Application {
   @Column({ type: 'tinyint', width: 1, default: 0 })
   status: number;
 
-  @Column({ type: 'json', name: 'workflow_config' })
+  @Column({ type: 'varchar', length: 36, name: 'workflow_id', nullable: true })
   @IsOptional()
-  workflowConfig: any;
+  workflowId: string;
 
   @Column({ type: 'varchar', length: 32, name: 'created_user' })
   createdUser: string;

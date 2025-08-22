@@ -65,9 +65,9 @@ export class ApplicationDto {
   status?: number;
 
   @IsOptional()
-  @IsObject()
-  @ApiProperty({ description: '工作流配置', required: false })
-  workflowConfig?: any;
+  @IsString()
+  @ApiProperty({ description: '关联的工作流ID', required: false })
+  workflowId?: string;
 
   @IsOptional()
   @IsString()
