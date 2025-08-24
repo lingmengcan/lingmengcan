@@ -65,8 +65,8 @@
 
   // 节点类型定义
   const nodeTypes = markRaw({
-    input: InputNode,
-    output: OutputNode,
+    start: InputNode,
+    end: OutputNode,
     llm: LlmNode,
     prompt: PromptNode,
     condition: ConditionNode,
@@ -75,8 +75,8 @@
 
   // 可用的节点类型
   const availableNodeTypes = [
-    { type: 'input', label: '输入节点', icon: 'login', color: '#10b981' },
-    { type: 'output', label: '输出节点', icon: 'logout', color: '#f59e0b' },
+    { type: 'start', label: '开始节点', icon: 'login', color: '#10b981' },
+    { type: 'end', label: '结束节点', icon: 'logout', color: '#f59e0b' },
     { type: 'llm', label: 'LLM节点', icon: 'chat', color: '#3b82f6' },
     { type: 'prompt', label: '提示词节点', icon: 'edit-1', color: '#8b5cf6' },
     { type: 'condition', label: '条件节点', icon: 'fork', color: '#ef4444' },
@@ -199,8 +199,8 @@
   // 获取默认节点配置
   const getDefaultNodeConfig = (nodeType: string) => {
     const configs = {
-      input: { inputType: 'text', required: true, defaultValue: '' },
-      output: { outputType: 'text', format: 'json' },
+      start: { inputType: 'text', required: true, defaultValue: '' },
+      end: { outputType: 'text', format: 'json' },
       llm: { model: '', temperature: 0.7, maxTokens: 1000 },
       prompt: { template: '', variables: [] },
       condition: { operator: 'equals', value: '' },
@@ -224,8 +224,8 @@
   // 获取节点描述
   const getNodeDescription = (nodeType: string) => {
     const descriptions: Record<string, string> = {
-      input: '接收外部输入数据',
-      output: '输出处理结果',
+      start: '工作流开始节点，接收输入数据',
+      end: '工作流结束节点，输出处理结果',
       llm: '使用大语言模型处理文本',
       prompt: '构建提示词模板',
       condition: '根据条件进行分支处理',
