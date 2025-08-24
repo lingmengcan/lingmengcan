@@ -1,8 +1,6 @@
 <template>
   <div
-    class="bg-white border border-gray-200 rounded-lg w-40 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-    :class="{ 'ring-2 ring-blue-500': selected }"
-    @click="handleNodeClick"
+    class="bg-white border border-gray-200 rounded-lg w-60 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
   >
     <div class="flex items-center justify-between px-3 py-2 bg-white rounded-t-lg">
       <div class="flex items-center">
@@ -32,17 +30,8 @@
 
   const props = defineProps<{
     data: NodeData;
-    selected?: boolean;
-  }>();
-
-  const emit = defineEmits<{
-    'node-click': [event: MouseEvent];
   }>();
 
   const config = computed(() => props.data.config || {});
 
-  const handleNodeClick = (event: MouseEvent) => {
-    event.stopPropagation();
-    emit('node-click', event);
-  };
 </script>

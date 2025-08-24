@@ -2,13 +2,12 @@
   import { ref, watch, nextTick, markRaw, onMounted } from 'vue';
   import { VueFlow, useVueFlow } from '@vue-flow/core';
   import { Background } from '@vue-flow/background';
-  import { Controls } from '@vue-flow/controls';
   import { MiniMap } from '@vue-flow/minimap';
   import { MessagePlugin } from 'tdesign-vue-next';
 
   // 导入自定义节点组件
-  import InputNode from './nodes/input-node.vue';
-  import OutputNode from './nodes/output-node.vue';
+  import StartNode from './nodes/start-node.vue';
+  import EndNode from './nodes/end-node.vue';
   import LlmNode from './nodes/llm-node.vue';
   import PromptNode from './nodes/prompt-node.vue';
   import ConditionNode from './nodes/condition-node.vue';
@@ -51,7 +50,6 @@
 
   const emit = defineEmits<{
     'update:modelValue': [value: WorkflowConfig];
-    'node-selected': [node: any];
     'test-workflow': [data: any];
   }>();
 
@@ -65,8 +63,8 @@
 
   // 节点类型定义
   const nodeTypes = markRaw({
-    start: InputNode,
-    end: OutputNode,
+    start: StartNode,
+    end: EndNode,
     llm: LlmNode,
     prompt: PromptNode,
     condition: ConditionNode,
@@ -155,7 +153,6 @@
   // 节点点击处理
   onNodeClick((event) => {
     selectedNode.value = event.node;
-    emit('node-selected', event.node);
 
     // 更新节点选中状态
     nodes.value.forEach((node) => {
@@ -163,16 +160,6 @@
     });
   });
 
-  // 画布点击处理
-  const handlePaneClick = () => {
-    selectedNode.value = null;
-    emit('node-selected', null);
-
-    // 清除所有节点选中状态
-    nodes.value.forEach((node) => {
-      node.selected = false;
-    });
-  };
 
   // 显示节点选择器
   const showAddNodeDialog = () => {
@@ -297,7 +284,7 @@
         class="w-full h-full bg-slate-50"
         :default-viewport="{ zoom: 1.0 }"
         :min-zoom="0.2"
-        :max-zoom="2"
+        :max-zoom="2" 
         :pan-on-drag="interactionMode === 'mouse'"
         :zoom-on-scroll="interactionMode === 'mouse'"
         :zoom-on-pinch="interactionMode === 'trackpad'"
@@ -308,8 +295,6 @@
         :delete-key-code="['Backspace', 'Delete']"
         :zoom-activation-key-code="null"
         :pan-activation-key-code="interactionMode === 'mouse' ? 'Space' : null"
-        fit-view-on-init
-        @pane-click="handlePaneClick"
       >
         <!-- 背景 -->
         <Background pattern-color="#aaa" :gap="20" />

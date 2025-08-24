@@ -13,7 +13,6 @@
   const workflow = ref<Workflow | null>(null);
   const loading = ref(true);
   const saving = ref(false);
-  const selectedNode = ref(null);
   const isRunning = ref(false);
 
   // 加载工作流详情
@@ -98,16 +97,6 @@
     }
   };
 
-  // 处理节点选择
-  const handleNodeSelected = (node: any) => {
-    selectedNode.value = node;
-  };
-
-  // 取消节点选择
-  const clearNodeSelection = () => {
-    selectedNode.value = null;
-  };
-
   // 导出工作流
   const exportWorkflow = () => {
     if (!workflow.value) return;
@@ -169,9 +158,9 @@
 </script>
 
 <template>
-  <div class="workflow-designer-page h-full flex flex-col bg-gray-50">
+  <div class="h-full flex flex-col bg-gray-50">
     <!-- 顶部标题栏 -->
-    <div class="bg-white border-b border-gray-200 px-4 py-3">
+    <div class="bg-white border-b border-gray-200 px-4 py-3 shadow-sm">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <t-button variant="text" @click="goBack" size="small" class="text-gray-600">
@@ -225,286 +214,43 @@
             v-if="workflow"
             v-model="workflow.config"
             @update:model-value="updateWorkflowConfig"
-            @node-selected="handleNodeSelected"
             @test-workflow="testWorkflow"
             class="h-full"
-            @click="clearNodeSelection"
           />
         </t-loading>
       </div>
 
-      <!-- 右侧编辑面板 -->
-      <div v-if="selectedNode" class="w-80 bg-white border-l border-gray-200 flex flex-col shadow-lg">
-        <!-- 面板头部 -->
-        <div class="flex items-center justify-between p-4 border-b border-gray-100">
-          <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <t-icon name="play-circle" class="text-blue-600" size="16" />
-            </div>
-            <span class="font-medium text-gray-900">开始</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <t-button variant="text" size="small" class="text-gray-400">
-              <t-icon name="help-circle" size="16" />
-            </t-button>
-            <t-button variant="text" size="small" class="text-gray-400" @click="selectedNode = null">
-              <t-icon name="close" size="16" />
-            </t-button>
-          </div>
-        </div>
-
-        <!-- 面板内容 -->
-        <div class="flex-1 overflow-y-auto">
-          <!-- 节点描述 -->
-          <div class="p-4 border-b border-gray-100">
-            <p class="text-sm text-gray-600">工作流的起始节点，用于设定启动工作流需要的信息</p>
-          </div>
-
-          <!-- 输入配置 -->
-          <div class="p-4">
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center space-x-2">
-                  <t-icon name="chevron-down" size="14" class="text-gray-400" />
-                  <span class="text-sm font-medium text-gray-900">输入</span>
-                  <div class="w-4 h-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <t-icon name="help-circle" size="10" class="text-gray-400" />
-                  </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <t-button variant="text" size="small" class="text-blue-600 p-1">
-                    <t-icon name="import" size="14" />
-                  </t-button>
-                  <t-button variant="text" size="small" class="text-blue-600 p-1">
-                    <t-icon name="add" size="14" />
-                  </t-button>
-                </div>
-              </div>
-
-              <!-- 输入字段 -->
-              <div class="space-y-3">
-                <div class="grid grid-cols-3 gap-2 text-xs text-gray-500 font-medium">
-                  <span>变量名</span>
-                  <span>变量类型</span>
-                  <span>必填</span>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2 items-center">
-                  <t-input size="small" value="input" class="text-sm" placeholder="变量名" />
-                  <t-select size="small" value="str.String" class="text-sm">
-                    <t-option value="str.String" label="str.String" />
-                    <t-option value="int.Number" label="int.Number" />
-                    <t-option value="bool.Boolean" label="bool.Boolean" />
-                  </t-select>
-                  <div class="flex items-center justify-between">
-                    <t-checkbox checked size="small" />
-                    <div class="flex space-x-1">
-                      <t-button variant="text" size="small" class="text-gray-400 p-1">
-                        <t-icon name="edit" size="12" />
-                      </t-button>
-                      <t-button variant="text" size="small" class="text-gray-400 p-1">
-                        <t-icon name="delete" size="12" />
-                      </t-button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-  .workflow-designer-page {
-    height: 100vh;
-    background: #f8f9fa;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-
-  .animate-spin {
-    animation: spin 1s linear infinite;
+  to {
+    transform: rotate(360deg);
   }
+}
 
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .absolute.bottom-6.left-1\/2 {
+    bottom: 4rem;
+    left: 1rem;
+    right: 1rem;
+    transform: none;
   }
-
-  /* 浮动工具栏样式 */
-  .floating-toolbar {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
+  
+  .flex.items-center.gap-3 {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
   }
-
-  .toolbar-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: white;
-    border-radius: 9999px;
-    padding: 8px 16px;
-    box-shadow:
-      0 10px 25px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
-    backdrop-filter: blur(10px);
-  }
-
-  /* 缩放控制样式 */
-  .zoom-control {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: #f3f4f6;
-    border-radius: 9999px;
-    padding: 4px 8px;
-  }
-
-  .zoom-btn {
-    padding: 4px !important;
-    color: #6b7280;
-    border: none;
-    background: transparent;
-  }
-
-  .zoom-btn:hover {
-    background-color: #e5e7eb;
-    color: #374151;
-  }
-
-  .zoom-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .zoom-text {
-    font-size: 12px;
-    color: #6b7280;
-    min-width: 40px;
-    text-align: center;
-  }
-
-  /* 视图控制样式 */
-  .view-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .control-btn {
-    padding: 8px !important;
-    color: #6b7280;
-    border: none;
-    background: transparent;
-    transition: all 0.2s ease;
-  }
-
-  .control-btn:hover {
-    background-color: #f3f4f6;
-    color: #374151;
-    transform: translateY(-1px);
-  }
-
-  /* 分隔线样式 */
-  .divider {
-    height: 24px;
-    width: 1px;
-    background-color: #d1d5db;
-  }
-
-  /* 添加节点按钮样式 */
-  .add-node-btn {
-    border-radius: 9999px;
-    transition: all 0.2s ease;
-  }
-
-  .add-node-btn:hover {
-    transform: translateY(-1px);
-  }
-
-  /* 运行按钮样式 */
-  .run-btn {
-    border-radius: 9999px;
-    transition: all 0.2s ease;
-  }
-
-  .run-btn:hover {
-    transform: translateY(-1px);
-  }
-
-  /* 自定义按钮样式 */
-  :deep(.t-button--variant-text) {
-    color: #6b7280;
-    border: none;
-    background: transparent;
-  }
-
-  :deep(.t-button--variant-text:hover) {
-    background-color: #f3f4f6;
-    color: #374151;
-  }
-
-  /* 状态指示器 */
-  .bg-green-500 {
-    background-color: #10b981;
-  }
-
-  /* 文本颜色 */
-  .text-gray-400 {
-    color: #9ca3af;
-  }
-
-  .text-gray-500 {
-    color: #6b7280;
-  }
-
-  .text-gray-600 {
-    color: #4b5563;
-  }
-
-  .text-gray-900 {
-    color: #111827;
-  }
-
-  /* 边框样式 */
-  .border-gray-200 {
-    border-color: #e5e7eb;
-  }
-
-  /* 圆角样式 */
-  .rounded-full {
-    border-radius: 9999px;
-  }
-
-  /* 顶部标题栏样式 */
-  .workflow-designer-page .bg-white:first-child {
-    box-shadow:
-      0 1px 3px 0 rgba(0, 0, 0, 0.1),
-      0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-
-  /* 响应式设计 */
-  @media (max-width: 768px) {
-    .floating-toolbar {
-      bottom: 16px;
-      left: 16px;
-      right: 16px;
-      transform: none;
-    }
-
-    .toolbar-container {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 8px;
-    }
-  }
+}
 </style>
