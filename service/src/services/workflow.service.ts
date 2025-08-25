@@ -4,7 +4,7 @@ import { Repository, Like } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Workflow } from '@/entities/workflow.entity';
 import { WorkflowExecution } from '@/entities/workflow-execution.entity';
-import { WorkflowNodeType } from '@/entities/workflow-node-type.entity';
+import { Plugin } from '@/entities/plugin.entity';
 import {
   WorkflowListDto,
   WorkflowDto,
@@ -21,8 +21,8 @@ export class WorkflowService {
     private readonly workflowRepository: Repository<Workflow>,
     @InjectRepository(WorkflowExecution)
     private readonly workflowExecutionRepository: Repository<WorkflowExecution>,
-    @InjectRepository(WorkflowNodeType)
-    private readonly workflowNodeTypeRepository: Repository<WorkflowNodeType>,
+    @InjectRepository(Plugin)
+    private readonly pluginRepository: Repository<Plugin>,
   ) {}
 
   /**
@@ -240,22 +240,5 @@ export class WorkflowService {
 
     await this.workflowExecutionRepository.save(execution);
     return true;
-  }
-
-  /**
-   * 获取节点类型列表
-   */
-  async getNodeTypes(dto: NodeTypeListDto) {
-    const { category } = dto;
-
-    const queryBuilder = this.workflowNodeTypeRepository.createQueryBuilder('workflowNodeType');
-
-    if (category) {
-      queryBuilder.andWhere('workflowNodeType.category = :category', { category });
-    }
-
-    queryBuilder.orderBy('workflowNodeType.nodeName', 'ASC');
-
-    return await queryBuilder.getMany();
   }
 }

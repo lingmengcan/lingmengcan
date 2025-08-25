@@ -20,6 +20,7 @@ import { DrawModule } from './modules/draw.module';
 import { KnowledgeModule } from './modules/knowledge.module';
 import { ApplicationModule } from './modules/application.module';
 import { WorkflowModule } from './modules/workflow.module';
+import { PluginModule } from './modules/plugin.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { WorkflowModule } from './modules/workflow.module';
     KnowledgeModule,
     ApplicationModule,
     WorkflowModule,
+    PluginModule,
   ],
   controllers: [AppController],
   providers: [AppService],

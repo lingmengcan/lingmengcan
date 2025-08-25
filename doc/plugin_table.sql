@@ -1,0 +1,20 @@
+CREATE TABLE `plugin` (
+  `plugin_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '插件ID',
+  `plugin_name` varchar(128) NOT NULL COMMENT '插件名称',
+  `plugin_type` varchar(32) DEFAULT NULL COMMENT '插件类型',
+  `plugin_type_name` varchar(32) DEFAULT NULL COMMENT '插件类型名称',
+  `description` varchar(512) DEFAULT NULL COMMENT '插件描述',
+  `icon` varchar(64) DEFAULT NULL COMMENT '图标',
+  `version` varchar(32) DEFAULT NULL COMMENT '版本',
+  `author` varchar(64) DEFAULT NULL COMMENT '作者',
+  `config` text DEFAULT NULL COMMENT '配置',
+  `status` tinyint(4) NOT NULL DEFAULT 0 COMMENT '-1 deleted, 0 normal, 1 deactivated',
+  `created_user` varchar(32) DEFAULT NULL COMMENT '创建人',
+  `updated_user` varchar(32) DEFAULT NULL COMMENT '更新人',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`plugin_id`),
+  KEY `idx_plugin_type` (`plugin_type`),
+  KEY `idx_plugin_name` (`plugin_name`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='插件表';

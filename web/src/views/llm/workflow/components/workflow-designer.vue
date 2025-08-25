@@ -4,6 +4,7 @@
   import { Background } from '@vue-flow/background';
   import { MiniMap } from '@vue-flow/minimap';
   import { MessagePlugin } from 'tdesign-vue-next';
+  import { getPluginList } from '@/api/llm/plugin';
 
   // 导入自定义节点组件
   import StartNode from './nodes/start-node.vue';
@@ -71,15 +72,33 @@
     http: HttpNode,
   }) as any;
 
-  // 可用的节点类型
-  const availableNodeTypes = [
-    { type: 'start', label: '开始节点', icon: 'login', color: '#10b981' },
-    { type: 'end', label: '结束节点', icon: 'logout', color: '#f59e0b' },
-    { type: 'llm', label: 'LLM节点', icon: 'chat', color: '#3b82f6' },
-    { type: 'prompt', label: '提示词节点', icon: 'edit-1', color: '#8b5cf6' },
-    { type: 'condition', label: '条件节点', icon: 'fork', color: '#ef4444' },
-    { type: 'http', label: 'HTTP请求', icon: 'internet', color: '#06b6d4' },
-  ];
+  // 可用的节点类型（从插件市场获取）
+  const availableNodeTypes = ref<Array<{
+    type: string;
+    label: string;
+    icon: string;
+    color: string;
+    pluginId: string;
+    description?: string;
+    config?: any;
+  }>>([]);
+
+  // 默认节点类型映射（用于图标和颜色）
+  const defaultNodeTypeMap: Record<string, { icon: string; color: string }> = {
+    start: { icon: 'login', color: '#10b981' },
+    end: { icon: 'logout', color: '#f59e0b' },
+    llm: { icon: 'chat', color: '#3b82f6' },
+    prompt: { icon: 'edit-1', color: '#8b5cf6' },
+    condition: { icon: 'fork', color: '#ef4444' },
+    http: { icon: 'internet', color: '#06b6d4' },
+    ai: { icon: 'chat', color: '#3b82f6' },
+    logic: { icon: 'fork', color: '#ef4444' },
+    input: { icon: 'login', color: '#10b981' },
+    output: { icon: 'logout', color: '#f59e0b' },
+    data: { icon: 'database', color: '#8b5cf6' },
+    transform: { icon: 'transform', color: '#06b6d4' },
+    custom: { icon: 'setting', color: '#6b7280' },
+  };
 
   // 节点选择弹窗状态
   const showNodeSelector = ref(false);
@@ -255,6 +274,60 @@
     }
   };
 
+  // 从插件市场加载节点类型
+  const loadNodeTypesFromPlugins = async () => {
+    try {
+      const res = await getPluginList({
+        page: 1,
+        pageSize: 1000, // 获取所有插件
+      });
+
+      if (res && res.data && res.data.list) {
+        // 过滤出工作流节点插件
+        const workflowPlugins = res.data.list.filter(plugin => {
+          try {
+            const config = JSON.parse(plugin.config || '{}');
+            return config.isWorkflowNode === true && plugin.status === 0; // 只获取启用的工作流节点
+          } catch {
+            return false;
+          }
+        });
+
+        // 转换为节点类型格式
+        availableNodeTypes.value = workflowPlugins.map(plugin => {
+          const config = JSON.parse(plugin.config || '{}');
+          const nodeType = config.nodeType || plugin.pluginType || 'custom';
+          const defaultStyle = defaultNodeTypeMap[nodeType] || defaultNodeTypeMap.custom;
+
+          return {
+            type: nodeType,
+            label: plugin.pluginName,
+            icon: plugin.icon || defaultStyle.icon,
+            color: defaultStyle.color,
+            pluginId: plugin.pluginId,
+            description: plugin.description,
+            config: config.configSchema,
+          };
+        });
+
+        console.log(`从插件市场加载了 ${availableNodeTypes.value.length} 个工作流节点`);
+      }
+    } catch (error) {
+      console.error('加载工作流节点失败:', error);
+      MessagePlugin.error('加载工作流节点失败');
+      
+      // 如果加载失败，使用默认节点类型
+      availableNodeTypes.value = [
+        { type: 'start', label: '开始节点', icon: 'login', color: '#10b981', pluginId: 'default-start' },
+        { type: 'end', label: '结束节点', icon: 'logout', color: '#f59e0b', pluginId: 'default-end' },
+        { type: 'llm', label: 'LLM节点', icon: 'chat', color: '#3b82f6', pluginId: 'default-llm' },
+        { type: 'prompt', label: '提示词节点', icon: 'edit-1', color: '#8b5cf6', pluginId: 'default-prompt' },
+        { type: 'condition', label: '条件节点', icon: 'fork', color: '#ef4444', pluginId: 'default-condition' },
+        { type: 'http', label: 'HTTP请求', icon: 'internet', color: '#06b6d4', pluginId: 'default-http' },
+      ];
+    }
+  };
+
   // 组件挂载后同步缩放级别
   // 处理缩放级别变化
   const handleZoomChange = (value: number) => {
@@ -265,11 +338,14 @@
     }
   };
 
-  // 组件挂载后同步缩放级别
-  onMounted(() => {
+  // 组件挂载后同步缩放级别和加载节点类型
+  onMounted(async () => {
     nextTick(() => {
       syncZoomLevel();
     });
+    
+    // 加载工作流节点类型
+    await loadNodeTypesFromPlugins();
   });
 </script>
 

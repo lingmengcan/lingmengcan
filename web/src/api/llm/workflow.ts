@@ -1,12 +1,6 @@
 import { Method } from '@/utils/http/axiosplus';
 import http, { Result } from '@/utils/http';
-import {
-  Workflow,
-  WorkflowList,
-  WorkflowListParams,
-  WorkflowExecution,
-  WorkflowNodeType
-} from '@/models/workflow';
+import { Workflow, WorkflowList, WorkflowListParams, WorkflowExecution, WorkflowNodeType } from '@/models/workflow';
 
 // 获取工作流列表
 export const getWorkflowList = (data: WorkflowListParams) =>
@@ -21,8 +15,7 @@ export const addWorkflow = (data: Omit<Workflow, 'workflowId'>) =>
   http.request<Result<Workflow>>('workflow/add', Method.POST, data);
 
 // 编辑工作流
-export const editWorkflow = (data: Workflow) =>
-  http.request<Result<Workflow>>('workflow/edit', Method.POST, data);
+export const editWorkflow = (data: Workflow) => http.request<Result<Workflow>>('workflow/edit', Method.POST, data);
 
 // 删除工作流
 export const deleteWorkflow = (workflowId: string) =>
@@ -46,16 +39,12 @@ export const executeWorkflow = (workflowId: string, inputs?: any) =>
 
 // 获取工作流执行历史
 export const getWorkflowExecutions = (workflowId: string, page: number = 1, pageSize: number = 10) =>
-  http.request<Result<{ list: WorkflowExecution[]; count: number }>>('workflow/executions', Method.POST, { 
-    workflowId, 
-    page, 
-    pageSize 
+  http.request<Result<{ list: WorkflowExecution[]; count: number }>>('workflow/executions', Method.POST, {
+    workflowId,
+    page,
+    pageSize,
   });
 
 // 停止工作流执行
 export const stopWorkflowExecution = (executionId: string) =>
   http.request<Result<boolean>>('workflow/execution-stop', Method.POST, { executionId });
-
-// 获取节点类型列表
-export const getNodeTypes = (category?: string) =>
-  http.request<Result<WorkflowNodeType[]>>('workflow/node-types', Method.POST, { category });

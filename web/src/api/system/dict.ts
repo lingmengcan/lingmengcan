@@ -6,7 +6,7 @@ import http, { Result } from '@/utils/http';
 export const getDictList = (data: DictParams) => http.request<Result<DictList>>('dict/list', Method.POST, data);
 
 // 获取列表
-export const getDictListByType = (dictType: string | string[]) =>
+export const getDictListByType = (dictType: string | string[] | number | number[]) =>
   http.request<Result<Dict[]>>('dict/list-by-type', Method.POST, { dictType });
 
 // 新增

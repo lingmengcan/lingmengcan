@@ -70,7 +70,7 @@ export class RoleController {
    * @returns
    */
   @UseGuards(AuthGuard('jwt'))
-  @Post('/add')
+  @Post('add')
   async add(@Body() role: Role, @Request() req: any) {
     const userName = req.user.userName;
     role.updatedUser = userName;

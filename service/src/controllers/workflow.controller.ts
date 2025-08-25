@@ -2,13 +2,13 @@ import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags } from '@nestjs/swagger';
 import { WorkflowService } from '@/services/workflow.service';
-import { 
-  WorkflowListDto, 
-  WorkflowDto, 
-  WorkflowExecuteDto, 
-  WorkflowExecutionListDto, 
+import {
+  WorkflowListDto,
+  WorkflowDto,
+  WorkflowExecuteDto,
+  WorkflowExecutionListDto,
   WorkflowCopyDto,
-  NodeTypeListDto
+  NodeTypeListDto,
 } from '@/dtos/workflow.dto';
 import { successJson } from '@/utils/result';
 
@@ -120,14 +120,5 @@ export class WorkflowController {
   @Post('execution-stop')
   async stopWorkflowExecution(@Body() body: { executionId: string }) {
     return successJson(await this.workflowService.stopExecution(body.executionId));
-  }
-
-  /**
-   * 获取节点类型列表
-   */
-  @UseGuards(AuthGuard('jwt'))
-  @Post('node-types')
-  async getNodeTypes(@Body() dto: NodeTypeListDto) {
-    return successJson(await this.workflowService.getNodeTypes(dto));
   }
 }

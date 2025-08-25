@@ -41,6 +41,15 @@ const llmRoutes: RouteRecordRaw[] = [
         },
       },
       {
+        path: '/llm/plugin',
+        name: 'LLMPlugin',
+        component: () => import('@/views/llm/plugin/index.vue'),
+        meta: {
+          title: '插件市场',
+          icon: 'app',
+        },
+      },
+      {
         path: '/llm/mcp',
         name: 'LLMMCP',
         component: () => import('@/views/llm/mcp/index.vue'),

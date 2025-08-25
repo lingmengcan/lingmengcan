@@ -30,6 +30,7 @@ export default {
     description: '描述',
     validationFailed: '验证不通过',
     deleteConfirm: '删除后无法恢复，是否继续删除？',
+    operationSuccess: '操作成功',
     table: {
       actions: '操作',
     },
