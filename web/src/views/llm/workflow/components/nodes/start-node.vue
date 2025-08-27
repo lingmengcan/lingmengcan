@@ -7,12 +7,11 @@
         <t-icon name="login" class="text-sm text-gray-700 mr-1.5" />
         <span class="text-sm font-medium text-gray-700">开始</span>
       </div>
-      <t-icon name="more" class="text-xs text-gray-400 cursor-pointer" />
     </div>
     <div class="px-3 py-2 border-t border-gray-100">
       <div class="flex items-center gap-1.5">
         <span class="text-xs text-gray-500">输入</span>
-        <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">query</span>
+        <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">input</span>
       </div>
     </div>
     <Handle type="source" :position="Position.Right" />

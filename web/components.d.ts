@@ -9,6 +9,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     Avatar: typeof import('./src/components/avatar/index.vue')['default']
     InputSlider: typeof import('./src/components/input/input-slider.vue')['default']
+    JsonEditor: typeof import('./src/components/json-editor/json-editor.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SelectDict: typeof import('./src/components/select/select-dict.vue')['default']
@@ -21,6 +22,7 @@ declare module 'vue' {
     TButton: typeof import('tdesign-vue-next')['Button']
     TCard: typeof import('tdesign-vue-next')['Card']
     TCheckbox: typeof import('tdesign-vue-next')['Checkbox']
+    TCode: typeof import('tdesign-vue-next')['Code']
     TCol: typeof import('tdesign-vue-next')['Col']
     TConfigProvider: typeof import('tdesign-vue-next')['ConfigProvider']
     TContent: typeof import('tdesign-vue-next')['Content']

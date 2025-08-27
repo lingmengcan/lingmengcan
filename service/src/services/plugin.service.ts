@@ -35,7 +35,7 @@ export class PluginService {
     }
 
     const [list, total] = await queryBuilder
-      .orderBy('plugin.updatedAt', 'DESC')
+      .orderBy('plugin.pluginName', 'ASC')
       .skip((page - 1) * pageSize)
       .take(pageSize)
       .getManyAndCount();

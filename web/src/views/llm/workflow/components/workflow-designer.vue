@@ -1,354 +1,3 @@
-<script lang="ts" setup>
-  import { ref, watch, nextTick, markRaw, onMounted } from 'vue';
-  import { VueFlow, useVueFlow } from '@vue-flow/core';
-  import { Background } from '@vue-flow/background';
-  import { MiniMap } from '@vue-flow/minimap';
-  import { MessagePlugin } from 'tdesign-vue-next';
-  import { getPluginList } from '@/api/llm/plugin';
-
-  // 导入自定义节点组件
-  import StartNode from './nodes/start-node.vue';
-  import EndNode from './nodes/end-node.vue';
-  import LlmNode from './nodes/llm-node.vue';
-  import PromptNode from './nodes/prompt-node.vue';
-  import ConditionNode from './nodes/condition-node.vue';
-  import HttpNode from './nodes/http-node.vue';
-
-  interface WorkflowConfig {
-    nodes: WorkflowNode[];
-    edges: WorkflowEdge[];
-    variables: WorkflowVariable[];
-  }
-
-  interface WorkflowNode {
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    data: {
-      label: string;
-      config: Record<string, any>;
-    };
-    selected?: boolean;
-  }
-
-  interface WorkflowEdge {
-    id: string;
-    source: string;
-    target: string;
-    type?: string;
-    animated?: boolean;
-  }
-
-  interface WorkflowVariable {
-    name: string;
-    type: string;
-    value: any;
-  }
-
-  const props = defineProps<{
-    modelValue: WorkflowConfig;
-  }>();
-
-  const emit = defineEmits<{
-    'update:modelValue': [value: WorkflowConfig];
-    'test-workflow': [data: any];
-  }>();
-
-  // Vue Flow 实例
-  const { onConnect, addEdges, onNodesChange, onEdgesChange, onNodeClick, fitView, zoomTo, getViewport } = useVueFlow();
-
-  // 节点和边的响应式数据
-  const nodes = ref(props.modelValue.nodes || []);
-  const edges = ref(props.modelValue.edges || []);
-  const variables = ref(props.modelValue.variables || []);
-
-  // 节点类型定义
-  const nodeTypes = markRaw({
-    start: StartNode,
-    end: EndNode,
-    llm: LlmNode,
-    prompt: PromptNode,
-    condition: ConditionNode,
-    http: HttpNode,
-  }) as any;
-
-  // 可用的节点类型（从插件市场获取）
-  const availableNodeTypes = ref<Array<{
-    type: string;
-    label: string;
-    icon: string;
-    color: string;
-    pluginId: string;
-    description?: string;
-    config?: any;
-  }>>([]);
-
-  // 默认节点类型映射（用于图标和颜色）
-  const defaultNodeTypeMap: Record<string, { icon: string; color: string }> = {
-    start: { icon: 'login', color: '#10b981' },
-    end: { icon: 'logout', color: '#f59e0b' },
-    llm: { icon: 'chat', color: '#3b82f6' },
-    prompt: { icon: 'edit-1', color: '#8b5cf6' },
-    condition: { icon: 'fork', color: '#ef4444' },
-    http: { icon: 'internet', color: '#06b6d4' },
-    ai: { icon: 'chat', color: '#3b82f6' },
-    logic: { icon: 'fork', color: '#ef4444' },
-    input: { icon: 'login', color: '#10b981' },
-    output: { icon: 'logout', color: '#f59e0b' },
-    data: { icon: 'database', color: '#8b5cf6' },
-    transform: { icon: 'transform', color: '#06b6d4' },
-    custom: { icon: 'setting', color: '#6b7280' },
-  };
-
-  // 节点选择弹窗状态
-  const showNodeSelector = ref(false);
-  const selectedNode = ref<any>(null);
-  const zoomLevel = ref(100); // 初始化为100%，与default-viewport的1.0对应
-  const zoomFormat = (value: number) => `${value}%`;
-
-  // 交互模式状态
-  const interactionMode = ref<'mouse' | 'trackpad'>('trackpad'); // 默认触控板友好模式
-  const showInteractionModeDialog = ref(false);
-
-  // 监听节点和边的变化
-  watch(
-    [nodes, edges, variables],
-    () => {
-      emit('update:modelValue', {
-        nodes: nodes.value,
-        edges: edges.value,
-        variables: variables.value,
-      });
-    },
-    { deep: true },
-  );
-
-  // 监听外部数据变化
-  watch(
-    () => props.modelValue,
-    (newValue) => {
-      nodes.value = newValue.nodes || [];
-      edges.value = newValue.edges || [];
-      variables.value = newValue.variables || [];
-    },
-    { deep: true },
-  );
-
-  // 连接处理
-  onConnect((connection) => {
-    addEdges([
-      {
-        id: `edge-${Date.now()}`,
-        ...connection,
-        type: 'smoothstep',
-        animated: true,
-      },
-    ]);
-  });
-
-  // 节点变化处理
-  onNodesChange((changes) => {
-    changes.forEach((change) => {
-      if (change.type === 'position' && change.position) {
-        const node = nodes.value.find((n) => n.id === change.id);
-        if (node) {
-          node.position = change.position;
-        }
-      } else if (change.type === 'remove') {
-        nodes.value = nodes.value.filter((n) => n.id !== change.id);
-      }
-    });
-  });
-
-  // 边变化处理
-  onEdgesChange((changes) => {
-    changes.forEach((change) => {
-      if (change.type === 'remove') {
-        edges.value = edges.value.filter((e) => e.id !== change.id);
-      }
-    });
-  });
-
-  // 节点点击处理
-  onNodeClick((event) => {
-    selectedNode.value = event.node;
-
-    // 更新节点选中状态
-    nodes.value.forEach((node) => {
-      node.selected = node.id === event.node.id;
-    });
-  });
-
-
-  // 显示节点选择器
-  const showAddNodeDialog = () => {
-    showNodeSelector.value = true;
-  };
-
-  // 添加节点
-  const addNode = (nodeType: string) => {
-    const newNode = {
-      id: `${nodeType}-${Date.now()}`,
-      type: nodeType,
-      position: { x: Math.random() * 400, y: Math.random() * 400 },
-      data: {
-        label: availableNodeTypes.find((t) => t.type === nodeType)?.label || nodeType,
-        config: getDefaultNodeConfig(nodeType),
-      },
-    };
-
-    nodes.value.push(newNode);
-    showNodeSelector.value = false;
-    MessagePlugin.success(`已添加${newNode.data.label}`);
-  };
-
-  // 获取默认节点配置
-  const getDefaultNodeConfig = (nodeType: string) => {
-    const configs = {
-      start: { inputType: 'text', required: true, defaultValue: '' },
-      end: { outputType: 'text', format: 'json' },
-      llm: { model: '', temperature: 0.7, maxTokens: 1000 },
-      prompt: { template: '', variables: [] },
-      condition: { operator: 'equals', value: '' },
-      http: { method: 'GET', url: '', headers: {} },
-    };
-    return configs[nodeType] || {};
-  };
-
-  // 适应画布
-  const fitToScreen = () => {
-    fitView();
-    MessagePlugin.info('适应画布');
-  };
-
-  // 居中显示
-  const centerView = () => {
-    fitView();
-    MessagePlugin.info('居中显示');
-  };
-
-  // 获取节点描述
-  const getNodeDescription = (nodeType: string) => {
-    const descriptions: Record<string, string> = {
-      start: '工作流开始节点，接收输入数据',
-      end: '工作流结束节点，输出处理结果',
-      llm: '使用大语言模型处理文本',
-      prompt: '构建提示词模板',
-      condition: '根据条件进行分支处理',
-      http: '发送HTTP请求获取数据',
-    };
-    return descriptions[nodeType] || '';
-  };
-
-  // 交互模式切换
-  const toggleInteractionMode = () => {
-    showInteractionModeDialog.value = true;
-  };
-
-  const selectInteractionMode = (mode: 'mouse' | 'trackpad') => {
-    interactionMode.value = mode;
-    showInteractionModeDialog.value = false;
-    MessagePlugin.success(`已切换到${mode === 'mouse' ? '鼠标友好模式' : '触控板友好模式'}`);
-  };
-
-  // 获取交互模式图标
-  const getInteractionModeIcon = () => {
-    return interactionMode.value === 'mouse' ? 'mouse' : 'laptop';
-  };
-
-  // 获取交互模式标题
-  const getInteractionModeTitle = () => {
-    return interactionMode.value === 'mouse' ? '鼠标友好模式' : '触控板友好模式';
-  };
-
-  // 同步缩放级别
-  const syncZoomLevel = () => {
-    try {
-      const viewport = getViewport();
-      if (viewport && viewport.zoom) {
-        zoomLevel.value = Math.round(viewport.zoom * 100);
-      }
-    } catch (error) {
-      // 如果获取失败，保持默认值
-      console.warn('Failed to sync zoom level:', error);
-    }
-  };
-
-  // 从插件市场加载节点类型
-  const loadNodeTypesFromPlugins = async () => {
-    try {
-      const res = await getPluginList({
-        page: 1,
-        pageSize: 1000, // 获取所有插件
-      });
-
-      if (res && res.data && res.data.list) {
-        // 过滤出工作流节点插件
-        const workflowPlugins = res.data.list.filter(plugin => {
-          try {
-            const config = JSON.parse(plugin.config || '{}');
-            return config.isWorkflowNode === true && plugin.status === 0; // 只获取启用的工作流节点
-          } catch {
-            return false;
-          }
-        });
-
-        // 转换为节点类型格式
-        availableNodeTypes.value = workflowPlugins.map(plugin => {
-          const config = JSON.parse(plugin.config || '{}');
-          const nodeType = config.nodeType || plugin.pluginType || 'custom';
-          const defaultStyle = defaultNodeTypeMap[nodeType] || defaultNodeTypeMap.custom;
-
-          return {
-            type: nodeType,
-            label: plugin.pluginName,
-            icon: plugin.icon || defaultStyle.icon,
-            color: defaultStyle.color,
-            pluginId: plugin.pluginId,
-            description: plugin.description,
-            config: config.configSchema,
-          };
-        });
-
-        console.log(`从插件市场加载了 ${availableNodeTypes.value.length} 个工作流节点`);
-      }
-    } catch (error) {
-      console.error('加载工作流节点失败:', error);
-      MessagePlugin.error('加载工作流节点失败');
-      
-      // 如果加载失败，使用默认节点类型
-      availableNodeTypes.value = [
-        { type: 'start', label: '开始节点', icon: 'login', color: '#10b981', pluginId: 'default-start' },
-        { type: 'end', label: '结束节点', icon: 'logout', color: '#f59e0b', pluginId: 'default-end' },
-        { type: 'llm', label: 'LLM节点', icon: 'chat', color: '#3b82f6', pluginId: 'default-llm' },
-        { type: 'prompt', label: '提示词节点', icon: 'edit-1', color: '#8b5cf6', pluginId: 'default-prompt' },
-        { type: 'condition', label: '条件节点', icon: 'fork', color: '#ef4444', pluginId: 'default-condition' },
-        { type: 'http', label: 'HTTP请求', icon: 'internet', color: '#06b6d4', pluginId: 'default-http' },
-      ];
-    }
-  };
-
-  // 组件挂载后同步缩放级别
-  // 处理缩放级别变化
-  const handleZoomChange = (value: number) => {
-    if (value && value >= 20 && value <= 200) {
-      const zoomValue = value / 100;
-      zoomTo(zoomValue);
-      zoomLevel.value = value;
-    }
-  };
-
-  // 组件挂载后同步缩放级别和加载节点类型
-  onMounted(async () => {
-    nextTick(() => {
-      syncZoomLevel();
-    });
-    
-    // 加载工作流节点类型
-    await loadNodeTypesFromPlugins();
-  });
-</script>
-
 <template>
   <div class="w-full h-[calc(100vh-60px)] relative">
     <!-- 主画布区域 -->
@@ -359,8 +8,9 @@
         :node-types="nodeTypes"
         class="w-full h-full bg-slate-50"
         :default-viewport="{ zoom: 1.0 }"
+        :default-edge-options="{ type: 'smoothstep', animated: true, style: { strokeDasharray: 'none' } }"
         :min-zoom="0.2"
-        :max-zoom="2" 
+        :max-zoom="2"
         :pan-on-drag="interactionMode === 'mouse'"
         :zoom-on-scroll="interactionMode === 'mouse'"
         :zoom-on-pinch="interactionMode === 'trackpad'"
@@ -374,7 +24,6 @@
       >
         <!-- 背景 -->
         <Background pattern-color="#aaa" :gap="20" />
-
         <!-- 小地图 -->
         <MiniMap />
       </VueFlow>
@@ -390,104 +39,17 @@
 
       <!-- 浮动工具栏 -->
       <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
-        <div class="flex items-center gap-3 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 backdrop-blur-sm">
-          <!-- 交互模式切换 -->
-          <t-popup v-model:visible="showInteractionModeDialog" placement="top" :show-arrow="false">
-            <t-button
-              variant="text"
-              size="small"
-              @click="toggleInteractionMode"
-              :title="getInteractionModeTitle()"
-              class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all"
-            >
-              <t-icon :name="getInteractionModeIcon()" size="16px" />
-            </t-button>
-            <template #content>
-              <div class="p-4 min-w-[280px]">
-                <h4 class="text-sm font-semibold text-gray-800 mb-3 text-center">交互模式</h4>
-                <div class="flex flex-col gap-2">
-                  <!-- 鼠标友好模式 -->
-                  <div
-                    class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border"
-                    :class="interactionMode === 'mouse' ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'"
-                    @click="selectInteractionMode('mouse')"
-                  >
-                    <t-icon name="mouse" size="20" />
-                    <div class="flex flex-col gap-0.5">
-                      <span class="text-sm font-medium text-gray-800">鼠标友好模式</span>
-                      <span class="text-xs text-gray-600 leading-tight">鼠标左键拖动画布，滚轮缩放</span>
-                    </div>
-                  </div>
-
-                  <!-- 触控板友好模式 -->
-                  <div
-                    class="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border"
-                    :class="interactionMode === 'trackpad' ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300'"
-                    @click="selectInteractionMode('trackpad')"
-                  >
-                    <t-icon name="laptop" size="20" />
-                    <div class="flex flex-col gap-0.5">
-                      <span class="text-sm font-medium text-gray-800">触控板友好模式</span>
-                      <span class="text-xs text-gray-600 leading-tight">双指同向移动拖动，双指张开捏合缩放</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </t-popup>
-
-          <!-- 分隔线 -->
-          <div class="h-6 w-px bg-gray-300"></div>
-          
-          <!-- 缩放控制 -->
-          <div class="flex items-center gap-1 bg-gray-100 rounded-full px-2 py-1">
-            <t-input-number
-              v-model="zoomLevel"
-              :min="20"
-              :max="200"
-              :step="10"
-              size="small"
-              :format="zoomFormat"
-              @change="handleZoomChange"
-              auto-width
-            />
-          </div>
-
-          <!-- 视图控制 -->
-          <div class="flex items-center gap-1">
-            <t-button variant="text" size="small" @click="fitToScreen" title="适应画布" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
-              <t-icon name="fullscreen" size="16px" />
-            </t-button>
-            <t-button variant="text" size="small" @click="centerView" title="居中显示" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
-              <t-icon name="view-module" size="16px" />
-            </t-button>
-            <t-button variant="text" size="small" title="全屏" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
-              <t-icon name="fullscreen-1" size="16px" />
-            </t-button>
-            <t-button variant="text" size="small" title="网格" class="p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-all">
-              <t-icon name="edit" size="16px" />
-            </t-button>
-          </div>
-
-          <!-- 分隔线 -->
-          <div class="h-6 w-px bg-gray-300"></div>
-
+        <div
+          class="flex items-center gap-3 bg-white rounded-full px-4 py-2 shadow-lg border border-gray-200 backdrop-blur-sm"
+        >
           <!-- 添加节点 -->
-          <t-button theme="primary" size="small" @click="showAddNodeDialog" class="rounded-full transition-all hover:-translate-y-0.5">
-            <template #icon>
-              <t-icon name="add" />
-            </template>
+          <t-button theme="primary" size="small" @click="showAddNodeDialog" class="rounded-full">
+            <template #icon><t-icon name="add" /></template>
             添加节点
           </t-button>
-
-          <!-- 分隔线 -->
-          <div class="h-6 w-px bg-gray-300"></div>
-
           <!-- 运行按钮 -->
-          <t-button theme="success" size="small" @click="$emit('test-workflow', {})" class="rounded-full transition-all hover:-translate-y-0.5">
-            <template #icon>
-              <t-icon name="play-circle-stroke" />
-            </template>
+          <t-button theme="success" size="small" @click="$emit('test-workflow', {})" class="rounded-full">
+            <template #icon><t-icon name="play-circle-stroke" /></template>
             试运行
           </t-button>
         </div>
@@ -495,83 +57,380 @@
     </div>
 
     <!-- 节点选择弹窗 -->
-    <t-dialog v-model:visible="showNodeSelector" header="选择节点类型" width="600px" :footer="false">
-      <div class="grid grid-cols-2 gap-4">
+    <t-dialog v-model:visible="showNodeSelector" header="添加节点" width="800px" :footer="false">
+      <div v-if="availableNodeTypes.length === 0" class="text-center py-8">
+        <t-icon name="component" size="48" class="text-gray-300 mb-4" />
+        <p class="text-gray-500">暂无可用的工作流节点</p>
+      </div>
+      <div v-else class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
         <div
           v-for="nodeType in availableNodeTypes"
           :key="nodeType.type"
-          class="flex items-center p-4 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all"
+          class="flex items-start p-4 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all"
           @click="addNode(nodeType.type)"
         >
-          <div
-            class="w-12 h-12 rounded-lg flex items-center justify-center mr-4"
-            :style="{ backgroundColor: nodeType.color + '20', color: nodeType.color }"
-          >
-            <t-icon :name="nodeType.icon" size="24" />
+          <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center mr-4 flex-shrink-0">
+            <t-icon :name="nodeType.icon" size="24" class="text-blue-600" />
           </div>
-          <div>
-            <h4 class="text-sm font-medium text-gray-900">{{ nodeType.label }}</h4>
-            <p class="text-xs text-gray-500 mt-1">{{ getNodeDescription(nodeType.type) }}</p>
+          <div class="flex-1 min-w-0">
+            <h4 class="text-sm font-medium text-gray-900 truncate">{{ nodeType.label }}</h4>
+            <p class="text-xs text-gray-500 line-clamp-2 mb-2">{{ nodeType.description || '暂无描述' }}</p>
           </div>
         </div>
       </div>
     </t-dialog>
+
+    <!-- 统一的节点配置面板 - 自适应高度面板 -->
+    <div
+      v-if="showNodeConfigPanel && selectedNode"
+      class="fixed right-1 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 transform transition-all duration-300 overflow-hidden flex flex-col"
+      :class="showNodeConfigPanel ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'"
+      style="top: 55px; bottom: 5px; height: calc(100vh - 60px)"
+    >
+      <!-- 配置面板头部 -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+            <t-icon name="setting" class="text-blue-600" size="16" />
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">{{ getNodeTitle(selectedNode) }}</h3>
+            <p class="text-sm text-gray-500">节点配置</p>
+          </div>
+        </div>
+        <t-button
+          variant="text"
+          size="small"
+          @click="showNodeConfigPanel = false"
+          class="hover:bg-gray-200 rounded-full"
+        >
+          <t-icon name="close" size="20" />
+        </t-button>
+      </div>
+
+      <!-- 配置面板内容 -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <!-- LLM节点配置 -->
+        <LlmNodeConfig v-if="selectedNode.type === 'llm'" :node="selectedNode" @update-node="updateSelectedNode" />
+        <!-- 其他节点类型的配置组件可以在这里添加 -->
+        <div v-else class="text-center py-8">
+          <t-icon name="setting" size="48" class="text-gray-300 mb-4" />
+          <p class="text-gray-500">{{ selectedNode.type }} 节点配置</p>
+          <p class="text-gray-400 text-sm mt-2">配置组件开发中...</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+<script setup lang="ts">
+  import { ref, watch, nextTick, markRaw, onMounted, computed } from 'vue';
+  import { VueFlow, useVueFlow, Node, Edge } from '@vue-flow/core';
+  import { Background } from '@vue-flow/background';
+  import { MiniMap } from '@vue-flow/minimap';
+  import { MessagePlugin } from 'tdesign-vue-next';
+  import { getPluginList } from '@/api/llm/plugin';
+  import LlmNodeConfig from './node-configs/llm-node-config.vue';
+
+  // 类型定义
+  interface WorkflowVariable {
+    name: string;
+    type: string;
+    value: any;
+  }
+
+  interface WorkflowConfig {
+    nodes: WorkflowNode[];
+    edges: Edge[];
+    variables: WorkflowVariable[];
+  }
+
+  type WorkflowNode = Node & {
+    data: {
+      label: string;
+      config: Record<string, any>;
+    };
+  };
+
+  interface NodeTypeInfo {
+    type: string;
+    label: string;
+    icon: string;
+    pluginId: string;
+    description?: string;
+    config?: any;
+    componentPath?: string;
+    configSchema?: object;
+  }
+
+  // Props 和 Emits
+  const props = defineProps<{
+    modelValue: WorkflowConfig;
+  }>();
+
+  const emit = defineEmits<{
+    'update:modelValue': [value: WorkflowConfig];
+    'test-workflow': [data: any];
+  }>();
+
+  // Vue Flow 实例
+  const { onConnect, addEdges, onNodesChange, onEdgesChange, onNodeClick, fitView, zoomTo, getViewport } = useVueFlow();
+
+  // 响应式状态
+  const nodes = ref<WorkflowNode[]>([]);
+  const edges = ref<Edge[]>([]);
+  const variables = ref(props.modelValue.variables || []);
+  const nodeTypes = ref<Record<string, any>>({});
+  const availableNodeTypes = ref<NodeTypeInfo[]>([]);
+
+  // UI 状态
+  const showNodeSelector = ref(false);
+  const selectedNode = ref<any>(null);
+  const showNodeConfigPanel = ref(false);
+  const interactionMode = ref<'mouse' | 'trackpad'>('trackpad');
+
+  // 计算属性
+  const isNodeTypesLoaded = computed(() => Object.keys(nodeTypes.value).length > 0);
+
+  // 监听数据变化
+  watch(
+    [nodes, edges, variables],
+    () => {
+      emit('update:modelValue', {
+        nodes: nodes.value,
+        edges: edges.value,
+        variables: variables.value,
+      });
+    },
+    { deep: true },
+  );
+
+  watch(
+    () => props.modelValue,
+    (newValue) => {
+      if (isNodeTypesLoaded.value) {
+        nodes.value = newValue.nodes || [];
+        edges.value = newValue.edges || [];
+      }
+      variables.value = newValue.variables || [];
+    },
+    { deep: true },
+  );
+
+  // 事件处理
+  onConnect((connection) => {
+    addEdges([
+      {
+        id: `edge-${Date.now()}`,
+        ...connection,
+        type: 'smoothstep',
+        animated: true,
+        style: { strokeDasharray: 'none' },
+      } as Edge,
+    ]);
+  });
+
+  onNodesChange((changes) => {
+    changes.forEach((change) => {
+      if (change.type === 'position' && change.position) {
+        const node = nodes.value.find((n) => n.id === change.id);
+        if (node) {
+          node.position = change.position;
+        }
+      } else if (change.type === 'remove') {
+        nodes.value = nodes.value.filter((n) => n.id !== change.id);
+      }
+    });
+  });
+
+  onEdgesChange((changes) => {
+    changes.forEach((change) => {
+      if (change.type === 'remove') {
+        edges.value = edges.value.filter((e) => e.id !== change.id);
+      }
+    });
+  });
+
+  onNodeClick((event) => {
+    selectedNode.value = event.node;
+    showNodeConfigPanel.value = true;
+  });
+
+  // 方法
+  const showAddNodeDialog = () => {
+    showNodeSelector.value = true;
+  };
+
+  const addNode = (nodeType: string) => {
+    if (!availableNodeTypes.value || !Array.isArray(availableNodeTypes.value)) {
+      MessagePlugin.error('节点类型未加载完成，请稍后重试');
+      return;
+    }
+
+    const nodeTypeInfo = availableNodeTypes.value.find((t) => t.type === nodeType);
+
+    const newNode: WorkflowNode = {
+      id: `${nodeType}-${Date.now()}`,
+      type: nodeType,
+      position: { x: Math.random() * 400, y: Math.random() * 400 },
+      data: {
+        label: nodeTypeInfo?.label || nodeType,
+        config: getDefaultNodeConfig(nodeType),
+      },
+    };
+
+    nodes.value.push(newNode);
+    showNodeSelector.value = false;
+    MessagePlugin.success(`已添加${newNode.data.label}`);
+  };
+
+  const getDefaultNodeConfig = (nodeType: string) => {
+    if (availableNodeTypes.value && Array.isArray(availableNodeTypes.value)) {
+      const nodeTypeInfo = availableNodeTypes.value.find((t) => t.type === nodeType);
+      if (nodeTypeInfo?.configSchema) {
+        const schema = nodeTypeInfo.configSchema as any;
+        if (schema.properties) {
+          const defaultConfig: Record<string, any> = {};
+          Object.keys(schema.properties).forEach((key) => {
+            const property = schema.properties[key];
+            if (property.default !== undefined) {
+              defaultConfig[key] = property.default;
+            }
+          });
+          return defaultConfig;
+        }
+      }
+    }
+
+    const configs = {
+      start: { inputType: 'text', required: true, defaultValue: '' },
+      end: { outputType: 'text', format: 'json' },
+      llm: { model: 'hunyuan-standard', temperature: 0.7, maxTokens: 1000 },
+      prompt: { template: '', variables: [] },
+      condition: { operator: 'equals', value: '' },
+      http: { method: 'GET', url: '', headers: {} },
+    };
+    return configs[nodeType] || {};
+  };
+
+  const getNodeTitle = (node: any) => {
+    if (!node) return '';
+    return node.data?.label || node.type || '未知节点';
+  };
+
+  const updateSelectedNode = (updatedData: any) => {
+    if (selectedNode.value) {
+      const nodeIndex = nodes.value.findIndex((n) => n.id === selectedNode.value.id);
+      if (nodeIndex !== -1) {
+        nodes.value[nodeIndex] = {
+          ...nodes.value[nodeIndex],
+          data: {
+            ...nodes.value[nodeIndex].data,
+            ...updatedData,
+          },
+        };
+        selectedNode.value = nodes.value[nodeIndex];
+      }
+    }
+  };
+
+  const loadNodeComponent = async (componentPath: string) => {
+    try {
+      const module = await import(/* @vite-ignore */ componentPath);
+      return markRaw(module.default || module);
+    } catch (error) {
+      console.warn(`加载组件失败: ${componentPath}`, error);
+      return markRaw({
+        template: `<div class="p-4 border border-red-300 bg-red-50 rounded">
+          <p class="text-red-600 text-sm">组件加载失败: ${componentPath}</p>
+        </div>`,
+      });
+    }
+  };
+
+  const loadNodeTypesFromPlugins = async () => {
+    try {
+      const res = await getPluginList({
+        page: 1,
+        pageSize: 1000,
+      });
+
+      if (res && res.data && res.data.list) {
+        const workflowPlugins = res.data.list.filter((plugin) => {
+          try {
+            JSON.parse(plugin.config || '{}');
+            return true;
+          } catch (parseError) {
+            console.warn(`插件 ${plugin.pluginId} 的config字段解析失败:`, parseError);
+            return false;
+          }
+        });
+
+        const nodeTypesMap: Record<string, any> = {};
+
+        for (const plugin of workflowPlugins) {
+          const config = JSON.parse(plugin.config || '{}');
+          const nodeType = config.nodeType || plugin.pluginType || 'custom';
+
+          if (config.componentPath) {
+            try {
+              const component = await loadNodeComponent(config.componentPath);
+              nodeTypesMap[nodeType] = component;
+            } catch (error) {
+              console.warn(`加载组件失败: ${nodeType} -> ${config.componentPath}`, error);
+            }
+          }
+        }
+
+        nodeTypes.value = nodeTypesMap;
+
+        availableNodeTypes.value = workflowPlugins.map((plugin) => {
+          const config = JSON.parse(plugin.config || '{}');
+          const nodeType = config.nodeType || plugin.pluginType || 'custom';
+
+          return {
+            type: nodeType,
+            label: plugin.pluginName,
+            icon: plugin.icon || 'component',
+            pluginId: plugin.pluginId,
+            description: plugin.description,
+            config: config,
+            componentPath: config.componentPath,
+            configSchema: config.nodeConfigSchema,
+          };
+        });
+
+        if (availableNodeTypes.value.length === 0) {
+          MessagePlugin.warning('未找到可用的工作流节点，请检查插件配置');
+        }
+      }
+    } catch (error) {
+      console.error('加载工作流节点失败:', error);
+      MessagePlugin.error(`加载工作流节点失败: ${error.message || '未知错误'}`);
+    }
+  };
+
+  onMounted(async () => {
+    await loadNodeTypesFromPlugins();
+
+    if (props.modelValue.nodes && props.modelValue.nodes.length > 0) {
+      nodes.value = props.modelValue.nodes;
+    }
+
+    if (props.modelValue.edges && props.modelValue.edges.length > 0) {
+      edges.value = props.modelValue.edges;
+    }
+  });
+</script>
 
 <style>
   @import '@vue-flow/core/dist/style.css';
   @import '@vue-flow/core/dist/theme-default.css';
 
-  .vue-flow__edge {
-    stroke-width: 2;
-  }
-
-  .vue-flow__edge.selected {
-    stroke: #3b82f6;
-  }
-
-  .vue-flow__handle {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .vue-flow__handle-top {
-    top: -4px;
-  }
-
-  .vue-flow__handle-bottom {
-    bottom: -4px;
-  }
-
-  .vue-flow__handle-left {
-    left: -4px;
-  }
-
-  .vue-flow__handle-right {
-    right: -4px;
-  }
-
-  /* 响应式设计 */
-  @media (max-width: 768px) {
-    .absolute.bottom-6 {
-      bottom: 1rem;
-      left: 1rem;
-      right: 1rem;
-      transform: none;
-    }
-
-    .flex.items-center.gap-3 {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .grid-cols-2 {
-      grid-template-columns: repeat(1, minmax(0, 1fr));
-    }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 </style>

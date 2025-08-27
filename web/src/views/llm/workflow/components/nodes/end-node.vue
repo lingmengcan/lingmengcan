@@ -7,7 +7,6 @@
         <t-icon name="logout" class="text-sm text-blue-600 mr-1.5" />
         <span class="text-sm font-medium text-gray-700">结束</span>
       </div>
-      <t-icon name="more" class="text-xs text-gray-400 cursor-pointer" />
     </div>
     <div class="px-3 py-2 border-t border-gray-100">
       <div class="flex items-center gap-1.5">

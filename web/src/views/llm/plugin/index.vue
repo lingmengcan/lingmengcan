@@ -118,7 +118,18 @@
         <t-input v-model="drawerFormData.author" :placeholder="$t('views.llm.plugin.placeholder.author')" />
       </t-form-item>
       <t-form-item :label="$t('views.llm.plugin.config')" name="config">
-        <t-textarea v-model="drawerFormData.config" :placeholder="$t('views.llm.plugin.placeholder.config')" />
+        <div style="width: 100%">
+          <!-- 编辑模式 -->
+          <t-textarea
+            v-model="drawerFormData.config"
+            :placeholder="$t('views.llm.plugin.placeholder.config')"
+            :autosize="{ minRows: 6, maxRows: 10 }"
+            class="font-mono text-sm"
+            @focus="formatJsonConfig"
+          />
+
+          <div class="mt-2 text-xs text-gray-500">提示：请输入有效的JSON格式配置</div>
+        </div>
       </t-form-item>
       <t-form-item :label="$t('common.status')" name="status">
         <selectDict v-model:dict-code="drawerFormData.status" dict-type="SYS_STATUS" />
@@ -285,6 +296,19 @@
     }
 
     LoadingPlugin(false);
+  };
+
+  // 格式化JSON配置
+  const formatJsonConfig = () => {
+    if (drawerFormData.value.config) {
+      try {
+        const parsed = JSON.parse(drawerFormData.value.config);
+        drawerFormData.value.config = JSON.stringify(parsed, null, 2);
+      } catch (error) {
+        MessagePlugin.error('JSON格式错误，无法格式化');
+        console.warn('配置不是有效的JSON格式:', error);
+      }
+    }
   };
 
   // 获取插件分类数据
