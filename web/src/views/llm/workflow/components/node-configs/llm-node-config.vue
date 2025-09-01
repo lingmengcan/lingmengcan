@@ -106,13 +106,12 @@
   // 本地配置副本
   const localConfig = ref({
     label: props.node?.data?.label || 'LLM插件',
-    model: 'hunyuan-standard',
-    temperature: 0.7,
-    maxTokens: 1000,
-    topP: 0.9,
-    systemPrompt: '',
-    userPrompt: '',
-    ...props.node?.data?.config,
+    model: props.node?.data?.config?.model || 'hunyuan-standard',
+    temperature: props.node?.data?.config?.temperature ?? 0.7,
+    maxTokens: props.node?.data?.config?.maxTokens || 1000,
+    topP: props.node?.data?.config?.topP ?? 0.9,
+    systemPrompt: props.node?.data?.config?.systemPrompt || '',
+    userPrompt: props.node?.data?.config?.userPrompt || ''
   });
 
   // 监听外部数据变化
@@ -121,9 +120,13 @@
     (newNode) => {
       if (newNode) {
         localConfig.value = {
-          ...localConfig.value,
           label: newNode.data?.label || 'LLM插件',
-          ...newNode.data?.config,
+          model: newNode.data?.config?.model || 'hunyuan-standard',
+          temperature: newNode.data?.config?.temperature ?? 0.7,
+          maxTokens: newNode.data?.config?.maxTokens || 1000,
+          topP: newNode.data?.config?.topP ?? 0.9,
+          systemPrompt: newNode.data?.config?.systemPrompt || '',
+          userPrompt: newNode.data?.config?.userPrompt || ''
         };
       }
     },
@@ -144,4 +147,5 @@
       },
     });
   };
+
 </script>
