@@ -176,7 +176,7 @@
       </div>
 
       <!-- 配置面板内容 -->
-      <div class="flex-1 overflow-y-auto p-6">
+      <div class="flex-1 overflow-y-auto p-3">
         <!-- LLM节点配置 -->
         <component :is="selectedNodeConfigComponent" :node="selectedNode" @update-node="updateSelectedNode" />
       </div>

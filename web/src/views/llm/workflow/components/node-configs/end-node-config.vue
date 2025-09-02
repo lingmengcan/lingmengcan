@@ -1,32 +1,24 @@
 <template>
-  <div class="space-y-6">
-    <!-- 基础配置 -->
-    <div>
-      <h4 class="text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">基础配置</h4>
+  <div>
+    <!-- 使用 TDesign Collapse 折叠面板 -->
+    <t-collapse v-model="activeNames" :default-value="['output']" borderless class="compact-collapse">
+      <t-collapse-panel value="output" header="输出">
+        <!-- 节点名称和输出类型 -->
+        <t-space size="small">
+          <t-form-item label="输出变量" class="compact-form-item">
+            <t-input v-model="localConfig.variableName" placeholder="output" size="small" @change="updateConfig" />
+          </t-form-item>
 
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">节点名称</label>
-        <t-input v-model="localConfig.label" placeholder="请输入节点名称" @change="updateConfig" />
-      </div>
-
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">输出类型</label>
-        <t-select v-model="localConfig.outputType" placeholder="请选择输出类型" @change="updateConfig">
-          <t-option value="text" label="文本" />
-          <t-option value="json" label="JSON" />
-          <t-option value="file" label="文件" />
-        </t-select>
-      </div>
-
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">输出格式</label>
-        <t-select v-model="localConfig.format" placeholder="请选择输出格式" @change="updateConfig">
-          <t-option value="json" label="JSON" />
-          <t-option value="xml" label="XML" />
-          <t-option value="plain" label="纯文本" />
-        </t-select>
-      </div>
-    </div>
+          <!-- 输出类型 -->
+          <t-form-item label="变量类型" class="compact-form-item">
+            <t-select v-model="localConfig.outputType" placeholder="text" size="small" @change="updateConfig">
+              <t-option value="text" label="Text" />
+              <t-option value="json" label="Json" />
+            </t-select>
+          </t-form-item>
+        </t-space>
+      </t-collapse-panel>
+    </t-collapse>
   </div>
 </template>
 
@@ -46,11 +38,14 @@
     'update-node': [data: NodeData];
   }>();
 
+  // 折叠面板激活状态
+  const activeNames = ref(['output']);
+
   // 本地配置副本
   const localConfig = ref({
     label: props.node?.data?.label || '结束节点',
+    variableName: props.node?.data?.config?.variableName || 'output',
     outputType: props.node?.data?.config?.outputType || 'text',
-    format: props.node?.data?.config?.format || 'json'
   });
 
   // 监听外部数据变化
@@ -60,8 +55,8 @@
       if (newNode) {
         localConfig.value = {
           label: newNode.data?.label || '结束节点',
+          variableName: newNode?.data?.config?.variableName || 'output',
           outputType: newNode.data?.config?.outputType || 'text',
-          format: newNode.data?.config?.format || 'json'
         };
       }
     },
@@ -74,9 +69,23 @@
       label: localConfig.value.label,
       config: {
         outputType: localConfig.value.outputType,
-        format: localConfig.value.format,
+        variableName: localConfig.value.variableName,
       },
     });
   };
-
 </script>
+
+<style scoped>
+  .compact-collapse :deep(.t-collapse-panel__header) {
+    padding: 0px;
+  }
+
+  .compact-collapse :deep(.t-collapse-panel__content) {
+    padding: 8px;
+  }
+
+  .compact-form-item :deep(.t-form__label) {
+    color: #999;
+    font-size: 12px;
+  }
+</style>

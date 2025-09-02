@@ -1,25 +1,25 @@
 <template>
-  <div class="space-y-6">
-    <!-- 基础配置 -->
-    <div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">输入类型</label>
-        <t-select v-model="localConfig.inputType" placeholder="请选择输入类型" @change="updateConfig">
-          <t-option value="text" label="文本" />
-          <t-option value="json" label="JSON" />
-          <t-option value="file" label="文件" />
-        </t-select>
-      </div>
-
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">默认值</label>
-        <t-textarea v-model="localConfig.defaultValue" placeholder="请输入默认值" :rows="3" @change="updateConfig" />
-      </div>
-
-      <div class="mb-4">
-        <t-checkbox v-model="localConfig.required" @change="updateConfig">必填</t-checkbox>
-      </div>
-    </div>
+  <div>
+    <!-- 使用 TDesign Collapse 折叠面板 -->
+    <t-collapse v-model="activeNames" :default-value="['input']" borderless class="compact-collapse">
+      <t-collapse-panel value="input" header="输入">
+        <!-- 变量名 -->
+        <t-space size="small">
+          <t-form-item label="变量名" class="compact-form-item">
+            <t-input v-model="localConfig.variableName" placeholder="input" size="small" @change="updateConfig" />
+          </t-form-item>
+          <!-- 变量类型 -->
+          <t-form-item label="变量类型" class="compact-form-item">
+            <t-select v-model="localConfig.inputType" placeholder="Text" size="small" @change="updateConfig">
+              <t-option value="text" label="Text" />
+              <t-option value="json" label="Json" />
+              <t-option value="number" label="Number" />
+              <t-option value="boolean" label="Boolean" />
+            </t-select>
+          </t-form-item>
+        </t-space>
+      </t-collapse-panel>
+    </t-collapse>
   </div>
 </template>
 
@@ -39,12 +39,14 @@
     'update-node': [data: NodeData];
   }>();
 
+  // 折叠面板激活状态
+  const activeNames = ref(['input']);
+
   // 本地配置副本
   const localConfig = ref({
     label: props.node?.data?.label || '开始节点',
+    variableName: props.node?.data?.config?.variableName || 'input',
     inputType: props.node?.data?.config?.inputType || 'text',
-    required: props.node?.data?.config?.required ?? true,
-    defaultValue: props.node?.data?.config?.defaultValue || '',
   });
 
   // 监听外部数据变化
@@ -54,9 +56,8 @@
       if (newNode) {
         localConfig.value = {
           label: newNode.data?.label || '开始节点',
+          variableName: newNode.data?.config?.variableName || 'input',
           inputType: newNode.data?.config?.inputType || 'text',
-          required: newNode.data?.config?.required ?? true,
-          defaultValue: newNode.data?.config?.defaultValue || '',
         };
       }
     },
@@ -68,10 +69,24 @@
     emit('update-node', {
       label: localConfig.value.label,
       config: {
+        variableName: localConfig.value.variableName,
         inputType: localConfig.value.inputType,
-        required: localConfig.value.required,
-        defaultValue: localConfig.value.defaultValue,
       },
     });
   };
 </script>
+
+<style scoped>
+  .compact-collapse :deep(.t-collapse-panel__header) {
+    padding: 0px;
+  }
+
+  .compact-collapse :deep(.t-collapse-panel__content) {
+    padding: 8px;
+  }
+
+  .compact-form-item :deep(.t-form__label) {
+    color: #999;
+    font-size: 12px;
+  }
+</style>

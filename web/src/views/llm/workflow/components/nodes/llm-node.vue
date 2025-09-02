@@ -36,7 +36,7 @@
         <!-- 输出信息 -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">输出</span>
-          <span class="text-sm font-medium text-orange-500">result</span>
+          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">output</span>
         </div>
 
         <!-- 模型信息 -->

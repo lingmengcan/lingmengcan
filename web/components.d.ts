@@ -24,6 +24,8 @@ declare module 'vue' {
     TCheckbox: typeof import('tdesign-vue-next')['Checkbox']
     TCode: typeof import('tdesign-vue-next')['Code']
     TCol: typeof import('tdesign-vue-next')['Col']
+    TCollapse: typeof import('tdesign-vue-next')['Collapse']
+    TCollapsePanel: typeof import('tdesign-vue-next')['CollapsePanel']
     TConfigProvider: typeof import('tdesign-vue-next')['ConfigProvider']
     TContent: typeof import('tdesign-vue-next')['Content']
     TDialog: typeof import('tdesign-vue-next')['Dialog']

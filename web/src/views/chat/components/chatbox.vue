@@ -104,6 +104,7 @@
   import { ChatParams, Conversation, Message } from '@/models/chat';
   import { chat, regenerate } from '@/api/chat/chat';
   import coversationParams from './coversation-params.vue';
+  import selectModel from '@/components/select/select-model.vue';
 
   defineProps({
     chatListVisable: {
@@ -131,7 +132,7 @@
     systemPrompt: '',
     temperature: 0.5,
     topP: 1,
-    maxTokens: 7000,
+    maxTokens: 4096,
   });
 
   interface ChatItem extends Message {
