@@ -1,5 +1,5 @@
 <template>
-  <div class="relative cursor-pointer node-container" ">
+  <div class="relative cursor-pointer node-container">
     <div
       class="relative rounded-lg border-2 border-blue-500 bg-white shadow-md min-w-[300px] hover:shadow-lg transition-all duration-200"
     >
@@ -77,40 +77,24 @@
   }>();
 
   const data = ref(props.data);
-  
+
   // 获取Vue Flow实例
   const {} = useVueFlow();
 </script>
 
 <style scoped>
-  /* 悬停时显示图标 */
-  .node-container:hover .opacity-0 {
+  /* 悬停时显示图标和放大连接点 */
+  .node-container:hover .handle-icon {
     opacity: 1;
   }
 
-  /* 悬停时放大连接点 */
-  .node-container:hover .w-3 {
-    width: 1rem;
+  .node-container .handle-point {
+    width: 12px;
+    height: 12px;
   }
 
-  .node-container:hover .h-3 {
-    height: 1rem;
-  }
-
-  /* 选中状态样式 */
-  .node-container.selected > div {
-    box-shadow: 0 0 0 2px rgb(59 130 246);
-  }
-
-  .node-container.selected .opacity-0 {
-    opacity: 1;
-  }
-
-  .node-container.selected .w-3 {
-    width: 1rem;
-  }
-
-  .node-container.selected .h-3 {
-    height: 1rem;
+  .node-container:hover .handle-point {
+    width: 16px;
+    height: 16px;
   }
 </style>
