@@ -1,17 +1,20 @@
 <template>
-  <div class="relative cursor-pointer">
+  <div class="relative cursor-pointer node-container">
     <!-- 节点主体 -->
     <div
       class="bg-white border border-gray-200 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg"
-      style="min-width: 240px; transform: translateY(0)"
+      style="min-width: 240px"
     >
       <!-- 头部 -->
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div class="flex items-center gap-2">
           <t-icon name="chat" class="text-lg text-gray-700" />
-          <span class="text-sm font-medium text-gray-900">LLM插件</span>
+          <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
+            {{ data.label }}
+          </span>
         </div>
         <div class="flex items-center gap-1">
+          <!-- 运行按钮 -->
           <t-button
             variant="text"
             size="small"
@@ -19,14 +22,6 @@
             @click.stop="handleRun"
           >
             <t-icon name="play-circle" size="16" />
-          </t-button>
-          <t-button
-            variant="text"
-            size="small"
-            class="p-1 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-            @click.stop="handleMore"
-          >
-            <t-icon name="more" size="16" />
           </t-button>
         </div>
       </div>
@@ -43,32 +38,39 @@
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">模型</span>
           <div class="flex items-center gap-2 text-sm text-gray-700">
-            <t-icon name="logo-github" class="text-base text-blue-500" />
             <span>{{ displayModel }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 连接点 -->
-    <Handle
-      type="target"
-      :position="Position.Left"
-      class="bg-blue-500 border-2 border-white rounded-full shadow-sm"
-      style="width: 16px; height: 16px; left: -8px"
-    />
-    <Handle
-      type="source"
-      :position="Position.Right"
-      class="bg-blue-500 border-2 border-white rounded-full shadow-sm"
-      style="width: 16px; height: 16px; right: -8px"
-    />
+    <!-- 左侧连接点 -->
+    <div class="absolute left-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+      <Handle
+        type="target"
+        :position="Position.Left"
+        class="handle-point w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center transition-all duration-200"
+      >
+        <t-icon name="add" class="handle-icon text-white text-xs opacity-0 transition-opacity duration-200" />
+      </Handle>
+    </div>
+
+    <!-- 右侧连接点 -->
+    <div class="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2">
+      <Handle
+        type="source"
+        :position="Position.Right"
+        class="handle-point w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center transition-all duration-200"
+      >
+        <t-icon name="add" class="handle-icon text-white text-xs opacity-0 transition-opacity duration-200" />
+      </Handle>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { Handle, Position } from '@vue-flow/core';
+  import { Handle, Position, useVueFlow } from '@vue-flow/core';
   import { MessagePlugin } from 'tdesign-vue-next';
 
   interface NodeData {
@@ -77,21 +79,21 @@
   }
 
   const props = defineProps<{
+    id: string;
+    type: string;
     data: NodeData;
+    onUpdateNode?: (nodeId: string, updates: Partial<NodeData>) => void;
+    onCopyNode?: (nodeId: string) => void;
+    onDeleteNode?: (nodeId: string) => void;
   }>();
+
+  // 获取Vue Flow实例
+  const { findNode } = useVueFlow();
 
   // 显示的模型名称
   const displayModel = computed(() => {
-    const modelMap: Record<string, string> = {
-      'hunyuan-standard': 'hunyuan-standard',
-      'hunyuan-pro': 'hunyuan-pro',
-      'gpt-3.5-turbo': 'GPT-3.5 Turbo',
-      'gpt-4': 'GPT-4',
-      'claude-3': 'Claude-3',
-      'qwen-max': '通义千问',
-    };
     const model = props.data?.config?.model || 'hunyuan-standard';
-    return modelMap[model] || model;
+    return model;
   });
 
   // 运行按钮点击事件
@@ -99,29 +101,21 @@
     MessagePlugin.info('运行LLM节点');
     // 这里可以添加运行逻辑
   };
-
-  // 更多操作按钮点击事件
-  const handleMore = () => {
-    MessagePlugin.info('更多操作');
-    // 这里可以添加更多操作的菜单
-  };
 </script>
 
 <style scoped>
-  /* Vue Flow 连接点样式覆盖 */
-  :deep(.vue-flow__handle) {
-    width: 16px;
-    height: 16px;
-    background: #3b82f6;
-    border: 2px solid white;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* 悬停时显示图标和放大连接点 */
+  .node-container:hover .handle-icon {
+    opacity: 1;
   }
 
-  /* 响应式设计 */
-  @media (max-width: 768px) {
-    .node-container {
-      min-width: 200px;
-    }
+  .node-container .handle-point {
+    width: 12px;
+    height: 12px;
+  }
+
+  .node-container:hover .handle-point {
+    width: 16px;
+    height: 16px;
   }
 </style>

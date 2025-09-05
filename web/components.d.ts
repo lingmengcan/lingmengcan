@@ -67,5 +67,6 @@ declare module 'vue' {
     TTooltip: typeof import('tdesign-vue-next')['Tooltip']
     TTree: typeof import('tdesign-vue-next')['Tree']
     TTreeSelect: typeof import('tdesign-vue-next')['TreeSelect']
+    TUpload: typeof import('tdesign-vue-next')['Upload']
   }
 }

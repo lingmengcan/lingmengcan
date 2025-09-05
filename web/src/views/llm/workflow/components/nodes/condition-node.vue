@@ -1,122 +1,116 @@
 <template>
-  <div class="condition-node">
-    <div class="node-header">
-      <t-icon name="fork" class="node-icon" />
-      <span class="node-title">{{ data.label }}</span>
-    </div>
-    <div class="node-content">
-      <div class="input-field">
-        <label class="field-label">条件变量</label>
-        <t-input v-model="config.variable" size="small" placeholder="请输入变量名" />
+  <div class="relative cursor-pointer node-container" ">
+    <div
+      class="relative rounded-lg border-2 border-blue-500 bg-white shadow-md min-w-[300px] hover:shadow-lg transition-all duration-200"
+    >
+      <!-- 节点头部 -->
+      <div class="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg border-b border-gray-200">
+        <div class="flex items-center">
+          <t-icon name="fork" class="text-blue-600 mr-2" />
+          <span class="font-medium text-gray-800">{{ data.label }}</span>
+        </div>
+        <div class="flex items-center">
+          <t-icon name="more" class="text-gray-500" />
+        </div>
       </div>
-      <div class="input-field">
-        <label class="field-label">操作符</label>
-        <t-select v-model="config.operator" size="small">
-          <t-option value="equals" label="等于" />
-          <t-option value="not_equals" label="不等于" />
-          <t-option value="greater_than" label="大于" />
-          <t-option value="less_than" label="小于" />
-          <t-option value="contains" label="包含" />
-          <t-option value="not_contains" label="不包含" />
-        </t-select>
-      </div>
-      <div class="input-field">
-        <label class="field-label">比较值</label>
-        <t-input v-model="config.value" size="small" placeholder="请输入比较值" />
+
+      <!-- 节点内容 -->
+      <div class="p-3">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-500">条件分支</span>
+          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">condition</span>
+        </div>
       </div>
     </div>
-    <Handle type="target" :position="Position.Left" />
-    <Handle type="source" :position="Position.Right" id="true" style="top: 30%; background: #10b981;" />
-    <Handle type="source" :position="Position.Right" id="false" style="top: 70%; background: #ef4444;" />
-    <div class="condition-labels">
-      <span class="true-label">True</span>
-      <span class="false-label">False</span>
+
+    <!-- IF 连接点 -->
+    <div class="absolute right-0 top-1/3 transform translate-x-1/2 -translate-y-1/2 flex items-center">
+      <div class="mr-2 text-xs font-medium text-gray-600">IF</div>
+      <Handle
+        type="source"
+        :position="Position.Right"
+        id="true"
+        class="w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center transition-all duration-200"
+      >
+        <t-icon name="add" class="text-white text-xs opacity-0 transition-opacity duration-200" />
+      </Handle>
+    </div>
+
+    <!-- ELSE 连接点 -->
+    <div class="absolute right-0 top-2/3 transform translate-x-1/2 -translate-y-1/2 flex items-center">
+      <div class="mr-2 text-xs font-medium text-gray-600">ELSE</div>
+      <Handle
+        type="source"
+        :position="Position.Right"
+        id="false"
+        class="w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center transition-all duration-200"
+      >
+        <t-icon name="add" class="text-white text-xs opacity-0 transition-opacity duration-200" />
+      </Handle>
+    </div>
+
+    <!-- 左侧连接点 -->
+    <div class="absolute left-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+      <Handle
+        type="target"
+        :position="Position.Left"
+        class="w-3 h-3 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center transition-all duration-200"
+      >
+        <t-icon name="add" class="text-white text-xs opacity-0 transition-opacity duration-200" />
+      </Handle>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Handle, Position } from '@vue-flow/core';
+  import { Handle, Position, useVueFlow } from '@vue-flow/core';
+  import { ref } from 'vue';
 
-interface NodeData {
-  label: string;
-  config: Record<string, any>;
-}
+  interface NodeData {
+    label: string;
+    config: Record<string, any>;
+  }
 
-const props = defineProps<{
-  data: NodeData;
-}>();
+  const props = defineProps<{
+    id: string;
+    data: NodeData;
+  }>();
 
-const config = computed(() => props.data.config || {});
+  const data = ref(props.data);
+  
+  // 获取Vue Flow实例
+  const {} = useVueFlow();
 </script>
 
 <style scoped>
-.condition-node {
-  background: white;
-  border: 2px solid #ef4444;
-  border-radius: 8px;
-  min-width: 200px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
+  /* 悬停时显示图标 */
+  .node-container:hover .opacity-0 {
+    opacity: 1;
+  }
 
-.node-header {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  background: #ef4444;
-  color: white;
-  border-radius: 6px 6px 0 0;
-}
+  /* 悬停时放大连接点 */
+  .node-container:hover .w-3 {
+    width: 1rem;
+  }
 
-.node-icon {
-  margin-right: 8px;
-}
+  .node-container:hover .h-3 {
+    height: 1rem;
+  }
 
-.node-title {
-  font-size: 14px;
-  font-weight: 500;
-}
+  /* 选中状态样式 */
+  .node-container.selected > div {
+    box-shadow: 0 0 0 2px rgb(59 130 246);
+  }
 
-.node-content {
-  padding: 12px;
-}
+  .node-container.selected .opacity-0 {
+    opacity: 1;
+  }
 
-.input-field {
-  margin-bottom: 8px;
-}
+  .node-container.selected .w-3 {
+    width: 1rem;
+  }
 
-.input-field:last-child {
-  margin-bottom: 0;
-}
-
-.field-label {
-  display: block;
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.condition-labels {
-  position: absolute;
-  right: -40px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.true-label {
-  font-size: 10px;
-  color: #10b981;
-  font-weight: 500;
-}
-
-.false-label {
-  font-size: 10px;
-  color: #ef4444;
-  font-weight: 500;
-}
+  .node-container.selected .h-3 {
+    height: 1rem;
+  }
 </style>
