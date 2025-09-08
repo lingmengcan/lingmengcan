@@ -1,22 +1,17 @@
 <template>
   <div class="relative cursor-pointer node-container">
-    <div
-      class="relative rounded-lg border-2 border-blue-500 bg-white shadow-md min-w-[300px] hover:shadow-lg transition-all duration-200"
-    >
+    <div class="bg-white border border-gray-200 rounded-lg w-60 shadow-sm hover:shadow-md transition-shadow">
       <!-- 节点头部 -->
-      <div class="flex items-center justify-between px-4 py-2 bg-white rounded-t-lg border-b border-gray-200">
+      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
         <div class="flex items-center">
           <t-icon name="fork" class="text-blue-600 mr-2" />
           <span class="font-medium text-gray-800">{{ data.label }}</span>
         </div>
-        <div class="flex items-center">
-          <t-icon name="more" class="text-gray-500" />
-        </div>
       </div>
 
       <!-- 节点内容 -->
-      <div class="p-3">
-        <div class="flex items-center gap-1.5">
+      <div class="px-3 py-2 flex flex-col gap-2">
+        <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">条件分支</span>
           <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">condition</span>
         </div>

@@ -1,24 +1,19 @@
 <template>
   <div class="relative cursor-pointer node-container">
     <!-- 节点主体 -->
-    <div
-      class="bg-white border border-gray-200 rounded-lg shadow-md transition-all duration-200 hover:shadow-lg"
-      style="min-width: 240px"
-    >
+    <div class="bg-white border border-gray-200 rounded-lg w-60 shadow-sm hover:shadow-md transition-shadow">
       <!-- 头部 -->
-      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
         <div class="flex items-center gap-2">
           <t-icon name="chat" class="text-lg text-gray-700" />
-          <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-            {{ data.label }}
-          </span>
+          <span class="text-sm font-medium text-gray-700">{{ data.label }}</span>
         </div>
         <div class="flex items-center gap-1">
           <!-- 运行按钮 -->
           <t-button
             variant="text"
             size="small"
-            class="p-1 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+            class="text-gray-500 hover:text-gray-700 transition-colors duration-200"
             @click.stop="handleRun"
           >
             <t-icon name="play-circle" size="16" />
@@ -27,7 +22,7 @@
       </div>
 
       <!-- 内容区域 -->
-      <div class="p-4 flex flex-col gap-3">
+      <div class="px-3 py-2 flex flex-col gap-2">
         <!-- 输出信息 -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">输出</span>

@@ -1,14 +1,18 @@
 <template>
   <div class="relative cursor-pointer node-container">
+    <!-- 节点主体 -->
     <div class="bg-white border border-gray-200 rounded-lg w-60 shadow-sm hover:shadow-md transition-shadow">
-      <div class="flex items-center justify-between px-3 py-2 bg-white rounded-t-lg">
-        <div class="flex items-center">
-          <t-icon name="login" class="text-sm text-gray-700 mr-1.5" />
+      <!-- 头部 -->
+      <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+        <div class="flex items-center gap-2">
+          <t-icon name="login" class="text-sm text-gray-700" />
           <span class="text-sm font-medium text-gray-700">{{ data.label }}</span>
         </div>
       </div>
-      <div class="px-3 py-2 border-t border-gray-100">
-        <div class="flex items-center gap-1.5">
+
+      <!-- 内容区域 -->
+      <div class="px-3 py-2 flex flex-col gap-2">
+        <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">输入</span>
           <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">input</span>
         </div>
