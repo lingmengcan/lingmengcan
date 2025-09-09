@@ -76,8 +76,13 @@
 </script>
 
 <style scoped>
+  .compact-collapse :deep(.t-collapse-panel) {
+    border-bottom: 1px solid #e7e7e7;
+    padding: 8px;
+  }
+
   .compact-collapse :deep(.t-collapse-panel__header) {
-    padding: 0px;
+    padding: 2px 0px;
   }
 
   .compact-collapse :deep(.t-collapse-panel__content) {

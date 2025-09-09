@@ -120,7 +120,7 @@
       </div>
 
       <!-- 配置面板内容 -->
-      <div class="flex-1 overflow-y-auto p-3">
+      <div class="flex-1 overflow-y-auto">
         <component
           :is="selectedNodeConfigComponent"
           :node="workflowStore.selectedNode"

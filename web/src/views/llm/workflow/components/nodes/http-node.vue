@@ -33,19 +33,11 @@
 
         <!-- 请求信息 -->
         <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">方法</span>
+          <span class="text-xs text-gray-500">{{ displayMethod }}</span>
           <div class="flex items-center gap-2 text-sm text-gray-700">
             <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
-              {{ displayMethod }}
+              {{ displayUrl }}
             </span>
-          </div>
-        </div>
-
-        <!-- URL信息 -->
-        <div class="flex items-center gap-2" v-if="displayUrl">
-          <span class="text-xs text-gray-500">URL</span>
-          <div class="flex items-center gap-2 text-sm text-gray-700 truncate">
-            <span class="truncate" :title="displayUrl">{{ displayUrl }}</span>
           </div>
         </div>
       </div>
@@ -76,8 +68,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { Handle, Position, useVueFlow } from '@vue-flow/core';
+  import { computed, ref, watch } from 'vue';
+  import { Handle, Position } from '@vue-flow/core';
   import { MessagePlugin } from 'tdesign-vue-next';
 
   interface NodeData {
@@ -94,8 +86,7 @@
     onDeleteNode?: (nodeId: string) => void;
   }>();
 
-  // 获取Vue Flow实例
-  const { findNode } = useVueFlow();
+  const data = ref(props.data);
 
   // 显示的请求方法
   const displayMethod = computed(() => {
@@ -114,6 +105,15 @@
     MessagePlugin.info('运行HTTP节点');
     // 这里可以添加运行逻辑
   };
+
+  // 监听 props 变化，更新本地数据
+  watch(
+    () => props.data,
+    (newData) => {
+      data.value = newData;
+    },
+    { deep: true },
+  );
 </script>
 
 <style scoped>

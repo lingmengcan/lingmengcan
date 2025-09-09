@@ -32,7 +32,7 @@
         <!-- 模型信息 -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">模型</span>
-          <div class="flex items-center gap-2 text-sm text-gray-700">
+          <div class="flex items-center gap-2 text-xs text-gray-700">
             <span>{{ displayModel }}</span>
           </div>
         </div>
@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { Handle, Position, useVueFlow } from '@vue-flow/core';
   import { MessagePlugin } from 'tdesign-vue-next';
 
@@ -81,6 +81,9 @@
     onCopyNode?: (nodeId: string) => void;
     onDeleteNode?: (nodeId: string) => void;
   }>();
+
+  // 直接使用 props 数据，确保响应式更新
+  const data = computed(() => props.data);
 
   // 获取Vue Flow实例
   const { findNode } = useVueFlow();
