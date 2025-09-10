@@ -184,17 +184,25 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const updateNode = (nodeId: string, updatedData: Partial<WorkflowNode['data']>) => {
     const nodeIndex = nodes.value.findIndex((n) => n.id === nodeId);
     if (nodeIndex !== -1) {
-      nodes.value[nodeIndex] = {
-        ...nodes.value[nodeIndex],
-        data: {
-          ...nodes.value[nodeIndex].data,
-          ...updatedData,
-        },
+      // 创建新的数据对象，确保引用发生变化
+      const newData = {
+        ...nodes.value[nodeIndex].data,
+        ...updatedData,
       };
+      
+      const updatedNode = {
+        ...nodes.value[nodeIndex],
+        data: newData,
+      };
+      
+      // 创建新的 nodes 数组，确保 Vue Flow 检测到变化
+      nodes.value = nodes.value.map((node, index) => 
+        index === nodeIndex ? updatedNode : node
+      );
       
       // 如果更新的是当前选中的节点，同步更新选中节点
       if (selectedNode.value && selectedNode.value.id === nodeId) {
-        selectedNode.value = nodes.value[nodeIndex];
+        selectedNode.value = updatedNode;
       }
     }
   };

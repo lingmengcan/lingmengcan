@@ -25,12 +25,6 @@
 
       <!-- 内容区域 -->
       <div class="px-3 py-2 flex flex-col gap-2">
-        <!-- 输出信息 -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">输出</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">response</span>
-        </div>
-
         <!-- 请求信息 -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">{{ displayMethod }}</span>
@@ -39,6 +33,12 @@
               {{ displayUrl }}
             </span>
           </div>
+        </div>
+
+        <!-- 输出信息 -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">输出</span>
+          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">response</span>
         </div>
       </div>
     </div>

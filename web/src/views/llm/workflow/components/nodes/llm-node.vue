@@ -23,18 +23,18 @@
 
       <!-- 内容区域 -->
       <div class="px-3 py-2 flex flex-col gap-2">
-        <!-- 输出信息 -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">输出</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">output</span>
-        </div>
-
         <!-- 模型信息 -->
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">模型</span>
           <div class="flex items-center gap-2 text-xs text-gray-700">
             <span>{{ displayModel }}</span>
           </div>
+        </div>
+
+        <!-- 输出信息 -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">输出</span>
+          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">output</span>
         </div>
       </div>
     </div>
@@ -66,7 +66,6 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import { Handle, Position, useVueFlow } from '@vue-flow/core';
-  import { MessagePlugin } from 'tdesign-vue-next';
 
   interface NodeData {
     label: string;
@@ -82,22 +81,37 @@
     onDeleteNode?: (nodeId: string) => void;
   }>();
 
-  // 直接使用 props 数据，确保响应式更新
-  const data = computed(() => props.data);
+  const data = ref(props.data);
 
   // 获取Vue Flow实例
-  const { findNode } = useVueFlow();
+  const {} = useVueFlow();
 
-  // 显示的模型名称
+  // 显示的模型名称 - 使用响应式的 data 而不是 props
   const displayModel = computed(() => {
-    const model = props.data?.config?.model || 'hunyuan-standard';
+    const model = data.value?.config?.model || 'lingmengcan';
     return model;
   });
 
+  // 监听 props 变化，更新本地数据
+  watch(
+    () => props.data,
+    (newData) => {
+      data.value = newData;
+    },
+    { deep: true, immediate: true },
+  );
+
   // 运行按钮点击事件
   const handleRun = () => {
-    MessagePlugin.info('运行LLM节点');
-    // 这里可以添加运行逻辑
+    // 触发运行事件，让配置组件显示运行测试面板
+    const event = new CustomEvent('llm-node-run', {
+      detail: {
+        nodeId: props.id,
+        nodeType: props.type,
+        nodeData: data.value,
+      },
+    });
+    window.dispatchEvent(event);
   };
 </script>
 
