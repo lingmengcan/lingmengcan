@@ -1,4 +1,4 @@
-import { ChatDto } from '@/dtos/chat.dto';
+import { ChatDto, LlmChatDto } from '@/dtos/chat.dto';
 import { Conversation } from '@/entities/conversation.entity';
 import { Message } from '@/entities/message.entity';
 import { ChatService } from '@/services/chat.service';
@@ -40,6 +40,34 @@ export class ChatController {
       res.write(chunk);
     }
     res.end();
+  }
+
+  /**
+   * LLM 调试对话接口 - 不存储到数据库
+   */
+  @Post('debug')
+  @ApiBody({
+    description: 'LLM调试对话，不存储到数据库',
+    type: LlmChatDto,
+  })
+  async debugChat(@Body() dto: LlmChatDto, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    try {
+      const stream = await this.chatService.debugChat(dto);
+      for await (const chunk of stream) {
+        res.write(chunk);
+      }
+      res.end();
+    } catch (error) {
+      console.error('Debug Chat Error:', error);
+      res.status(500).write(`调用失败: ${error.message}`);
+      res.end();
+    }
   }
 
   @UseGuards(AuthGuard('jwt'))

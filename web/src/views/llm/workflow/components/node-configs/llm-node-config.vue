@@ -100,7 +100,7 @@
         <!-- 节点名称和输出类型 -->
         <t-space size="small">
           <t-form-item label="输出变量" class="compact-form-item">
-            <t-input v-model="localConfig.variableName" placeholder="output" size="small" @change="updateConfig" />
+            <t-input v-model="localConfig.outputVariable" placeholder="output" size="small" @change="updateConfig" />
           </t-form-item>
 
           <!-- 输出类型 -->
@@ -111,6 +111,10 @@
             </t-select>
           </t-form-item>
         </t-space>
+        <div class="flex items-center gap-2 text-xs pt-2">
+          <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded">reasoning_content</span>
+          <span class="text-gray-500">string</span>
+        </div>
       </t-collapse-panel>
     </t-collapse>
 
@@ -147,6 +151,36 @@
           <t-icon name="play-circle" class="mr-1" />
           运行
         </t-button>
+
+        <!-- 运行结果显示 -->
+        <div v-if="testStatus === 'success' || testStatus === 'error'" class="mt-4">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium">运行结果</span>
+            <div class="text-xs text-gray-500">耗时: {{ testDuration }}s | Tokens: {{ testTokens }}</div>
+          </div>
+
+          <!-- 输入 JSON -->
+          <div class="mb-3">
+            <div class="text-xs text-gray-500 mb-1">输入</div>
+            <t-textarea
+              :value="JSON.stringify(testInputJson, null, 2)"
+              readonly
+              :autosize="{ minRows: 3, maxRows: 6 }"
+              class="w-full font-mono text-xs"
+            />
+          </div>
+
+          <!-- 输出 JSON -->
+          <div class="mb-3">
+            <div class="text-xs text-gray-500 mb-1">输出</div>
+            <t-textarea
+              :value="JSON.stringify(testOutputJson, null, 2)"
+              readonly
+              :autosize="{ minRows: 3, maxRows: 8 }"
+              class="w-full font-mono text-xs"
+            />
+          </div>
+        </div>
       </div>
     </t-drawer>
   </div>
@@ -156,6 +190,7 @@
   import { ref, watch } from 'vue';
   import selectModel from '@/components/select/select-model.vue';
   import { MessagePlugin } from 'tdesign-vue-next';
+  import { debugChat } from '@/api/chat/chat';
 
   interface NodeData {
     label: string;
@@ -179,6 +214,8 @@
   const testStatus = ref<'idle' | 'running' | 'success' | 'error'>('idle');
   const testDuration = ref(1);
   const testTokens = ref(0);
+  const testInputJson = ref({});
+  const testOutputJson = ref({});
 
   // 本地配置副本
   const localConfig = ref({
@@ -237,6 +274,35 @@
     });
   };
 
+  // 流处理函数
+  const fetchSSE = async (
+    fetchFn: () => Promise<Response>,
+    options: { success: (chunk: string) => void; fail?: () => void; complete?: (isOk: boolean, msg?: string) => void },
+  ) => {
+    const response = await fetchFn();
+    const { success, fail, complete } = options;
+    // 如果不 ok 说明有请求错误
+    if (!response.ok) {
+      complete?.(false, response.statusText);
+      fail?.();
+      return;
+    }
+    const reader = response?.body?.getReader();
+    const decoder = new TextDecoder();
+    if (!reader) return;
+
+    reader.read().then(function processText({ done, value }) {
+      if (done) {
+        // 正常的返回
+        complete?.(true);
+        return;
+      }
+      const chunk = decoder.decode(value, { stream: true });
+      success(chunk);
+      reader.read().then(processText);
+    });
+  };
+
   // 运行测试
   const runTest = async () => {
     if (testStatus.value === 'running') return;
@@ -266,51 +332,93 @@
         content: userContent,
       });
 
-      // 模拟 API 调用
-      const response = await fetch('/api/llm/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // 构建请求数据
+      const requestData = {
+        model: localConfig.value.model,
+        messages,
+        temperature: localConfig.value.temperature,
+        max_tokens: localConfig.value.maxTokens,
+        top_p: localConfig.value.topP,
+      };
+
+      // 保存输入 JSON
+      testInputJson.value = {
+        [localConfig.value.variableName]: userContent,
+      };
+
+      // 调用调试 API 使用 fetchSSE
+      let responseText = '';
+      let reasoningContent = '';
+
+      await fetchSSE(() => debugChat(requestData), {
+        success: (chunk: string) => {
+          // 尝试解析 JSON 格式的响应
+          try {
+            const lines = chunk.split('\n').filter((line) => line.trim());
+            for (const line of lines) {
+              const data = JSON.parse(line);
+              if (data.content) {
+                responseText += data.content;
+              }
+              if (data.reasoning_content) {
+                reasoningContent = data.reasoning_content;
+              }
+            }
+          } catch (e) {
+            // 如果不是 JSON 格式，直接添加到响应文本
+            responseText += chunk;
+          }
         },
-        body: JSON.stringify({
-          model: localConfig.value.model || 'lingmengcan',
-          messages,
-          temperature: localConfig.value.temperature || 0.7,
-          max_tokens: localConfig.value.maxTokens || 1000,
-          top_p: localConfig.value.topP || 1,
-        }),
+        complete: (isOk: boolean, msg?: string) => {
+          testDuration.value = Math.round((Date.now() - startTime) / 1000);
+          if (isOk) {
+            testTokens.value = Math.floor(responseText.length / 4); // 简单估算 token 数
+            testStatus.value = 'success';
+
+            // 保存输出 JSON
+            testOutputJson.value = {
+              [localConfig.value.outputVariable]: responseText,
+              reasoning_content: reasoningContent, // 使用从接口获取的推理内容
+            };
+
+            MessagePlugin.success(`测试运行成功，耗时 ${testDuration.value}s`);
+          } else {
+            testStatus.value = 'error';
+
+            // 保存错误输出 JSON
+            testOutputJson.value = {
+              error: msg || '未知错误',
+            };
+
+            MessagePlugin.error(`测试运行失败: ${msg || '未知错误'}`);
+          }
+        },
+        fail: () => {
+          testDuration.value = Math.round((Date.now() - startTime) / 1000);
+          testStatus.value = 'error';
+
+          // 保存失败输出 JSON
+          testOutputJson.value = {
+            error: '网络请求失败',
+            metadata: {
+              duration: testDuration.value,
+              status: 'error',
+            },
+          };
+
+          MessagePlugin.error('测试运行失败');
+        },
       });
-
-      testDuration.value = Math.round((Date.now() - startTime) / 1000);
-
-      if (!response.ok) {
-        // 如果 API 不存在，显示模拟成功状态
-        if (response.status === 404) {
-          testStatus.value = 'success';
-          testTokens.value = Math.floor(Math.random() * 100) + 50;
-          MessagePlugin.success('测试运行成功（模拟数据）');
-          return;
-        }
-        throw new Error(`API 调用失败: ${response.status}`);
-      }
-
-      const result = await response.json();
-      testTokens.value = result.usage?.total_tokens || Math.floor(Math.random() * 100) + 50;
-      testStatus.value = 'success';
-
-      MessagePlugin.success(`测试运行成功，耗时 ${testDuration.value}s`);
     } catch (error: any) {
       testDuration.value = Math.round((Date.now() - startTime) / 1000);
+      testStatus.value = 'error';
 
-      // 网络错误时显示模拟成功状态
-      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        testStatus.value = 'success';
-        testTokens.value = Math.floor(Math.random() * 100) + 50;
-        MessagePlugin.success('测试运行成功（模拟数据）');
-      } else {
-        testStatus.value = 'error';
-        MessagePlugin.error(`测试运行失败: ${error.message}`);
-      }
+      // 保存异常错误的输出 JSON
+      testOutputJson.value = {
+        error: error.message,
+      };
+
+      MessagePlugin.error(`测试运行失败: ${error.message}`);
     }
   };
 

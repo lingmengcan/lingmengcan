@@ -51,3 +51,8 @@ export const regenerate = (data: ChatParams) => {
 export async function chat(data: ChatParams) {
   return httpStream('/chat', data);
 }
+
+// LLM 调试对话 - 不存储到数据库
+export async function debugChat(data: any) {
+  return httpStream('/chat/debug', data);
+}

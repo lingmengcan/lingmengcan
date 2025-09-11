@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ChatDto } from '@/dtos/chat.dto';
+import { ChatDto, LlmChatDto } from '@/dtos/chat.dto';
 import { MessageService } from './message.service';
 import { Message } from '@/entities/message.entity';
 import { ConversationService } from './conversation.service';
@@ -36,6 +36,95 @@ export class ChatService {
   async chat(dto: ChatDto) {
     const { message } = dto;
     return this.chatLlm(message);
+  }
+
+  // LLM 调试对话 - 不存储到数据库
+  async debugChat(dto: LlmChatDto) {
+    // 获取模型配置
+    const model = await this.llmService.findByModelName(dto.model);
+    if (!model) {
+      throw new Error(`模型 ${dto.model} 未找到`);
+    }
+
+    // 创建模型实例
+    let llm;
+    if (model.apiType === 'LLM_API_OLLAMA') {
+      llm = new Ollama({
+        model: model.modelName,
+        temperature: dto.temperature,
+        topP: dto.top_p || 1,
+      });
+    } else {
+      llm = new ChatOpenAI(
+        {
+          openAIApiKey: model.apiKey,
+          temperature: dto.temperature,
+          topP: dto.top_p,
+          maxTokens: dto.max_tokens,
+          streaming: true,
+        },
+        { basePath: model.baseUrl },
+      );
+    }
+
+    // 转换消息格式
+    const messages = dto.messages.map((msg) => {
+      switch (msg.role) {
+        case 'system':
+          return SystemMessagePromptTemplate.fromTemplate(msg.content);
+        case 'user':
+          return HumanMessagePromptTemplate.fromTemplate(msg.content);
+        case 'assistant':
+          // 对于 assistant 消息，我们需要用 AIMessage 处理
+          return new AIMessage(msg.content);
+        default:
+          return HumanMessagePromptTemplate.fromTemplate(msg.content);
+      }
+    });
+
+    // 创建提示模板
+    const prompt = ChatPromptTemplate.fromMessages(messages);
+
+    // 不使用 StringOutputParser，直接获取原始响应以获取推理内容
+    const chain = prompt.pipe(llm);
+
+    // 创建一个异步生成器来处理流式响应并提取深度思考内容
+    async function* processStreamWithReasoning() {
+      let reasoning_content = '';
+
+      for await (const chunk of await chain.stream({})) {
+        // 检查是否有深度思考内容（适用于支持推理的模型如 o1）
+        if (chunk && typeof chunk === 'object' && 'additional_kwargs' in chunk) {
+          const chunkWithKwargs = chunk as any;
+          if (chunkWithKwargs.additional_kwargs?.reasoning_content) {
+            reasoning_content += chunkWithKwargs.additional_kwargs.reasoning_content;
+          }
+        }
+
+        // 获取内容 - 添加类型检查
+        const content = (chunk && typeof chunk === 'object' && 'content' in chunk) 
+          ? (chunk as any).content || '' 
+          : '';
+
+        // 返回包含深度思考内容的 JSON 格式
+        const responseData = {
+          content: content,
+          reasoning_content: reasoning_content,
+          type: 'chunk',
+        };
+        yield JSON.stringify(responseData) + '\n';
+      }
+
+      // 最后发送完成标记
+      const finalData = {
+        content: '',
+        reasoning_content: reasoning_content,
+        type: 'complete',
+      };
+      yield JSON.stringify(finalData) + '\n';
+    }
+
+    return processStreamWithReasoning();
   }
 
   //重新回答
