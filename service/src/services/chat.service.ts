@@ -91,35 +91,56 @@ export class ChatService {
     // 创建一个异步生成器来处理流式响应并提取深度思考内容
     async function* processStreamWithReasoning() {
       let reasoning_content = '';
+      let full_content = '';
+      let sentCleanContentLength = 0;
 
+      let thinkTagComplete = false;
+      
       for await (const chunk of await chain.stream({})) {
-        // 检查是否有深度思考内容（适用于支持推理的模型如 o1）
-        if (chunk && typeof chunk === 'object' && 'additional_kwargs' in chunk) {
-          const chunkWithKwargs = chunk as any;
-          if (chunkWithKwargs.additional_kwargs?.reasoning_content) {
-            reasoning_content += chunkWithKwargs.additional_kwargs.reasoning_content;
-          }
+        // 获取内容 - 添加类型检查
+        const content = chunk && typeof chunk === 'object' && 'content' in chunk ? (chunk as any).content || '' : '';
+
+        // 累积完整内容用于提取推理
+        full_content += content;
+
+        // 检查是否包含完整的 <think></think> 标签
+        const thinkMatch = full_content.match(/<think>([\s\S]*?)<\/think>/);
+        if (thinkMatch && !thinkTagComplete) {
+          reasoning_content = thinkMatch[1].trim();
+          thinkTagComplete = true;
+          // 移除 think 标签后重新设置 full_content
+          full_content = full_content.replace(/<think>[\s\S]*?<\/think>/g, '');
+          sentCleanContentLength = 0; // 重置已发送长度
         }
 
-        // 获取内容 - 添加类型检查
-        const content = (chunk && typeof chunk === 'object' && 'content' in chunk) 
-          ? (chunk as any).content || '' 
-          : '';
+        // 如果 think 标签还没完整接收，跳过内容发送
+        if (!thinkTagComplete && full_content.includes('<think>')) {
+          continue;
+        }
 
-        // 返回包含深度思考内容的 JSON 格式
-        const responseData = {
-          content: content,
-          reasoning_content: reasoning_content,
-          type: 'chunk',
-        };
-        yield JSON.stringify(responseData) + '\n';
+        // 计算新增的干净内容
+        const newCleanContent = full_content.substring(sentCleanContentLength);
+        sentCleanContentLength = full_content.length;
+
+        // 只有当有新的干净内容时才发送
+        if (newCleanContent.trim()) {
+          const responseData = {
+            content: newCleanContent,
+            reasoning_content: reasoning_content,
+          };
+          yield JSON.stringify(responseData) + '\n';
+        }
       }
 
-      // 最后发送完成标记
+      // 最后发送完成标记，确保推理内容完整
+      const finalThinkMatch = full_content.match(/<think>([\s\S]*?)<\/think>/);
+      if (finalThinkMatch) {
+        reasoning_content = finalThinkMatch[1].trim();
+      }
+
       const finalData = {
         content: '',
         reasoning_content: reasoning_content,
-        type: 'complete',
       };
       yield JSON.stringify(finalData) + '\n';
     }

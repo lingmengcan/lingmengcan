@@ -148,7 +148,7 @@
 
         <!-- 运行按钮 -->
         <t-button theme="primary" size="medium" :loading="testStatus === 'running'" @click="runTest" block>
-          <t-icon name="play-circle" class="mr-1" />
+          <template #icon><t-icon name="play-circle" /></template>
           运行
         </t-button>
 
@@ -312,7 +312,7 @@
 
     try {
       // 构建请求数据
-      const messages = [];
+      const messages: Array<{ role: string; content: string }> = [];
 
       // 添加系统提示词
       if (localConfig.value.systemPrompt) {
@@ -400,10 +400,6 @@
           // 保存失败输出 JSON
           testOutputJson.value = {
             error: '网络请求失败',
-            metadata: {
-              duration: testDuration.value,
-              status: 'error',
-            },
           };
 
           MessagePlugin.error('测试运行失败');
