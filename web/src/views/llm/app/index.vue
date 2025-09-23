@@ -311,7 +311,7 @@
             <template #footer>
               <div class="flex justify-between items-center">
                 <span class="text-xs text-gray-500">v{{ item.version }}</span>
-                <div class="flex space-x-2">
+                <div class="flex gap-2">
                   <t-button size="small" theme="primary" @click="handleDesign(item)">
                     <template #icon>
                       <t-icon name="edit-1" />
@@ -341,7 +341,7 @@
                         <t-icon name="download" class="mr-1" />
                         {{ $t('views.llm.app.unpublish') }}
                       </t-dropdown-item>
-                      <t-dropdown-item @click="handleDelete(item)" theme="danger">
+                      <t-dropdown-item @click="handleDelete(item)" theme="error">
                         <t-icon name="delete" class="mr-1" />
                         {{ $t('views.llm.app.delete') }}
                       </t-dropdown-item>
