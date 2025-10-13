@@ -48,7 +48,7 @@
       </div>
 
       <!-- 浮动工具栏 -->
-      <FloatingToolbar @test-workflow="$emit('test-workflow', {})" />
+      <FloatingToolbar @debug-workflow="handleDebugWorkflow" />
     </div>
 
     <!-- 节点选择弹窗 -->
@@ -73,6 +73,9 @@
         </div>
       </div>
     </t-dialog>
+
+    <!-- 简化调试面板 -->
+    <DebugPanel :visible="showDebugPanel" :start-node="getStartNode()" @close="showDebugPanel = false" />
 
     <!-- 统一的节点配置面板 -->
     <div
@@ -143,10 +146,12 @@
   import type { WorkflowConfig, WorkflowNode } from '@/store/modules/workflow';
   import NodeActions from './node-actions.vue';
   import FloatingToolbar from './floating-toolbar.vue';
+  import DebugPanel from './debug-panel.vue';
 
   // Props 和 Emits
   const props = defineProps<{
     modelValue: WorkflowConfig;
+    workflowId?: string;
   }>();
 
   const emit = defineEmits<{
@@ -163,6 +168,9 @@
   // 响应式状态
   const selectedNodeConfigComponent = ref<any>(null);
 
+  // 调试相关状态
+  const showDebugPanel = ref(false);
+
   // 预加载组件
   const nodeComponents = import.meta.glob('@/views/llm/workflow/components/nodes/*.vue', { eager: false });
   const nodeConfigComponents = import.meta.glob('@/views/llm/workflow/components/node-configs/*.vue', { eager: false });
@@ -170,6 +178,16 @@
   // 使用标志位避免循环更新
   let isUpdatingFromStore = false;
   let isUpdatingFromProps = false;
+
+  // 调试相关方法
+  const handleDebugWorkflow = () => {
+    showDebugPanel.value = true;
+  };
+
+  // 获取开始节点
+  const getStartNode = () => {
+    return workflowStore.nodes.find((node) => node.type === 'start') || null;
+  };
 
   // 监听 store 数据变化，同步到父组件
   watch(

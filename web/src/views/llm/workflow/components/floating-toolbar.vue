@@ -15,10 +15,10 @@
 
       <!-- 撤销按钮 -->
       <t-tooltip content="撤销">
-        <t-button 
-          variant="text" 
-          size="small" 
-          @click="workflowStore.undo" 
+        <t-button
+          variant="text"
+          size="small"
+          @click="workflowStore.undo"
           :disabled="!workflowStore.canUndo"
           class="rounded-full"
         >
@@ -28,10 +28,10 @@
 
       <!-- 重做按钮 -->
       <t-tooltip content="重做">
-        <t-button 
-          variant="text" 
-          size="small" 
-          @click="workflowStore.redo" 
+        <t-button
+          variant="text"
+          size="small"
+          @click="workflowStore.redo"
           :disabled="!workflowStore.canRedo"
           class="rounded-full"
         >
@@ -86,9 +86,9 @@
       <div class="h-4 w-px bg-gray-200"></div>
 
       <!-- 运行按钮 -->
-      <t-button theme="success" size="small" @click="$emit('test-workflow')" class="rounded-full">
-        <template #icon><t-icon name="play-circle-stroke" /></template>
-        试运行
+      <t-button theme="success" size="small" @click="$emit('debug-workflow')" class="rounded-full">
+        <template #icon><t-icon name="bug" /></template>
+        调试
       </t-button>
     </div>
   </div>
@@ -104,7 +104,7 @@
 
   // Emits (只保留需要传递给父组件的事件)
   defineEmits<{
-    'test-workflow': [];
+    'debug-workflow': [];
   }>();
 
   // Vue Flow 实例

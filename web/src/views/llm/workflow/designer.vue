@@ -213,44 +213,44 @@
           <WorkflowDesigner
             v-if="workflow"
             v-model="workflow.config"
+            :workflow-id="workflowId"
             @update:model-value="updateWorkflowConfig"
             @test-workflow="testWorkflow"
             class="h-full"
           />
         </t-loading>
       </div>
-
     </div>
   </div>
 </template>
 
 <style scoped>
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
 
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .absolute.bottom-6.left-1\/2 {
-    bottom: 4rem;
-    left: 1rem;
-    right: 1rem;
-    transform: none;
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .absolute.bottom-6.left-1\/2 {
+      bottom: 4rem;
+      left: 1rem;
+      right: 1rem;
+      transform: none;
+    }
+
+    .flex.items-center.gap-3 {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
   }
-  
-  .flex.items-center.gap-3 {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-}
 </style>

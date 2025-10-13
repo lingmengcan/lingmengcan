@@ -207,6 +207,14 @@
     });
   };
 
+  // 查看API文档
+  const handleViewApiDoc = (row: Application) => {
+    // 构建API文档链接
+    const apiDocUrl = `/chat/app/api/${row.appId}`;
+    // 在新窗口中打开API文档
+    window.open(apiDocUrl, '_blank');
+  };
+
   // 提交新增/编辑
   const handleAddandEdit = async ({ validateResult, firstError, e }: any) => {
     e.preventDefault();
@@ -332,6 +340,10 @@
                       <t-dropdown-item @click="handleCopy(item)">
                         <t-icon name="file-copy" class="mr-1" />
                         {{ $t('views.llm.app.copy') }}
+                      </t-dropdown-item>
+                      <t-dropdown-item @click="handleViewApiDoc(item)">
+                        <t-icon name="api" class="mr-1" />
+                        {{ $t('views.llm.app.apiDoc') }}
                       </t-dropdown-item>
                       <t-dropdown-item v-if="item.status === 0" @click="handlePublish(item, true)">
                         <t-icon name="upload" class="mr-1" />

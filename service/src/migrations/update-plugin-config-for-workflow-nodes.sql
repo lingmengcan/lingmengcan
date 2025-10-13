@@ -50,21 +50,6 @@ UPDATE `plugin` SET
   )
 WHERE `plugin_type` = 'llm';
 
--- 更新prompt节点
-UPDATE `plugin` SET 
-  `config` = JSON_SET(
-    COALESCE(`config`, '{}'),
-    '$.nodeType', 'prompt',
-    '$.componentPath', './nodes/prompt-node.vue',
-    '$.nodeConfigSchema', JSON_OBJECT(
-      'type', 'object',
-      'properties', JSON_OBJECT(
-        'template', JSON_OBJECT('type', 'string', 'default', ''),
-        'variables', JSON_OBJECT('type', 'array', 'default', JSON_ARRAY())
-      )
-    )
-  )
-WHERE `plugin_type` = 'prompt';
 
 -- 更新condition节点
 UPDATE `plugin` SET 
