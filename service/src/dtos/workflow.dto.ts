@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsNumber, IsString, IsArray, IsObject } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsNumber, IsString, IsArray, IsObject, IsBoolean } from 'class-validator';
 
 /**
  * 工作流列表查询 DTO
@@ -61,6 +61,10 @@ export class WorkflowExecuteDto {
   @IsOptional()
   @IsObject()
   inputs?: any;
+
+  @IsOptional()
+  @IsBoolean()
+  stream?: boolean; // 是否流式输出
 }
 
 /**

@@ -1,6 +1,6 @@
 import { Method } from '@/utils/http/axiosplus';
 import http, { Result } from '@/utils/http';
-import { Workflow, WorkflowList, WorkflowListParams, WorkflowExecution, WorkflowNodeType } from '@/models/workflow';
+import { Workflow, WorkflowList, WorkflowListParams, WorkflowExecution } from '@/models/workflow';
 
 // 获取工作流列表
 export const getWorkflowList = (data: WorkflowListParams) =>
@@ -34,8 +34,12 @@ export const unpublishWorkflow = (workflowId: string) =>
   http.request<Result<boolean>>('workflow/unpublish', Method.POST, { workflowId });
 
 // 执行工作流
-export const executeWorkflow = (workflowId: string, inputs?: any) =>
-  http.request<Result<WorkflowExecution>>('workflow/execute', Method.POST, { workflowId, inputs });
+export const executeWorkflow = (workflowId: string, inputs?: any, stream: boolean = false) =>
+  http.request<Result<WorkflowExecution>>('workflow/execute', Method.POST, { workflowId, inputs, stream });
+
+// 调试执行工作流
+export const debugExecuteWorkflow = (workflowId: string, inputs?: any) =>
+  http.request<Result<WorkflowExecution>>('workflow/debug-execute', Method.POST, { workflowId, inputs });
 
 // 获取工作流执行历史
 export const getWorkflowExecutions = (workflowId: string, page: number = 1, pageSize: number = 10) =>

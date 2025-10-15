@@ -101,7 +101,25 @@ export class WorkflowController {
   @Post('execute')
   async executeWorkflow(@Body() dto: WorkflowExecuteDto, @Request() req: any) {
     const userName = req.user.userName;
+
+    // 如果是流式输出，直接同步执行并返回结果
+    if (dto.stream) {
+      const result = await this.workflowService.executeSync(dto, userName);
+      return successJson(result);
+    }
+
+    // 否则异步执行
     return successJson(await this.workflowService.execute(dto, userName));
+  }
+
+  /**
+   * 调试执行工作流
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Post('debug-execute')
+  async debugExecuteWorkflow(@Body() dto: WorkflowExecuteDto, @Request() req: any) {
+    const userName = req.user.userName;
+    return successJson(await this.workflowService.debugExecute(dto, userName));
   }
 
   /**

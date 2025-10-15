@@ -20,32 +20,103 @@
     </div>
 
     <!-- 调试内容 -->
-    <div class="flex-1 overflow-hidden flex flex-col">
-      <!-- 开始节点信息 -->
+    <div class="flex-1 overflow-y-auto flex flex-col debug-panel-content">
+      <!-- 输入参数区域 -->
       <div class="px-6 py-4 border-b border-gray-200">
-        <!-- 输入参数区域 -->
+        <h4 class="text-sm font-medium text-gray-700 mb-4">输入参数 (parameters)</h4>
+
+        <!-- parameters 参数 -->
         <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            开始节点输入参数
-            <span v-if="startNode" class="text-xs text-gray-500 ml-1">
-              ({{ startNode.data?.config?.inputType || 'text' }})
-            </span>
+          <label class="block text-sm font-medium text-gray-600 mb-2">
+            parameters
+            <span class="text-red-500">*</span>
           </label>
-          <t-textarea
-            v-model="inputParams"
-            :placeholder="getInputPlaceholder()"
-            :autosize="{ minRows: 4, maxRows: 8 }"
-            class="w-full"
-          />
-          <div v-if="startNode" class="mt-2 text-xs text-gray-500">
-            <p>
-              变量名:
-              <span class="font-medium">{{ startNode.data?.config?.variableName || 'input' }}</span>
-            </p>
-            <p>
-              类型:
-              <span class="font-medium">{{ getInputTypeLabel() }}</span>
-            </p>
+          <div class="space-y-3">
+            <!-- input 子参数 -->
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">input</label>
+              <t-textarea
+                v-model="inputData.parameters.input"
+                placeholder="请输入文本内容"
+                :autosize="{ minRows: 2, maxRows: 4 }"
+                class="w-full"
+              />
+              <p class="text-xs text-gray-400 mt-1">用户输入的文本内容</p>
+            </div>
+
+            <!-- image 子参数 -->
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">image (可选)</label>
+              <t-textarea
+                v-model="inputData.parameters.image"
+                placeholder="请输入图片RL，例如：https://example.com/image.png"
+                :autosize="{ minRows: 2, maxRows: 4 }"
+                class="w-full"
+              />
+              <p class="text-xs text-gray-400 mt-1">图片文件ID或URL（可选）</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- stream 参数 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-600 mb-2">stream</label>
+          <div class="flex items-center gap-3">
+            <t-checkbox v-model="inputData.stream">流式执行</t-checkbox>
+            <span class="text-xs text-gray-500">是否流式返回结果，默认为false</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 返回结果显示区域 -->
+      <div v-if="responseData" class="px-6 py-4 border-b border-gray-200 bg-green-50">
+        <div class="flex items-center justify-between mb-3">
+          <h5 class="text-sm font-medium text-green-700">执行结果</h5>
+          <t-button theme="default" size="small" variant="text" @click="responseData = null">
+            <t-icon name="close" />
+          </t-button>
+        </div>
+
+        <!-- 响应状态 -->
+        <div class="mb-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-sm font-medium text-gray-700">状态:</span>
+            <t-tag :theme="responseData.code === 0 ? 'success' : 'danger'" variant="light" size="small">
+              {{ responseData.code === 0 ? '成功' : '失败' }}
+            </t-tag>
+            <span class="text-xs text-gray-500">{{ responseData.message }}</span>
+          </div>
+        </div>
+
+        <!-- 执行信息 -->
+        <div v-if="responseData.data" class="space-y-3">
+          <!-- 基本信息 -->
+          <div class="bg-white rounded border p-3">
+            <h6 class="text-xs font-medium text-gray-600 mb-2">基本信息</h6>
+            <div class="space-y-1 text-xs">
+              <div>
+                <span class="text-gray-500">执行ID:</span>
+                <span class="font-mono">{{ getExecutionId() }}</span>
+              </div>
+              <div>
+                <span class="text-gray-500">工作流ID:</span>
+                <span class="font-mono">{{ getWorkflowId() }}</span>
+              </div>
+              <div v-if="getDuration()">
+                <span class="text-gray-500">执行时长:</span>
+                {{ getDuration() }}秒
+              </div>
+              <div v-if="getTimestamp()">
+                <span class="text-gray-500">完成时间:</span>
+                {{ formatDateTime(getTimestamp()) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 输出结果 -->
+          <div v-if="getOutput()" class="bg-white rounded border p-3">
+            <h6 class="text-xs font-medium text-gray-600 mb-2">输出结果</h6>
+            <pre class="text-xs text-gray-700 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{ getOutput() }}</pre>
           </div>
         </div>
       </div>
@@ -53,7 +124,7 @@
       <!-- 调试控制区域 -->
       <div class="px-6 py-4 border-b border-gray-200">
         <div class="flex items-center justify-between">
-          <t-button theme="primary" size="small" @click="startDebug" :loading="isRunning" :disabled="!startNode">
+          <t-button theme="primary" size="small" @click="startDebug" :loading="isRunning">
             <t-icon name="play-circle" />
             开始调试
           </t-button>
@@ -65,8 +136,8 @@
       </div>
 
       <!-- 执行日志区域 -->
-      <div class="flex-1 overflow-hidden flex flex-col">
-        <div class="px-6 py-3 border-b border-gray-200 bg-gray-50">
+      <div class="flex-1 flex flex-col">
+        <div class="px-6 py-3 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <div class="flex items-center justify-between">
             <h4 class="text-sm font-medium text-gray-700">执行日志</h4>
             <div class="flex items-center gap-2">
@@ -78,7 +149,7 @@
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6">
+        <div class="flex-1 p-6">
           <div v-if="logs.length === 0" class="text-center text-gray-500 py-8">
             <t-icon name="inbox" size="32" class="text-gray-300 mb-2" />
             <p>暂无执行日志</p>
@@ -123,11 +194,13 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { MessagePlugin } from 'tdesign-vue-next';
+  import { executeWorkflow as executeWorkflowAPI } from '@/api/llm/workflow';
 
   // Props
   const props = defineProps<{
     visible: boolean;
     startNode: any;
+    workflowId: string;
   }>();
 
   // Emits
@@ -136,8 +209,16 @@
   }>();
 
   // 响应式状态
-  const inputParams = ref('');
+  const inputData = ref({
+    workflowId: props.workflowId,
+    parameters: {
+      input: '',
+      image: '',
+    },
+    stream: true,
+  });
   const isRunning = ref(false);
+  const responseData = ref<any>(null);
   const logs = ref<
     Array<{
       timestamp: number;
@@ -152,58 +233,29 @@
     try {
       isRunning.value = true;
       logs.value = [];
+      responseData.value = null;
 
-      // 添加开始日志
-      addLog('info', '开始调试工作流...');
-
-      // 解析输入参数
-      let parsedInput;
-      try {
-        const inputType = props.startNode?.data?.config?.inputType || 'text';
-        const variableName = props.startNode?.data?.config?.variableName || 'input';
-
-        // 根据输入类型进行不同的解析
-        switch (inputType) {
-          case 'text':
-            // 文本类型，直接使用输入值
-            parsedInput = { [variableName]: inputParams.value.trim() };
-            break;
-          case 'json':
-            // JSON类型，解析JSON
-            parsedInput = JSON.parse(inputParams.value);
-            break;
-          case 'number':
-            // 数字类型，转换为数字
-            const numValue = parseFloat(inputParams.value.trim());
-            if (isNaN(numValue)) {
-              throw new Error('输入的不是有效的数字');
-            }
-            parsedInput = { [variableName]: numValue };
-            break;
-          case 'boolean':
-            // 布尔类型，转换为布尔值
-            const boolValue = inputParams.value.trim().toLowerCase();
-            if (boolValue === 'true') {
-              parsedInput = { [variableName]: true };
-            } else if (boolValue === 'false') {
-              parsedInput = { [variableName]: false };
-            } else {
-              throw new Error('请输入 true 或 false');
-            }
-            break;
-          default:
-            // 默认按JSON处理
-            parsedInput = JSON.parse(inputParams.value);
-        }
-
-        addLog('info', '输入参数解析成功', parsedInput);
-      } catch (error) {
-        addLog('error', '输入参数格式错误: ' + (error as Error).message);
+      // 验证必填参数
+      if (!inputData.value.workflowId.trim()) {
+        addLog('error', '请输入工作流ID');
+        MessagePlugin.error('请输入工作流ID');
         return;
       }
 
-      // 模拟工作流执行
-      await simulateWorkflowExecution(parsedInput);
+      if (!inputData.value.parameters.input.trim()) {
+        addLog('error', '请输入文本内容');
+        MessagePlugin.error('请输入文本内容');
+        return;
+      }
+
+      // 添加开始日志
+      addLog('info', '开始调试工作流...');
+      addLog('info', '工作流ID: ' + inputData.value.workflowId);
+      addLog('info', '输入参数: ' + JSON.stringify(inputData.value.parameters, null, 2));
+      addLog('info', '流式执行: ' + (inputData.value.stream ? '是' : '否'));
+
+      // 执行工作流
+      await executeWorkflow();
 
       addLog('success', '工作流执行完成');
       MessagePlugin.success('调试完成');
@@ -216,36 +268,73 @@
     }
   };
 
-  // 模拟工作流执行
-  const simulateWorkflowExecution = async (input: any) => {
-    // 模拟开始节点
-    addLog('info', '执行开始节点');
-    addLog('info', '输入参数: ' + JSON.stringify(input));
-    await delay(500);
+  // 执行工作流
+  const executeWorkflow = async () => {
+    try {
+      // 构建API请求参数
+      const apiParams = {
+        workflowId: inputData.value.workflowId,
+        parameters: {
+          input: inputData.value.parameters.input,
+        },
+        stream: inputData.value.stream,
+      };
 
-    // 模拟LLM节点
-    addLog('info', '执行LLM节点');
-    addLog('info', '调用AI模型...');
-    await delay(1000);
-    addLog('success', 'AI模型响应完成');
+      // 如果有图片参数，添加到parameters中
+      if (inputData.value.parameters.image.trim()) {
+        try {
+          // 尝试解析为JSON（file_id格式）
+          const imageData = JSON.parse(inputData.value.parameters.image);
+          (apiParams.parameters as any).image = imageData;
+        } catch {
+          // 如果不是JSON，则作为URL处理
+          (apiParams.parameters as any).image = inputData.value.parameters.image;
+        }
+      }
 
-    // 模拟条件节点
-    addLog('info', '执行条件节点');
-    addLog('info', '评估条件: input.message.length > 0');
-    await delay(300);
-    addLog('success', '条件评估结果: true');
+      addLog('info', '调用API: /openapi/v1/workflow/execute');
+      addLog('info', '请求参数: ' + JSON.stringify(apiParams, null, 2));
 
-    // 模拟输出节点
-    addLog('info', '执行输出节点');
-    addLog(
-      'success',
-      '输出结果: ' +
-        JSON.stringify({
-          response: 'Hello from AI!',
-          input: input.message || 'No message provided',
-          timestamp: new Date().toISOString(),
-        }),
-    );
+      // 调用执行API
+      const response = await executeWorkflowAPI(apiParams.workflowId, apiParams.parameters, apiParams.stream);
+
+      // 保存响应数据用于显示
+      responseData.value = response;
+
+      if (response.code === 0) {
+        addLog('success', 'API调用成功');
+
+        const execution = response.data as any;
+
+        // 显示基本信息
+        addLog('info', '执行ID: ' + execution.executionId);
+        addLog('info', '工作流ID: ' + execution.workflowId);
+
+        // 显示执行日志
+        const executionLogs = execution.executionLog || [];
+        if (executionLogs.length > 0) {
+          executionLogs.forEach((log: any) => {
+            const logLevel = log.error ? 'error' : 'info';
+            const nodeLabel = log.nodeId ? `节点 ${log.nodeId}` : '';
+            const message = `${nodeLabel} [${log.nodeType}] ${log.message}`;
+            addLog(logLevel, message, log.result || log.error);
+          });
+        }
+
+        // 显示最终结果
+        const output = execution.output || '';
+        if (output) {
+          addLog('success', '最终输出: ' + output);
+        } else {
+          addLog('warning', '未找到输出结果');
+        }
+      } else {
+        addLog('error', 'API调用失败: ' + (response.message || '未知错误'));
+      }
+    } catch (error) {
+      console.error('Workflow debug failed:', error);
+      addLog('error', '工作流调试异常: ' + (error as Error).message);
+    }
   };
 
   // 添加日志
@@ -261,11 +350,40 @@
   // 清空日志
   const clearLogs = () => {
     logs.value = [];
+    responseData.value = null;
     MessagePlugin.info('日志已清空');
   };
 
-  // 延迟函数
-  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  // 格式化日期时间
+  const formatDateTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
+  // 获取执行ID
+  const getExecutionId = () => {
+    return responseData.value?.data?.executionId || '';
+  };
+
+  // 获取工作流ID
+  const getWorkflowId = () => {
+    return responseData.value?.data?.workflowId || '';
+  };
+
+  // 获取执行时长
+  const getDuration = () => {
+    return responseData.value?.data?.duration || '';
+  };
+
+  // 获取时间戳
+  const getTimestamp = () => {
+    return responseData.value?.data?.timestamp || '';
+  };
+
+  // 获取输出结果
+  const getOutput = () => {
+    const data = responseData.value?.data;
+    return data?.output || '';
+  };
 
   // 格式化时间
   const formatTime = (timestamp: number) => {
@@ -316,74 +434,13 @@
     return classMap[level as keyof typeof classMap] || 'text-gray-600';
   };
 
-  // 获取输入提示文本
-  const getInputPlaceholder = () => {
-    if (!props.startNode) {
-      return '请输入JSON格式的输入参数，例如：\n{\n  "message": "Hello World",\n  "temperature": 0.7\n}';
-    }
-
-    const inputType = props.startNode.data?.config?.inputType || 'text';
-
-    switch (inputType) {
-      case 'text':
-        return `请输入文本内容，例如：\n"Hello World"`;
-      case 'json':
-        return `请输入JSON格式数据，例如：\n{\n  "message": "Hello World",\n  "data": {"key": "value"}\n}`;
-      case 'number':
-        return `请输入数字，例如：\n42\n或\n3.14`;
-      case 'boolean':
-        return `请输入布尔值，例如：\ntrue\n或\nfalse`;
-      default:
-        return `请输入${inputType}类型的数据`;
-    }
-  };
-
-  // 获取输入类型标签
-  const getInputTypeLabel = () => {
-    if (!props.startNode) return 'Text';
-
-    const inputType = props.startNode.data?.config?.inputType || 'text';
-    const typeMap = {
-      text: 'Text',
-      json: 'JSON',
-      number: 'Number',
-      boolean: 'Boolean',
-    };
-    return typeMap[inputType as keyof typeof typeMap] || 'Text';
-  };
-
-  // 设置默认输入值
-  const setDefaultInput = () => {
-    if (!props.startNode) {
-      inputParams.value = '{\n  "message": "Hello World",\n  "temperature": 0.7\n}';
-      return;
-    }
-
-    const inputType = props.startNode.data?.config?.inputType || 'text';
-
-    switch (inputType) {
-      case 'text':
-        inputParams.value = 'Hello World';
-        break;
-      case 'json':
-        inputParams.value = '{\n  "message": "Hello World",\n  "data": {"key": "value"}\n}';
-        break;
-      case 'number':
-        inputParams.value = '42';
-        break;
-      case 'boolean':
-        inputParams.value = 'true';
-        break;
-      default:
-        inputParams.value = '{\n  "message": "Hello World"\n}';
-    }
-  };
-
-  // 监听开始节点变化，设置默认输入值
+  // 监听工作流ID变化，更新输入数据
   watch(
-    () => props.startNode,
-    () => {
-      setDefaultInput();
+    () => props.workflowId,
+    (newWorkflowId) => {
+      if (newWorkflowId) {
+        inputData.value.workflowId = newWorkflowId;
+      }
     },
     { immediate: true },
   );
@@ -407,5 +464,11 @@
 
   .overflow-y-auto::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+  }
+
+  /* 确保调试面板内容可以滚动 */
+  .debug-panel-content {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
   }
 </style>

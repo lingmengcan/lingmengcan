@@ -74,8 +74,13 @@
       </div>
     </t-dialog>
 
-    <!-- 简化调试面板 -->
-    <DebugPanel :visible="showDebugPanel" :start-node="getStartNode()" @close="showDebugPanel = false" />
+    <!-- 调试面板 -->
+    <DebugPanel
+      :visible="showDebugPanel"
+      :start-node="getStartNode()"
+      :workflow-id="workflowId || ''"
+      @close="showDebugPanel = false"
+    />
 
     <!-- 统一的节点配置面板 -->
     <div
