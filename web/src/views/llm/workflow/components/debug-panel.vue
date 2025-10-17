@@ -41,7 +41,6 @@
                 :autosize="{ minRows: 2, maxRows: 4 }"
                 class="w-full"
               />
-              <p class="text-xs text-gray-400 mt-1">用户输入的文本内容</p>
             </div>
 
             <!-- image 子参数 -->
@@ -53,7 +52,6 @@
                 :autosize="{ minRows: 2, maxRows: 4 }"
                 class="w-full"
               />
-              <p class="text-xs text-gray-400 mt-1">图片文件ID或URL（可选）</p>
             </div>
           </div>
         </div>
@@ -69,27 +67,9 @@
       </div>
 
       <!-- 返回结果显示区域 -->
-      <div v-if="responseData" class="px-6 py-4 border-b border-gray-200 bg-green-50">
-        <div class="flex items-center justify-between mb-3">
-          <h5 class="text-sm font-medium text-green-700">执行结果</h5>
-          <t-button theme="default" size="small" variant="text" @click="responseData = null">
-            <t-icon name="close" />
-          </t-button>
-        </div>
-
-        <!-- 响应状态 -->
-        <div class="mb-3">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-sm font-medium text-gray-700">状态:</span>
-            <t-tag :theme="responseData.code === 0 ? 'success' : 'danger'" variant="light" size="small">
-              {{ responseData.code === 0 ? '成功' : '失败' }}
-            </t-tag>
-            <span class="text-xs text-gray-500">{{ responseData.message }}</span>
-          </div>
-        </div>
-
+      <div class="px-6 py-4 border-b border-gray-200 bg-green-50">
         <!-- 执行信息 -->
-        <div v-if="responseData.data" class="space-y-3">
+        <div class="space-y-3">
           <!-- 基本信息 -->
           <div class="bg-white rounded border p-3">
             <h6 class="text-xs font-medium text-gray-600 mb-2">基本信息</h6>
@@ -102,21 +82,15 @@
                 <span class="text-gray-500">工作流ID:</span>
                 <span class="font-mono">{{ getWorkflowId() }}</span>
               </div>
-              <div v-if="getDuration()">
-                <span class="text-gray-500">执行时长:</span>
-                {{ getDuration() }}秒
-              </div>
-              <div v-if="getTimestamp()">
-                <span class="text-gray-500">完成时间:</span>
-                {{ formatDateTime(getTimestamp()) }}
-              </div>
             </div>
           </div>
 
           <!-- 输出结果 -->
-          <div v-if="getOutput()" class="bg-white rounded border p-3">
+          <div class="bg-white rounded border p-3">
             <h6 class="text-xs font-medium text-gray-600 mb-2">输出结果</h6>
-            <pre class="text-xs text-gray-700 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{ getOutput() }}</pre>
+            <pre class="text-xs text-gray-700 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{
+              inputData.stream ? streamOutput : getOutput()
+            }}</pre>
           </div>
         </div>
       </div>
@@ -194,7 +168,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
   import { MessagePlugin } from 'tdesign-vue-next';
-  import { executeWorkflow as executeWorkflowAPI } from '@/api/llm/workflow';
+  import { executeWorkflowStream, debugExecuteWorkflow } from '@/api/llm/workflow';
 
   // Props
   const props = defineProps<{
@@ -219,6 +193,8 @@
   });
   const isRunning = ref(false);
   const responseData = ref<any>(null);
+  const streamOutput = ref('');
+  const executionId = ref('');
   const logs = ref<
     Array<{
       timestamp: number;
@@ -234,6 +210,7 @@
       isRunning.value = true;
       logs.value = [];
       responseData.value = null;
+      streamOutput.value = '';
 
       // 验证必填参数
       if (!inputData.value.workflowId.trim()) {
@@ -295,41 +272,98 @@
       addLog('info', '调用API: /openapi/v1/workflow/execute');
       addLog('info', '请求参数: ' + JSON.stringify(apiParams, null, 2));
 
-      // 调用执行API
-      const response = await executeWorkflowAPI(apiParams.workflowId, apiParams.parameters, apiParams.stream);
+      if (apiParams.stream) {
+        // 流式读取 SSE
+        const res = await executeWorkflowStream(apiParams.workflowId, apiParams.parameters);
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error('浏览器不支持流式读取');
 
-      // 保存响应数据用于显示
-      responseData.value = response;
+        let decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let visibleContent = '';
+        let reasoning = '';
 
-      if (response.code === 0) {
-        addLog('success', 'API调用成功');
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
 
-        const execution = response.data as any;
-
-        // 显示基本信息
-        addLog('info', '执行ID: ' + execution.executionId);
-        addLog('info', '工作流ID: ' + execution.workflowId);
-
-        // 显示执行日志
-        const executionLogs = execution.executionLog || [];
-        if (executionLogs.length > 0) {
-          executionLogs.forEach((log: any) => {
-            const logLevel = log.error ? 'error' : 'info';
-            const nodeLabel = log.nodeId ? `节点 ${log.nodeId}` : '';
-            const message = `${nodeLabel} [${log.nodeType}] ${log.message}`;
-            addLog(logLevel, message, log.result || log.error);
-          });
+          // SSE 按 \n\n 分帧
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop() || '';
+          for (const part of parts) {
+            const line = part.trim();
+            if (!line.startsWith('data:')) continue;
+            const payload = line.slice(5).trim();
+            if (!payload) continue;
+            try {
+              const json = JSON.parse(payload);
+              // 首帧元信息：保存 executionId
+              if (json.meta && json.meta.executionId) {
+                executionId.value = json.meta.executionId;
+                continue;
+              }
+              const piece = json.content || '';
+              if (json.reasoning_content) reasoning = json.reasoning_content;
+              if (piece) {
+                visibleContent += piece;
+                streamOutput.value += piece;
+                addLog('info', piece);
+              }
+            } catch (e) {
+              // 忽略非JSON帧
+            }
+          }
         }
 
-        // 显示最终结果
-        const output = execution.output || '';
-        if (output) {
-          addLog('success', '最终输出: ' + output);
+        // 汇总结果以匹配页面展示结构
+        responseData.value = {
+          code: 0,
+          message: 'success',
+          data: {
+            executionId: executionId.value,
+            workflowId: apiParams.workflowId,
+            output: visibleContent,
+            executionLog: [],
+            duration: '',
+            timestamp: new Date().toISOString(),
+            reasoning_content: reasoning,
+          },
+        };
+
+        if (visibleContent) {
+          addLog('success', '最终输出: ' + visibleContent);
         } else {
-          addLog('warning', '未找到输出结果');
+          addLog('warning', '未获得可见输出');
         }
       } else {
-        addLog('error', 'API调用失败: ' + (response.message || '未知错误'));
+        // 非流式：使用调试接口，绕过“未发布无法执行”限制
+        const response = await debugExecuteWorkflow(apiParams.workflowId, apiParams.parameters);
+        responseData.value = response;
+
+        if (response.code === 0) {
+          addLog('success', 'API调用成功');
+          const execution = response.data as any;
+          addLog('info', '执行ID: ' + execution.executionId);
+          addLog('info', '工作流ID: ' + execution.workflowId);
+          const executionLogs = execution.executionLog || [];
+          if (executionLogs.length > 0) {
+            executionLogs.forEach((log: any) => {
+              const logLevel = log.error ? 'error' : 'info';
+              const nodeLabel = log.nodeId ? `节点 ${log.nodeId}` : '';
+              const message = `${nodeLabel} [${log.nodeType}] ${log.message}`;
+              addLog(logLevel, message, log.result || log.error);
+            });
+          }
+          const output = execution.output || '';
+          if (output) {
+            addLog('success', '最终输出: ' + output);
+          } else {
+            addLog('warning', '未找到输出结果');
+          }
+        } else {
+          addLog('error', 'API调用失败: ' + (response.message || '未知错误'));
+        }
       }
     } catch (error) {
       console.error('Workflow debug failed:', error);
@@ -354,10 +388,10 @@
     MessagePlugin.info('日志已清空');
   };
 
-  // 格式化日期时间
-  const formatDateTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
-  };
+  // 格式化日期时间（当前未使用，保留以备扩展）
+  // const formatDateTime = (timestamp: string) => {
+  //   return new Date(timestamp).toLocaleString();
+  // };
 
   // 获取执行ID
   const getExecutionId = () => {
@@ -369,15 +403,13 @@
     return responseData.value?.data?.workflowId || '';
   };
 
-  // 获取执行时长
-  const getDuration = () => {
-    return responseData.value?.data?.duration || '';
-  };
+  // const getDuration = () => {
+  //   return responseData.value?.data?.duration || '';
+  // };
 
-  // 获取时间戳
-  const getTimestamp = () => {
-    return responseData.value?.data?.timestamp || '';
-  };
+  // const getTimestamp = () => {
+  //   return responseData.value?.data?.timestamp || '';
+  // };
 
   // 获取输出结果
   const getOutput = () => {

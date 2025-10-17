@@ -1,4 +1,6 @@
-import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request, Res } from '@nestjs/common';
+import { Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags } from '@nestjs/swagger';
 import { WorkflowService } from '@/services/workflow.service';
@@ -99,13 +101,30 @@ export class WorkflowController {
    */
   @UseGuards(AuthGuard('jwt'))
   @Post('execute')
-  async executeWorkflow(@Body() dto: WorkflowExecuteDto, @Request() req: any) {
+  async executeWorkflow(@Body() dto: WorkflowExecuteDto, @Request() req: any, @Res() res: Response) {
     const userName = req.user.userName;
 
     // 如果是流式输出，直接同步执行并返回结果
     if (dto.stream) {
-      const result = await this.workflowService.executeSync(dto, userName);
-      return successJson(result);
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders?.();
+
+      try {
+        const executionId = uuidv4();
+        // 发送首帧元信息，包含执行ID与工作流ID
+        res.write(`data: ${JSON.stringify({ meta: { executionId, workflowId: dto.workflowId } })}\n\n`);
+        for await (const chunk of this.workflowService.executeStream(dto)) {
+          // SSE 格式：data: <json>\n\n
+          res.write(`data: ${chunk}\n\n`);
+        }
+        res.end();
+      } catch (err) {
+        res.write(`data: ${JSON.stringify({ error: String(err?.message || err) })}\n\n`);
+        res.end();
+      }
+      return;
     }
 
     // 否则异步执行

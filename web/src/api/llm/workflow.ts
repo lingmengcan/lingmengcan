@@ -1,5 +1,5 @@
 import { Method } from '@/utils/http/axiosplus';
-import http, { Result } from '@/utils/http';
+import http, { Result, httpStream } from '@/utils/http';
 import { Workflow, WorkflowList, WorkflowListParams, WorkflowExecution } from '@/models/workflow';
 
 // 获取工作流列表
@@ -36,6 +36,10 @@ export const unpublishWorkflow = (workflowId: string) =>
 // 执行工作流
 export const executeWorkflow = (workflowId: string, inputs?: any, stream: boolean = false) =>
   http.request<Result<WorkflowExecution>>('workflow/execute', Method.POST, { workflowId, inputs, stream });
+
+// 执行工作流（流式）- 返回原始 fetch Response
+export const executeWorkflowStream = (workflowId: string, inputs?: any) =>
+  httpStream('workflow/execute', { workflowId, inputs, stream: true });
 
 // 调试执行工作流
 export const debugExecuteWorkflow = (workflowId: string, inputs?: any) =>
