@@ -39,4 +39,6 @@ lerna-debug.log*
 .codebuddy/*
 .cursor/*
 
+.specify/*
+
 pnpm-lock.yaml
