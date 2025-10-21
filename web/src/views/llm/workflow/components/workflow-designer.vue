@@ -51,29 +51,6 @@
       <FloatingToolbar @debug-workflow="handleDebugWorkflow" />
     </div>
 
-    <!-- 节点选择弹窗 -->
-    <t-dialog v-model:visible="workflowStore.showNodeSelector" header="添加节点" width="800px" :footer="false">
-      <div class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-        <div
-          v-for="nodeType in workflowStore.availableNodeTypes"
-          :key="nodeType.type"
-          class="flex items-start p-4 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 hover:border-blue-300 transition-all"
-          @click="
-            workflowStore.addNode(nodeType.type);
-            workflowStore.hideAddNodeDialog();
-          "
-        >
-          <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center mr-4 flex-shrink-0">
-            <t-icon :name="nodeType.icon" size="24" class="text-blue-600" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="text-sm font-medium text-gray-900 truncate">{{ nodeType.label }}</h4>
-            <p class="text-xs text-gray-500 line-clamp-2 mb-2">{{ nodeType.description }}</p>
-          </div>
-        </div>
-      </div>
-    </t-dialog>
-
     <!-- 调试面板 -->
     <DebugPanel
       :visible="showDebugPanel"

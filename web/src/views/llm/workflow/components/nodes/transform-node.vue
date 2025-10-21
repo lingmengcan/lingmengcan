@@ -25,13 +25,13 @@
         <!-- 输入格式 -->
         <div class="flex items-center justify-between">
           <span class="text-xs text-gray-500">输入</span>
-          <span class="text-xs font-medium text-gray-700">{{ data.config?.inputFormat || 'JSON' }}</span>
+          <span class="text-xs font-medium text-gray-700">{{ data.config?.inputFormat }}</span>
         </div>
 
         <!-- 输出格式 -->
         <div class="flex items-center justify-between">
           <span class="text-xs text-gray-500">输出</span>
-          <span class="text-xs font-medium text-gray-700">{{ data.config?.outputFormat || 'JSON' }}</span>
+          <span class="text-xs font-medium text-gray-700">{{ data.config?.outputFormat }}</span>
         </div>
 
         <!-- 转换规则数量 -->
