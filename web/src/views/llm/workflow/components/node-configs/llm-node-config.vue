@@ -59,7 +59,7 @@
         <!-- 变量名 -->
         <t-space size="small">
           <t-form-item label="变量名" class="compact-form-item">
-            <t-input v-model="localConfig.variableName" placeholder="input" size="small" @change="updateConfig" />
+            <t-input v-model="localConfig.inputVariable" placeholder="input" size="small" @change="updateConfig" />
           </t-form-item>
           <!-- 变量类型 -->
           <t-form-item label="变量类型" class="compact-form-item">
@@ -219,17 +219,17 @@
 
   // 本地配置副本
   const localConfig = ref({
-    label: props.node?.data?.label || 'LLM插件',
-    model: props.node?.data?.config?.model || 'lingmengcan',
-    temperature: props.node?.data?.config?.temperature ?? 0.5,
-    maxTokens: props.node?.data?.config?.maxTokens || 4096,
-    topP: props.node?.data?.config?.topP ?? 1,
-    systemPrompt: props.node?.data?.config?.systemPrompt || '',
-    userPrompt: props.node?.data?.config?.userPrompt || '',
-    outputVariable: props.node?.data?.config?.outputVariable || 'output',
-    outputType: props.node?.data?.config?.outputType || 'string',
-    variableName: props.node?.data?.config?.variableName || 'input',
-    inputType: props.node?.data?.config?.inputType || 'text',
+    label: props.node?.data?.label,
+    model: props.node?.data?.config?.model,
+    temperature: props.node?.data?.config?.temperature,
+    maxTokens: props.node?.data?.config?.maxTokens,
+    topP: props.node?.data?.config?.topP,
+    systemPrompt: props.node?.data?.config?.systemPrompt,
+    userPrompt: props.node?.data?.config?.userPrompt,
+    outputVariable: props.node?.data?.config?.outputVariable,
+    outputType: props.node?.data?.config?.outputType,
+    inputVariable: props.node?.data?.config?.inputVariable,
+    inputType: props.node?.data?.config?.inputType,
   });
 
   // 监听外部数据变化
@@ -238,17 +238,17 @@
     (newNode) => {
       if (newNode) {
         localConfig.value = {
-          label: newNode.data?.label || 'LLM插件',
-          model: newNode.data?.config?.model || 'lingmencan',
-          temperature: newNode.data?.config?.temperature ?? 0.5,
-          maxTokens: newNode.data?.config?.maxTokens || 1000,
+          label: newNode.data?.label,
+          model: newNode.data?.config?.model,
+          temperature: newNode.data?.config?.temperature,
+          maxTokens: newNode.data?.config?.maxTokens,
           topP: newNode.data?.config?.topP ?? 1,
-          systemPrompt: newNode.data?.config?.systemPrompt || '',
-          userPrompt: newNode.data?.config?.userPrompt || '',
-          outputVariable: newNode.data?.config?.outputVariable || 'output',
-          outputType: newNode.data?.config?.outputType || 'string',
-          variableName: newNode.data?.config?.variableName || 'input',
-          inputType: newNode.data?.config?.inputType || 'text',
+          systemPrompt: newNode.data?.config?.systemPrompt,
+          userPrompt: newNode.data?.config?.userPrompt,
+          outputVariable: newNode.data?.config?.outputVariable,
+          outputType: newNode.data?.config?.outputType,
+          inputVariable: newNode.data?.config?.inputVariable,
+          inputType: newNode.data?.config?.inputType,
         };
       }
     },
@@ -268,7 +268,7 @@
         userPrompt: localConfig.value.userPrompt,
         outputVariable: localConfig.value.outputVariable,
         outputType: localConfig.value.outputType,
-        variableName: localConfig.value.variableName,
+        inputVariable: localConfig.value.inputVariable,
         inputType: localConfig.value.inputType,
       },
     });
@@ -343,7 +343,7 @@
 
       // 保存输入 JSON
       testInputJson.value = {
-        [localConfig.value.variableName]: userContent,
+        [localConfig.value.inputVariable]: userContent,
       };
 
       // 调用调试 API 使用 fetchSSE

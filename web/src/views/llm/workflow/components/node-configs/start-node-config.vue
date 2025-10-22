@@ -6,16 +6,11 @@
         <!-- 变量名 -->
         <t-space size="small">
           <t-form-item label="变量名" class="compact-form-item">
-            <t-input v-model="localConfig.variableName" placeholder="input" size="small" @change="updateConfig" />
+            <t-input v-model="localConfig.inputVariable" placeholder="input" size="small" @change="updateConfig" />
           </t-form-item>
           <!-- 变量类型 -->
           <t-form-item label="变量类型" class="compact-form-item">
-            <t-select v-model="localConfig.inputType" placeholder="Text" size="small" @change="updateConfig">
-              <t-option value="text" label="Text" />
-              <t-option value="json" label="Json" />
-              <t-option value="number" label="Number" />
-              <t-option value="boolean" label="Boolean" />
-            </t-select>
+            <selectDict v-model:dict-code="localConfig.inputType" dict-type="INPUT_TYPE" />
           </t-form-item>
         </t-space>
       </t-collapse-panel>
@@ -44,9 +39,9 @@
 
   // 本地配置副本
   const localConfig = ref({
-    label: props.node?.data?.label || '开始节点',
-    variableName: props.node?.data?.config?.variableName || 'input',
-    inputType: props.node?.data?.config?.inputType || 'text',
+    label: props.node?.data?.label,
+    inputVariable: props.node?.data?.config?.inputVariable,
+    inputType: props.node?.data?.config?.inputType,
   });
 
   // 监听外部数据变化
@@ -55,9 +50,9 @@
     (newNode) => {
       if (newNode) {
         localConfig.value = {
-          label: newNode.data?.label || '开始节点',
-          variableName: newNode.data?.config?.variableName || 'input',
-          inputType: newNode.data?.config?.inputType || 'text',
+          label: newNode.data?.label,
+          inputVariable: newNode.data?.config?.inputVariable,
+          inputType: newNode.data?.config?.inputType,
         };
       }
     },
@@ -69,7 +64,7 @@
     emit('update-node', {
       label: localConfig.value.label,
       config: {
-        variableName: localConfig.value.variableName,
+        inputVariable: localConfig.value.inputVariable,
         inputType: localConfig.value.inputType,
       },
     });

@@ -286,13 +286,6 @@
       if (componentLoader) {
         const module = (await componentLoader()) as any;
         return markRaw(module.default || module);
-      } else {
-        return markRaw({
-          template: `<div class="p-4 border border-red-300 bg-red-50 rounded">
-            <p class="text-red-600 text-sm">未找到组件: ${resolvedPath}</p>
-            <p class="text-xs text-gray-500 mt-1">可用组件: ${Object.keys(nodeComponents).join(', ')}</p>
-          </div>`,
-        });
       }
     } catch (error) {
       console.error(`加载组件失败: ${componentPath}`, error);
@@ -314,9 +307,6 @@
       if (componentLoader) {
         const module = (await componentLoader()) as any;
         return markRaw(module.default || module);
-      } else {
-        console.warn(`未找到配置组件: ${configPath}`);
-        return null;
       }
     } catch (error) {
       console.error(`加载配置组件失败: ${nodeType}`, error);
@@ -324,7 +314,7 @@
     }
   };
 
-  // 加载节点类型组件
+  // 从插件市场加载节点
   const loadNodeTypesComponents = async () => {
     const nodeTypesMap: Record<string, any> = {};
 
@@ -346,7 +336,7 @@
     // 初始化 store
     await workflowStore.initialize();
 
-    // 加载节点类型组件
+    // 从插件市场加载节点
     await loadNodeTypesComponents();
 
     // 设置初始数据

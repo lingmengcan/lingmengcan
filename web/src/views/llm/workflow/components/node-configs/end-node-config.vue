@@ -6,7 +6,7 @@
         <!-- 节点名称和输出类型 -->
         <t-space size="small">
           <t-form-item label="输出变量" class="compact-form-item">
-            <t-input v-model="localConfig.variableName" placeholder="output" size="small" @change="updateConfig" />
+            <t-input v-model="localConfig.outputVariable" placeholder="output" size="small" @change="updateConfig" />
           </t-form-item>
 
           <!-- 输出类型 -->
@@ -43,9 +43,9 @@
 
   // 本地配置副本
   const localConfig = ref({
-    label: props.node?.data?.label || '结束节点',
-    variableName: props.node?.data?.config?.variableName || 'output',
-    outputType: props.node?.data?.config?.outputType || 'text',
+    label: props.node?.data?.label,
+    outputVariable: props.node?.data?.config?.outputVariable,
+    outputType: props.node?.data?.config?.outputType,
   });
 
   // 监听外部数据变化
@@ -54,9 +54,9 @@
     (newNode) => {
       if (newNode) {
         localConfig.value = {
-          label: newNode.data?.label || '结束节点',
-          variableName: newNode?.data?.config?.variableName || 'output',
-          outputType: newNode.data?.config?.outputType || 'text',
+          label: newNode.data?.label,
+          outputVariable: newNode?.data?.config?.outputVariable,
+          outputType: newNode.data?.config?.outputType,
         };
       }
     },
@@ -69,10 +69,12 @@
       label: localConfig.value.label,
       config: {
         outputType: localConfig.value.outputType,
-        variableName: localConfig.value.variableName,
+        outputVariable: localConfig.value.outputVariable,
       },
     });
   };
+
+  console.log(props.node);
 </script>
 
 <style scoped>

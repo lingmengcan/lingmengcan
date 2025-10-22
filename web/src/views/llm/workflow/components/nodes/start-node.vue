@@ -14,7 +14,9 @@
       <div class="px-3 py-2 flex flex-col gap-2">
         <div class="flex items-center gap-2">
           <span class="text-xs text-gray-500">输入</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">input</span>
+          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">
+            {{ data.config?.inputVariable }}
+          </span>
         </div>
       </div>
     </div>
@@ -33,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Handle, Position, useVueFlow } from '@vue-flow/core';
+  import { Handle, Position } from '@vue-flow/core';
   import { ref } from 'vue';
 
   interface NodeData {
@@ -47,9 +49,6 @@
   }>();
 
   const data = ref(props.data);
-
-  // 获取Vue Flow实例
-  const { findNode } = useVueFlow();
 </script>
 
 <style scoped>

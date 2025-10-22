@@ -1,18 +1,18 @@
 <script lang="ts" setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, onMounted } from 'vue';
   import { WorkflowNode } from '@/models/workflow';
+  import { useWorkflowStore } from '@/store/modules/workflow';
 
   interface Props {
     node: WorkflowNode;
   }
-
-  // 移除未使用的接口定义，使用内联类型
 
   const props = defineProps<Props>();
   const emit = defineEmits<{
     'update:node': [node: WorkflowNode];
   }>();
 
+  const workflowStore = useWorkflowStore();
   const nodeData = ref({ ...props.node });
 
   // 监听节点变化
@@ -29,300 +29,93 @@
     emit('update:node', nodeData.value);
   };
 
-  // 根据节点类型获取配置表单
+  // 从插件配置中获取配置表单
   const configForm = computed(() => {
-    switch (nodeData.value.type) {
-      case 'input':
-        return [
-          {
-            key: 'inputType',
-            label: '输入类型',
-            type: 'select',
-            options: [
-              { value: 'text', label: '文本' },
-              { value: 'number', label: '数字' },
-              { value: 'file', label: '文件' },
-              { value: 'json', label: 'JSON' },
-            ],
-          },
-          { key: 'required', label: '必填', type: 'switch' },
-          { key: 'defaultValue', label: '默认值', type: 'input' },
-          { key: 'placeholder', label: '占位符', type: 'input' },
-        ];
+    // 从 availableNodeTypes 中查找当前节点类型的配置
+    const nodeTypeInfo = workflowStore.availableNodeTypes.find((t) => t.type === nodeData.value.type);
 
-      case 'output':
-        return [
-          {
-            key: 'outputType',
-            label: '输出类型',
-            type: 'select',
-            options: [
-              { value: 'text', label: '文本' },
-              { value: 'json', label: 'JSON' },
-              { value: 'file', label: '文件' },
-            ],
-          },
-          { key: 'format', label: '输出格式', type: 'textarea' },
-        ];
+    if (nodeTypeInfo?.configSchema) {
+      const schema = nodeTypeInfo.configSchema as any;
 
-      case 'llm':
-        return [
-          {
-            key: 'model',
-            label: '模型名称',
-            type: 'select',
-            options: [
-              { value: 'gpt-4', label: 'GPT-4' },
-              { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-              { value: 'claude-3', label: 'Claude-3' },
-              { value: 'qwen-max', label: '通义千问Max' },
-            ],
-          },
-          { key: 'temperature', label: '温度', type: 'slider', min: 0, max: 2, step: 0.1 },
-          { key: 'maxTokens', label: '最大令牌数', type: 'number' },
-          { key: 'systemPrompt', label: '系统提示词', type: 'textarea' },
-          { key: 'userPrompt', label: '用户提示词', type: 'textarea' },
-        ];
+      // 如果 configSchema 已经是表单配置数组格式，直接返回
+      if (Array.isArray(schema)) {
+        return schema;
+      }
 
-      case 'condition':
-        return [
-          {
-            key: 'conditionType',
-            label: '条件类型',
-            type: 'select',
-            options: [
-              { value: 'equals', label: '等于' },
-              { value: 'contains', label: '包含' },
-              { value: 'greater', label: '大于' },
-              { value: 'less', label: '小于' },
-              { value: 'regex', label: '正则匹配' },
-            ],
-          },
-          { key: 'leftValue', label: '左值', type: 'input' },
-          { key: 'rightValue', label: '右值', type: 'input' },
-        ];
+      // 如果是 JSON Schema 格式，转换为表单配置
+      if (schema.properties) {
+        return convertJsonSchemaToFormConfig(schema);
+      }
+    }
 
-      case 'loop':
-        return [
-          {
-            key: 'loopType',
-            label: '循环类型',
-            type: 'select',
-            options: [
-              { value: 'for', label: '计数循环' },
-              { value: 'while', label: '条件循环' },
-              { value: 'foreach', label: '遍历循环' },
-            ],
-          },
-          { key: 'maxIterations', label: '最大迭代次数', type: 'number' },
-          { key: 'condition', label: '循环条件', type: 'input' },
-          { key: 'breakCondition', label: '中断条件', type: 'input' },
-          { key: 'outputVariable', label: '输出变量名', type: 'input' },
-          {
-            key: 'outputType',
-            label: '输出类型',
-            type: 'select',
-            options: [
-              { value: 'array', label: '数组' },
-              { value: 'object', label: '对象' },
-              { value: 'string', label: '字符串' },
-            ],
-          },
-          {
-            key: 'aggregation',
-            label: '聚合方式',
-            type: 'select',
-            options: [
-              { value: 'collect', label: '收集所有结果' },
-              { value: 'last', label: '最后一个结果' },
-              { value: 'first', label: '第一个结果' },
-              { value: 'count', label: '循环次数' },
-            ],
-          },
-        ];
+    // 如果没有配置，返回空数组
+    return [];
+  });
 
-      case 'http':
-        return [
-          {
-            key: 'method',
-            label: '请求方法',
-            type: 'select',
-            options: [
-              { value: 'GET', label: 'GET' },
-              { value: 'POST', label: 'POST' },
-              { value: 'PUT', label: 'PUT' },
-              { value: 'DELETE', label: 'DELETE' },
-              { value: 'PATCH', label: 'PATCH' },
-            ],
-          },
-          { key: 'url', label: '请求URL', type: 'input' },
-          { key: 'headers', label: '请求头', type: 'json' },
-          { key: 'params', label: '请求参数', type: 'json' },
-          { key: 'body', label: '请求体', type: 'textarea' },
-          {
-            key: 'bodyType',
-            label: '请求体类型',
-            type: 'select',
-            options: [
-              { value: 'none', label: '无' },
-              { value: 'json', label: 'JSON' },
-              { value: 'form', label: '表单' },
-              { value: 'raw', label: '原始数据' },
-            ],
-          },
-          { key: 'timeout', label: '超时时间(秒)', type: 'number' },
-          { key: 'retryCount', label: '重试次数', type: 'number' },
-          { key: 'authEnabled', label: '启用认证', type: 'switch' },
-          {
-            key: 'authType',
-            label: '认证类型',
-            type: 'select',
-            options: [
-              { value: 'bearer', label: 'Bearer Token' },
-              { value: 'basic', label: 'Basic Auth' },
-              { value: 'apikey', label: 'API Key' },
-            ],
-          },
-          { key: 'authToken', label: '认证令牌', type: 'input' },
-        ];
+  // 将 JSON Schema 转换为表单配置
+  const convertJsonSchemaToFormConfig = (schema: any) => {
+    const formConfig: any[] = [];
 
-      case 'database':
-        return [
-          {
-            key: 'operationType',
-            label: '操作类型',
-            type: 'select',
-            options: [
-              { value: 'select', label: '查询 (SELECT)' },
-              { value: 'insert', label: '插入 (INSERT)' },
-              { value: 'update', label: '更新 (UPDATE)' },
-              { value: 'delete', label: '删除 (DELETE)' },
-              { value: 'execute', label: '执行SQL' },
-            ],
-          },
-          {
-            key: 'dataSource',
-            label: '数据源',
-            type: 'select',
-            options: [
-              { value: 'default', label: '默认数据源' },
-              { value: 'mysql', label: 'MySQL' },
-              { value: 'postgresql', label: 'PostgreSQL' },
-              { value: 'sqlite', label: 'SQLite' },
-            ],
-          },
-          { key: 'tableName', label: '表名', type: 'input' },
-          { key: 'fields', label: '字段列表', type: 'json' },
-          { key: 'conditions', label: '查询条件', type: 'json' },
-          { key: 'sql', label: 'SQL语句', type: 'textarea' },
-          { key: 'outputVariable', label: '输出变量名', type: 'input' },
-          { key: 'limit', label: '限制条数', type: 'number' },
-          { key: 'orderBy', label: '排序字段', type: 'input' },
-          {
-            key: 'errorHandling',
-            label: '错误处理',
-            type: 'select',
-            options: [
-              { value: 'fail', label: '失败停止' },
-              { value: 'skip', label: '跳过错误' },
-              { value: 'default', label: '返回默认值' },
-            ],
-          },
-        ];
+    if (!schema.properties) return formConfig;
 
-      case 'transform':
-        return [
-          {
-            key: 'transformType',
-            label: '转换类型',
-            type: 'select',
-            options: [
-              { value: 'mapping', label: '字段映射' },
-              { value: 'filter', label: '数据过滤' },
-              { value: 'aggregate', label: '数据聚合' },
-              { value: 'format', label: '格式转换' },
-              { value: 'custom', label: '自定义转换' },
-            ],
-          },
-          {
-            key: 'inputFormat',
-            label: '输入格式',
-            type: 'select',
-            options: [
-              { value: 'json', label: 'JSON' },
-              { value: 'xml', label: 'XML' },
-              { value: 'csv', label: 'CSV' },
-              { value: 'text', label: '文本' },
-            ],
-          },
-          {
-            key: 'outputFormat',
-            label: '输出格式',
-            type: 'select',
-            options: [
-              { value: 'json', label: 'JSON' },
-              { value: 'xml', label: 'XML' },
-              { value: 'csv', label: 'CSV' },
-              { value: 'text', label: '文本' },
-            ],
-          },
-          { key: 'rules', label: '转换规则', type: 'json' },
-          { key: 'outputVariable', label: '输出变量名', type: 'input' },
-          {
-            key: 'errorHandling',
-            label: '错误处理',
-            type: 'select',
-            options: [
-              { value: 'skip', label: '跳过错误' },
-              { value: 'fail', label: '失败停止' },
-              { value: 'default', label: '使用默认值' },
-            ],
-          },
-          { key: 'defaultValue', label: '默认值', type: 'textarea' },
-          { key: 'customScript', label: '自定义脚本', type: 'textarea' },
-        ];
+    Object.keys(schema.properties).forEach((key) => {
+      const prop = schema.properties[key];
+      const formItem: any = {
+        key,
+        label: prop.title || key,
+        type: getFormType(prop),
+      };
 
-      case 'parallel':
-        return [
-          { key: 'branchCount', label: '分支数量', type: 'number' },
-          {
-            key: 'strategy',
-            label: '执行策略',
-            type: 'select',
-            options: [
-              { value: 'all', label: '等待全部完成' },
-              { value: 'any', label: '任一完成即结束' },
-              { value: 'race', label: '竞速模式（最快获胜）' },
-            ],
-          },
-          { key: 'branches', label: '分支配置', type: 'json' },
-          {
-            key: 'mergeStrategy',
-            label: '合并策略',
-            type: 'select',
-            options: [
-              { value: 'collect', label: '收集所有结果' },
-              { value: 'first', label: '第一个结果' },
-              { value: 'last', label: '最后一个结果' },
-              { value: 'merge', label: '合并为对象' },
-            ],
-          },
-          { key: 'outputVariable', label: '输出变量名', type: 'input' },
-          {
-            key: 'errorHandling',
-            label: '错误处理',
-            type: 'select',
-            options: [
-              { value: 'fail-fast', label: '快速失败' },
-              { value: 'continue', label: '继续执行' },
-              { value: 'retry', label: '重试失败分支' },
-            ],
-          },
-          { key: 'timeout', label: '全局超时(秒)', type: 'number' },
-        ];
+      // 添加选项
+      if (prop.enum) {
+        formItem.options = prop.enum.map((value: any) => ({
+          value,
+          label: prop.enumNames?.[prop.enum.indexOf(value)] || value,
+        }));
+      }
 
-      default:
-        return [];
+      // 添加其他属性
+      if (prop.minimum !== undefined) formItem.min = prop.minimum;
+      if (prop.maximum !== undefined) formItem.max = prop.maximum;
+      if (prop.default !== undefined) formItem.default = prop.default;
+      if (prop.placeholder) formItem.placeholder = prop.placeholder;
+      if (prop.description) formItem.description = prop.description;
+
+      formConfig.push(formItem);
+    });
+
+    return formConfig;
+  };
+
+  // 根据 JSON Schema 类型获取表单类型
+  const getFormType = (prop: any) => {
+    if (prop.enum) return 'select';
+    if (prop.type === 'boolean') return 'switch';
+    if (prop.type === 'number' || prop.type === 'integer') {
+      if (prop.minimum !== undefined && prop.maximum !== undefined) {
+        return 'slider';
+      }
+      return 'number';
+    }
+    if (prop.type === 'string') {
+      if (prop.format === 'textarea' || prop.maxLength > 100) {
+        return 'textarea';
+      }
+      if (prop.format === 'json') {
+        return 'json';
+      }
+      return 'input';
+    }
+    if (prop.type === 'object' || prop.type === 'array') {
+      return 'json';
+    }
+    return 'input';
+  };
+
+  // 如果没有从插件配置中获取到表单，使用后备方案
+  onMounted(() => {
+    if (configForm.value.length === 0) {
+      console.warn(`节点类型 ${nodeData.value.type} 没有配置表单定义，使用后备方案`);
     }
   });
 
