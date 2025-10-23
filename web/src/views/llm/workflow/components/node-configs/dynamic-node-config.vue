@@ -3,158 +3,223 @@
     <!-- 使用 TDesign Collapse 折叠面板 -->
     <t-collapse v-model="activeNames" borderless class="compact-collapse">
       <!-- 动态渲染配置项 -->
-      <t-collapse-panel
-        v-for="section in configSections"
-        :key="section.key"
-        :value="section.key"
-      >
-        <template #header>
-          <div class="flex items-center justify-between w-full">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-gray-700">{{ section.label }}</span>
-            </div>
-            <!-- 如果是数组类型，显示添加按钮 -->
-            <t-button
-              v-if="section.type === 'array'"
-              variant="text"
-              size="small"
-              class="text-blue-500"
-              @click.stop="addArrayItem(section.key)"
-            >
-              <t-icon name="add" />
-            </t-button>
-          </div>
-        </template>
-
-        <div>
-          <!-- 数组类型 -->
-          <template v-if="section.type === 'array'">
-            <t-empty v-if="getArrayValue(section.key).length === 0" :description="`暂无${section.label}`" />
-            <div
-              v-for="(item, index) in getArrayValue(section.key)"
-              :key="index"
-              class="mb-2"
-            >
+      <template v-for="(property, key) in schema.properties" :key="key">
+        <t-collapse-panel :value="key">
+          <template #header>
+            <div class="flex items-center justify-between w-full">
               <div class="flex items-center gap-2">
-                <!-- 渲染数组项的字段 -->
-                <template v-for="field in section.fields" :key="field.key">
-                  <!-- 输入框 -->
-                  <t-input
-                    v-if="field.type === 'input' || field.type === 'text'"
-                    :model-value="item[field.key]"
-                    @update:model-value="(value) => updateArrayItem(section.key, index, field.key, value)"
-                    :placeholder="field.placeholder || field.label"
-                    size="small"
-                    :style="field.style"
-                  />
-                  
-                  <!-- 下拉选择 -->
-                  <selectDict
-                    v-else-if="field.type === 'select' && field.dictType"
-                    :model-value="item[field.key]"
-                    @update:model-value="(value) => updateArrayItem(section.key, index, field.key, value)"
-                    :dict-type="field.dictType"
-                    size="small"
-                    :style="field.style"
-                  />
-                  
-                  <!-- 数据源选择 -->
-                  <t-select
-                    v-else-if="field.type === 'source'"
-                    :model-value="item[field.key]"
-                    @update:model-value="(value) => updateArrayItem(section.key, index, field.key, value)"
-                    :placeholder="field.placeholder || '选择来源'"
-                    size="small"
-                    clearable
-                    :style="field.style"
-                  >
-                    <t-option
-                      v-for="option in getSourceOptions(section.sourceType)"
-                      :key="option.value"
-                      :value="option.value"
-                      :label="option.label"
-                    />
-                  </t-select>
-                </template>
-                
-                <!-- 删除按钮 -->
-                <t-button
-                  variant="text"
-                  size="small"
-                  class="text-gray-400"
-                  @click="removeArrayItem(section.key, index)"
-                >
-                  <t-icon name="remove" />
-                </t-button>
+                <span class="font-medium text-gray-700">{{ property.title || key }}</span>
+                <span v-if="property.description" class="text-xs text-gray-400">{{ property.description }}</span>
               </div>
+              <!-- 如果是数组类型，显示添加按钮 -->
+              <t-button
+                v-if="property.type === 'array'"
+                variant="text"
+                size="small"
+                class="text-blue-500"
+                @click.stop="addArrayItem(key, property)"
+              >
+                <t-icon name="add" />
+              </t-button>
             </div>
           </template>
 
-          <!-- 对象类型 -->
-          <template v-else-if="section.type === 'object'">
-            <div v-for="field in section.fields" :key="field.key" class="mb-3">
-              <!-- 输入框 -->
+          <div>
+            <!-- 数组类型 -->
+            <template v-if="property.type === 'array'">
+              <t-empty v-if="getArrayValue(key).length === 0" :description="`暂无${property.title || key}`" />
+              <div v-for="(item, index) in getArrayValue(key)" :key="index" class="mb-2">
+                <div class="flex items-center gap-2">
+                  <!-- 渲染数组项的字段 -->
+                  <template v-for="(itemProp, itemKey) in property.items.properties" :key="itemKey">
+                    <!-- 文本输入 -->
+                    <t-input
+                      v-if="itemProp.type === 'string' && !itemProp.enum"
+                      :model-value="item[itemKey]"
+                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      :placeholder="itemProp.title || itemKey"
+                      size="small"
+                      :style="getFieldStyle(itemKey, property.items.properties)"
+                    />
+
+                    <!-- 数字输入 -->
+                    <t-input-number
+                      v-else-if="itemProp.type === 'number' || itemProp.type === 'integer'"
+                      :model-value="item[itemKey]"
+                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      :placeholder="itemProp.title || itemKey"
+                      size="small"
+                      :style="getFieldStyle(itemKey, property.items.properties)"
+                    />
+
+                    <!-- 布尔值 -->
+                    <t-switch
+                      v-else-if="itemProp.type === 'boolean'"
+                      :model-value="item[itemKey]"
+                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      size="small"
+                    />
+
+                    <!-- 枚举选择 -->
+                    <t-select
+                      v-else-if="itemProp.enum"
+                      :model-value="item[itemKey]"
+                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      :placeholder="itemProp.title || itemKey"
+                      size="small"
+                      :style="getFieldStyle(itemKey, property.items.properties)"
+                    >
+                      <t-option
+                        v-for="(enumValue, enumIndex) in itemProp.enum"
+                        :key="enumValue"
+                        :value="enumValue"
+                        :label="itemProp.enumNames?.[enumIndex] || enumValue"
+                      />
+                    </t-select>
+
+                    <!-- 数据源选择 (特殊字段名: source) -->
+                    <t-select
+                      v-else-if="itemKey === 'source'"
+                      :model-value="item[itemKey]"
+                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      placeholder="选择来源"
+                      size="small"
+                      clearable
+                      :style="getFieldStyle(itemKey, property.items.properties)"
+                    >
+                      <t-option
+                        v-for="option in getSourceOptions()"
+                        :key="option.value"
+                        :value="option.value"
+                        :label="option.label"
+                      />
+                    </t-select>
+                  </template>
+
+                  <!-- 删除按钮 -->
+                  <t-button variant="text" size="small" class="text-gray-400" @click="removeArrayItem(key, index)">
+                    <t-icon name="remove" />
+                  </t-button>
+                </div>
+              </div>
+            </template>
+
+            <!-- 对象类型 -->
+            <template v-else-if="property.type === 'object'">
+              <div v-for="(objProp, objKey) in property.properties" :key="objKey" class="mb-3">
+                <div class="text-xs text-gray-500 mb-1">{{ objProp.title || objKey }}</div>
+
+                <!-- 文本输入 -->
+                <t-input
+                  v-if="objProp.type === 'string' && !objProp.enum"
+                  :model-value="localConfig[key]?.[objKey]"
+                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
+                  :placeholder="objProp.description || objProp.title"
+                  size="small"
+                />
+
+                <!-- 文本域 -->
+                <t-textarea
+                  v-else-if="objProp.type === 'string' && objProp.format === 'textarea'"
+                  :model-value="localConfig[key]?.[objKey]"
+                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
+                  :placeholder="objProp.description || objProp.title"
+                  size="small"
+                  :autosize="{ minRows: 3, maxRows: 8 }"
+                />
+
+                <!-- 数字输入 -->
+                <t-input-number
+                  v-else-if="objProp.type === 'number' || objProp.type === 'integer'"
+                  :model-value="localConfig[key]?.[objKey]"
+                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
+                  :placeholder="objProp.description || objProp.title"
+                  size="small"
+                />
+
+                <!-- 布尔值 -->
+                <t-switch
+                  v-else-if="objProp.type === 'boolean'"
+                  :model-value="localConfig[key]?.[objKey]"
+                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
+                  size="small"
+                />
+
+                <!-- 枚举选择 -->
+                <t-select
+                  v-else-if="objProp.enum"
+                  :model-value="localConfig[key]?.[objKey]"
+                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
+                  :placeholder="objProp.description || objProp.title"
+                  size="small"
+                >
+                  <t-option
+                    v-for="(enumValue, enumIndex) in objProp.enum"
+                    :key="enumValue"
+                    :value="enumValue"
+                    :label="objProp.enumNames?.[enumIndex] || enumValue"
+                  />
+                </t-select>
+              </div>
+            </template>
+
+            <!-- 简单类型 -->
+            <template v-else>
+              <!-- 文本输入 -->
               <t-input
-                v-if="field.type === 'input' || field.type === 'text'"
-                :model-value="localConfig[section.key]?.[field.key]"
-                @update:model-value="(value) => updateObjectField(section.key, field.key, value)"
-                :placeholder="field.placeholder || field.label"
+                v-if="property.type === 'string' && !property.enum"
+                :model-value="localConfig[key]"
+                @update:model-value="(value) => updateSimpleField(key, value)"
+                :placeholder="property.description || property.title"
                 size="small"
               />
-              
+
               <!-- 文本域 -->
               <t-textarea
-                v-else-if="field.type === 'textarea'"
-                :model-value="localConfig[section.key]?.[field.key]"
-                @update:model-value="(value) => updateObjectField(section.key, field.key, value)"
-                :placeholder="field.placeholder || field.label"
+                v-else-if="property.type === 'string' && property.format === 'textarea'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value) => updateSimpleField(key, value)"
+                :placeholder="property.description || property.title"
                 size="small"
-                :autosize="field.autosize || { minRows: 3, maxRows: 8 }"
+                :autosize="{ minRows: 3, maxRows: 8 }"
               />
-              
-              <!-- 下拉选择 -->
-              <selectDict
-                v-else-if="field.type === 'select' && field.dictType"
-                :model-value="localConfig[section.key]?.[field.key]"
-                @update:model-value="(value) => updateObjectField(section.key, field.key, value)"
-                :dict-type="field.dictType"
-                size="small"
-              />
-            </div>
-          </template>
 
-          <!-- 简单字段类型 -->
-          <template v-else>
-            <!-- 输入框 -->
-            <t-input
-              v-if="section.fieldType === 'input' || section.fieldType === 'text'"
-              :model-value="localConfig[section.key]"
-              @update:model-value="(value) => updateSimpleField(section.key, value)"
-              :placeholder="section.placeholder || section.label"
-              size="small"
-            />
-            
-            <!-- 文本域 -->
-            <t-textarea
-              v-else-if="section.fieldType === 'textarea'"
-              :model-value="localConfig[section.key]"
-              @update:model-value="(value) => updateSimpleField(section.key, value)"
-              :placeholder="section.placeholder || section.label"
-              size="small"
-              :autosize="section.autosize || { minRows: 3, maxRows: 8 }"
-            />
-            
-            <!-- 下拉选择 -->
-            <selectDict
-              v-else-if="section.fieldType === 'select' && section.dictType"
-              :model-value="localConfig[section.key]"
-              @update:model-value="(value) => updateSimpleField(section.key, value)"
-              :dict-type="section.dictType"
-              size="small"
-            />
-          </template>
-        </div>
-      </t-collapse-panel>
+              <!-- 数字输入 -->
+              <t-input-number
+                v-else-if="property.type === 'number' || property.type === 'integer'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value) => updateSimpleField(key, value)"
+                :placeholder="property.description || property.title"
+                size="small"
+              />
+
+              <!-- 布尔值 -->
+              <t-switch
+                v-else-if="property.type === 'boolean'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value) => updateSimpleField(key, value)"
+                size="small"
+              />
+
+              <!-- 枚举选择 -->
+              <t-select
+                v-else-if="property.enum"
+                :model-value="localConfig[key]"
+                @update:model-value="(value) => updateSimpleField(key, value)"
+                :placeholder="property.description || property.title"
+                size="small"
+              >
+                <t-option
+                  v-for="(enumValue, enumIndex) in property.enum"
+                  :key="enumValue"
+                  :value="enumValue"
+                  :label="property.enumNames?.[enumIndex] || enumValue"
+                />
+              </t-select>
+            </template>
+          </div>
+        </t-collapse-panel>
+      </template>
     </t-collapse>
   </div>
 </template>
@@ -168,30 +233,9 @@
     config: Record<string, any>;
   }
 
-  interface ConfigSection {
-    key: string;
-    label: string;
-    type: 'array' | 'object' | 'simple';
-    fieldType?: string;
-    fields?: Array<{
-      key: string;
-      label: string;
-      type: string;
-      placeholder?: string;
-      style?: string;
-      dictType?: string;
-      autosize?: { minRows: number; maxRows: number };
-    }>;
-    defaultItem?: Record<string, any>;
-    sourceType?: 'input' | 'output';
-    placeholder?: string;
-    dictType?: string;
-    autosize?: { minRows: number; maxRows: number };
-  }
-
   const props = defineProps<{
     node: any;
-    configSchema: ConfigSection[];
+    schema: any; // JSON Schema
   }>();
 
   const emit = defineEmits<{
@@ -210,27 +254,34 @@
   // 初始化配置
   const initConfig = () => {
     const config: Record<string, any> = {};
-    
-    props.configSchema.forEach((section) => {
-      const existingValue = props.node?.data?.config?.[section.key];
-      
-      if (section.type === 'array') {
+
+    if (!props.schema || !props.schema.properties) {
+      console.warn('Schema is missing or invalid:', props.schema);
+      return config;
+    }
+
+    Object.keys(props.schema.properties).forEach((key) => {
+      const property = props.schema.properties[key];
+      const existingValue = props.node?.data?.config?.[key];
+
+      if (property.type === 'array') {
         // 数组类型
         if (Array.isArray(existingValue) && existingValue.length > 0) {
-          config[section.key] = existingValue;
+          config[key] = existingValue;
+        } else if (property.default) {
+          config[key] = JSON.parse(JSON.stringify(property.default));
         } else {
-          // 默认一个项
-          config[section.key] = section.defaultItem ? [{ ...section.defaultItem }] : [];
+          config[key] = [];
         }
-      } else if (section.type === 'object') {
+      } else if (property.type === 'object') {
         // 对象类型
-        config[section.key] = existingValue || {};
+        config[key] = existingValue || property.default || {};
       } else {
         // 简单类型
-        config[section.key] = existingValue !== undefined ? existingValue : '';
+        config[key] = existingValue !== undefined ? existingValue : (property.default || '');
       }
     });
-    
+
     return config;
   };
 
@@ -238,14 +289,18 @@
   const localConfig = reactive(initConfig());
 
   // 初始化激活的面板
-  activeNames.value = props.configSchema.map((section) => section.key);
+  if (props.schema && props.schema.properties) {
+    activeNames.value = Object.keys(props.schema.properties);
+  } else {
+    console.warn('Schema properties not found, cannot initialize active panels');
+  }
 
   // 监听外部数据变化
   watch(
     () => props.node,
     (newNode, oldNode) => {
       if (isUpdating.value) return;
-      
+
       if (newNode && newNode.id !== oldNode?.id) {
         Object.assign(localConfig, initConfig());
       }
@@ -258,17 +313,36 @@
     return localConfig[key] || [];
   };
 
-  // 添加数组项
-  const addArrayItem = (key: string) => {
-    const section = props.configSchema.find((s) => s.key === key);
-    if (!section) return;
+  // 获取字段样式
+  const getFieldStyle = (fieldKey: string, properties: any) => {
+    const fieldCount = Object.keys(properties).length;
     
+    // 特殊字段的固定宽度
+    if (fieldKey === 'name') return 'width: 120px';
+    if (fieldKey === 'type') return 'width: 100px';
+    if (fieldKey === 'required') return 'width: 80px';
+    if (fieldKey === 'source') return 'flex: 1';
+    
+    // 其他字段平均分配
+    return 'flex: 1';
+  };
+
+  // 添加数组项
+  const addArrayItem = (key: string, property: any) => {
     if (!localConfig[key]) {
       localConfig[key] = [];
     }
-    
-    const defaultItem = section.defaultItem || {};
-    localConfig[key].push({ ...defaultItem });
+
+    // 创建默认项
+    const defaultItem: Record<string, any> = {};
+    if (property.items?.properties) {
+      Object.keys(property.items.properties).forEach((itemKey) => {
+        const itemProp = property.items.properties[itemKey];
+        defaultItem[itemKey] = itemProp.default !== undefined ? itemProp.default : '';
+      });
+    }
+
+    localConfig[key].push(defaultItem);
     updateConfig();
   };
 
@@ -304,10 +378,10 @@
   };
 
   // 获取数据源选项
-  const getSourceOptions = (sourceType?: 'input' | 'output') => {
+  const getSourceOptions = () => {
     const options: Array<{ value: string; label: string }> = [];
     const currentNodeId = props.node?.id;
-    
+
     if (!currentNodeId) return options;
 
     try {
@@ -326,7 +400,7 @@
           if (sourceNode.type === 'start') {
             sourceOutputs = sourceNode.data?.config?.inputs || [];
           }
-          
+
           sourceOutputs.forEach((output: any) => {
             options.push({
               value: `${sourceNode.id}.${output.name}`,
