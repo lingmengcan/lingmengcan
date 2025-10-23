@@ -23,18 +23,40 @@
 
       <!-- 内容区域 -->
       <div class="px-3 py-2 flex flex-col gap-2">
-        <!-- 模型信息 -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">模型</span>
-          <div class="flex items-center gap-2 text-xs text-gray-700">
-            <span>{{ displayModel }}</span>
+        <!-- 输入变量列表 -->
+        <div v-if="inputs.length > 0" class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">输入</span>
+          <div class="flex items-center gap-1 flex-wrap">
+            <span
+              v-for="(input, index) in inputs"
+              :key="`input-${index}`"
+              class="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded"
+            >
+              {{ input.name }}
+            </span>
           </div>
         </div>
 
-        <!-- 输出信息 -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">输出</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">output</span>
+        <!-- 输出变量列表 -->
+        <div v-if="outputs.length > 0" class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">输出</span>
+          <div class="flex items-center gap-1 flex-wrap">
+            <span
+              v-for="(output, index) in outputs"
+              :key="`output-${index}`"
+              class="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded"
+            >
+              {{ output.name }}
+            </span>
+          </div>
+        </div>
+
+        <!-- 模型信息 -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">模型</span>
+          <div class="flex items-center gap-2 text-xs text-gray-700">
+            <span>{{ displayModel }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -67,9 +89,24 @@
   import { computed, ref, watch } from 'vue';
   import { Handle, Position, useVueFlow } from '@vue-flow/core';
 
+  interface InputVariable {
+    name: string;
+    type: string;
+  }
+
+  interface OutputVariable {
+    name: string;
+    type: string;
+  }
+
   interface NodeData {
     label: string;
-    config: Record<string, any>;
+    config: {
+      model?: string;
+      inputs?: InputVariable[];
+      outputs?: OutputVariable[];
+      [key: string]: any;
+    };
   }
 
   const props = defineProps<{
@@ -90,6 +127,27 @@
   const displayModel = computed(() => {
     const model = data.value?.config?.model || 'lingmengcan';
     return model;
+  });
+
+  // 计算输入变量列表 - 直接使用 props.data 保持响应式
+  const inputs = computed(() => {
+    if (Array.isArray(props.data.config?.inputs) && props.data.config.inputs.length > 0) {
+      return props.data.config.inputs;
+    }
+    // 默认显示一个输入变量
+    return [{ name: 'input', type: 'text' }];
+  });
+
+  // 计算输出变量列表 - 直接使用 props.data 保持响应式
+  const outputs = computed(() => {
+    if (Array.isArray(props.data.config?.outputs) && props.data.config.outputs.length > 0) {
+      return props.data.config.outputs;
+    }
+    // 默认显示两个输出变量
+    return [
+      { name: 'output', type: 'text' },
+      { name: 'reasoning_content', type: 'text' },
+    ];
   });
 
   // 监听 props 变化，更新本地数据

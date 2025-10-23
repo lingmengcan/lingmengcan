@@ -7,14 +7,22 @@
           <span class="text-sm font-medium text-gray-700">{{ data.label }}</span>
         </div>
       </div>
+      <!-- 内容区域 -->
       <div class="px-3 py-2 border-t border-gray-100">
-        <div class="flex items-center gap-1.5">
-          <span class="text-xs text-gray-500">输出</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">output</span>
+        <div v-if="outputs.length > 0" class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">输出</span>
+          <div class="flex items-center gap-1 flex-wrap">
+            <span
+              v-for="(output, index) in outputs"
+              :key="`output-${index}`"
+              class="text-xs text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded"
+            >
+              {{ output.name }}
+            </span>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5 mt-2">
-          <span class="text-xs text-gray-500">输出类型</span>
-          <span class="text-xs text-gray-700">返回变量</span>
+        <div v-else class="text-xs text-gray-400">
+          暂无输出变量
         </div>
       </div>
     </div>
@@ -33,12 +41,19 @@
 </template>
 
 <script setup lang="ts">
-  import { Handle, Position, useVueFlow } from '@vue-flow/core';
-  import { ref } from 'vue';
+  import { Handle, Position } from '@vue-flow/core';
+  import { computed } from 'vue';
+
+  interface OutputVariable {
+    name: string;
+    type: string;
+  }
 
   interface NodeData {
     label: string;
-    config: Record<string, any>;
+    config: {
+      outputs?: OutputVariable[];
+    };
   }
 
   const props = defineProps<{
@@ -46,10 +61,16 @@
     data: NodeData;
   }>();
 
-  const data = ref(props.data);
+  const data = props.data;
 
-  // 获取Vue Flow实例
-  const { findNode } = useVueFlow();
+  // 计算输出变量列表 - 直接使用 props.data 保持响应式
+  const outputs = computed(() => {
+    if (Array.isArray(props.data.config?.outputs) && props.data.config.outputs.length > 0) {
+      return props.data.config.outputs;
+    }
+    // 默认显示一个输出变量
+    return [{ name: 'output', type: 'json' }];
+  });
 </script>
 
 <style scoped>

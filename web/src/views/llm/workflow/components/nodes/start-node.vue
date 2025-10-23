@@ -6,17 +6,26 @@
       <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
         <div class="flex items-center gap-2">
           <t-icon name="login" class="text-sm text-gray-700" />
-          <span class="text-sm font-medium text-gray-700">{{ data.label }}</span>
+          <span class="text-sm font-medium text-gray-700">{{ props.data.label }}</span>
         </div>
       </div>
 
       <!-- 内容区域 -->
-      <div class="px-3 py-2 flex flex-col gap-2">
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">输入</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">
-            {{ data.config?.inputVariable }}
-          </span>
+      <div class="px-3 py-2">
+        <div v-if="inputs.length > 0" class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">输入</span>
+          <div class="flex items-center gap-1 flex-wrap">
+            <span
+              v-for="(input, index) in inputs"
+              :key="`input-${index}`"
+              class="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded"
+            >
+              {{ input.name }}
+            </span>
+          </div>
+        </div>
+        <div v-else class="text-xs text-gray-400">
+          暂无输入变量
         </div>
       </div>
     </div>
@@ -36,11 +45,18 @@
 
 <script setup lang="ts">
   import { Handle, Position } from '@vue-flow/core';
-  import { ref } from 'vue';
+  import { computed } from 'vue';
+
+  interface InputVariable {
+    name: string;
+    type: string;
+  }
 
   interface NodeData {
     label: string;
-    config: Record<string, any>;
+    config: {
+      inputs?: InputVariable[];
+    };
   }
 
   const props = defineProps<{
@@ -48,7 +64,14 @@
     data: NodeData;
   }>();
 
-  const data = ref(props.data);
+  // 计算输入变量列表 - 直接使用 props.data 保持响应式
+  const inputs = computed(() => {
+    if (Array.isArray(props.data.config?.inputs) && props.data.config.inputs.length > 0) {
+      return props.data.config.inputs;
+    }
+    // 默认显示一个输入变量
+    return [{ name: 'input', type: 'text' }];
+  });
 </script>
 
 <style scoped>

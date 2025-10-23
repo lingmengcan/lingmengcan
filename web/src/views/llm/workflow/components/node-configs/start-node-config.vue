@@ -1,25 +1,17 @@
 <template>
   <div>
-    <!-- 使用 TDesign Collapse 折叠面板 -->
-    <t-collapse v-model="activeNames" :default-value="['input']" borderless class="compact-collapse">
-      <t-collapse-panel value="input" header="输入">
-        <!-- 变量名 -->
-        <t-space size="small">
-          <t-form-item label="变量名" class="compact-form-item">
-            <t-input v-model="localConfig.inputVariable" placeholder="input" size="small" @change="updateConfig" />
-          </t-form-item>
-          <!-- 变量类型 -->
-          <t-form-item label="变量类型" class="compact-form-item">
-            <selectDict v-model:dict-code="localConfig.inputType" dict-type="INPUT_TYPE" />
-          </t-form-item>
-        </t-space>
-      </t-collapse-panel>
-    </t-collapse>
+    <DynamicNodeConfig
+      :node="node"
+      :config-schema="configSchema"
+      @update-node="handleUpdateNode"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { computed } from 'vue';
+  import DynamicNodeConfig from './dynamic-node-config.vue';
+  import { useWorkflowStore } from '@/store/modules/workflow';
 
   interface NodeData {
     label: string;
@@ -34,40 +26,50 @@
     'update-node': [data: NodeData];
   }>();
 
-  // 折叠面板激活状态
-  const activeNames = ref(['input']);
+  const workflowStore = useWorkflowStore();
 
-  // 本地配置副本
-  const localConfig = ref({
-    label: props.node?.data?.label,
-    inputVariable: props.node?.data?.config?.inputVariable,
-    inputType: props.node?.data?.config?.inputType,
+  // 从插件配置中获取配置 schema，如果没有则使用默认配置
+  const configSchema = computed(() => {
+    // 尝试从插件配置中获取
+    const nodeTypeInfo = workflowStore.availableNodeTypes.find((t) => t.type === props.node?.type);
+    
+    if (nodeTypeInfo?.config?.nodeConfigSchema) {
+      return nodeTypeInfo.config.nodeConfigSchema;
+    }
+
+    // 默认配置 - start 节点
+    return [
+      {
+        key: 'inputs',
+        label: '输入变量',
+        type: 'array',
+        fields: [
+          {
+            key: 'name',
+            label: '变量名',
+            type: 'input',
+            placeholder: '变量名',
+            style: 'width: 120px',
+          },
+          {
+            key: 'type',
+            label: '类型',
+            type: 'select',
+            dictType: 'INPUT_TYPE',
+            style: 'width: 80px',
+          },
+        ],
+        defaultItem: {
+          name: 'input',
+          type: 'text',
+        },
+      },
+    ];
   });
 
-  // 监听外部数据变化
-  watch(
-    () => props.node,
-    (newNode) => {
-      if (newNode) {
-        localConfig.value = {
-          label: newNode.data?.label,
-          inputVariable: newNode.data?.config?.inputVariable,
-          inputType: newNode.data?.config?.inputType,
-        };
-      }
-    },
-    { deep: true },
-  );
-
-  // 更新配置
-  const updateConfig = () => {
-    emit('update-node', {
-      label: localConfig.value.label,
-      config: {
-        inputVariable: localConfig.value.inputVariable,
-        inputType: localConfig.value.inputType,
-      },
-    });
+  // 处理更新节点
+  const handleUpdateNode = (data: NodeData) => {
+    emit('update-node', data);
   };
 </script>
 
@@ -83,6 +85,10 @@
 
   .compact-collapse :deep(.t-collapse-panel__content) {
     padding: 8px;
+  }
+
+  .compact-form-item {
+    margin: 0px;
   }
 
   .compact-form-item :deep(.t-form__label) {

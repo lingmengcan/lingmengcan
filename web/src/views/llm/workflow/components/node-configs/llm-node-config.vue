@@ -54,23 +54,62 @@
         </div>
       </t-collapse-panel>
 
-      <!-- 输入 -->
-      <t-collapse-panel value="input" header="输入">
-        <!-- 变量名 -->
-        <t-space size="small">
-          <t-form-item label="变量名" class="compact-form-item">
-            <t-input v-model="localConfig.inputVariable" placeholder="input" size="small" @change="updateConfig" />
-          </t-form-item>
-          <!-- 变量类型 -->
-          <t-form-item label="变量类型" class="compact-form-item">
-            <t-select v-model="localConfig.inputType" placeholder="Text" size="small" @change="updateConfig">
-              <t-option value="text" label="Text" />
-              <t-option value="json" label="Json" />
-              <t-option value="number" label="Number" />
-              <t-option value="boolean" label="Boolean" />
-            </t-select>
-          </t-form-item>
-        </t-space>
+      <!-- 输入变量 -->
+      <t-collapse-panel value="input">
+        <template #header>
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-gray-700">输入变量</span>
+            </div>
+            <t-button variant="text" size="small" class="text-blue-500" @click.stop="addInput">
+              <t-icon name="add" />
+            </t-button>
+          </div>
+        </template>
+
+        <div>
+          <t-empty v-if="localConfig.inputs.length === 0" description="暂无输入变量" />
+          <div v-for="(input, index) in localConfig.inputs" :key="index" class="mb-2">
+            <div class="flex items-center gap-2">
+              <!-- 变量名 -->
+              <t-input
+                :model-value="input.name"
+                @update:model-value="(value) => updateInputName(index, value)"
+                placeholder="变量名"
+                size="small"
+                style="width: 120px"
+              />
+              <!-- 类型 -->
+              <selectDict
+                :model-value="input.type"
+                @update:model-value="(value) => updateInputType(index, value)"
+                dict-type="INPUT_TYPE"
+                size="small"
+                style="width: 80px"
+              />
+              <!-- 数据源选择 -->
+              <t-select
+                :model-value="input.source"
+                @update:model-value="(value) => updateInputSource(index, value)"
+                placeholder="选择来源"
+                size="small"
+                clearable
+                class="flex-1"
+              >
+                <t-option
+                  v-for="option in availableSourceOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :label="option.label"
+                />
+              </t-select>
+              <!-- 删除按钮 -->
+              <t-button variant="text" size="small" class="text-gray-400" @click="removeInput(index)">
+                <t-icon name="remove" />
+              </t-button>
+            </div>
+          </div>
+        </div>
       </t-collapse-panel>
 
       <!-- 系统提示词 -->
@@ -96,24 +135,44 @@
       </t-collapse-panel>
 
       <!-- 输出 -->
-      <t-collapse-panel value="output" header="输出">
-        <!-- 节点名称和输出类型 -->
-        <t-space size="small">
-          <t-form-item label="输出变量" class="compact-form-item">
-            <t-input v-model="localConfig.outputVariable" placeholder="output" size="small" @change="updateConfig" />
-          </t-form-item>
+      <t-collapse-panel value="output">
+        <template #header>
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-gray-700">输出变量</span>
+            </div>
+            <t-button variant="text" size="small" class="text-blue-500" @click.stop="addOutput">
+              <t-icon name="add" />
+            </t-button>
+          </div>
+        </template>
 
-          <!-- 输出类型 -->
-          <t-form-item label="变量类型" class="compact-form-item">
-            <t-select v-model="localConfig.outputType" placeholder="text" size="small" @change="updateConfig">
-              <t-option value="text" label="Text" />
-              <t-option value="json" label="Json" />
-            </t-select>
-          </t-form-item>
-        </t-space>
-        <div class="flex items-center gap-2 text-xs pt-2">
-          <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded">reasoning_content</span>
-          <span class="text-gray-500">string</span>
+        <div>
+          <t-empty v-if="localConfig.outputs.length === 0" description="暂无输出变量" />
+          <div v-for="(output, index) in localConfig.outputs" :key="index" class="mb-2">
+            <div class="flex items-center gap-2">
+              <!-- 变量名 -->
+              <t-input
+                :model-value="output.name"
+                @update:model-value="(value) => updateOutputName(index, value)"
+                placeholder="变量名"
+                size="small"
+                style="width: 120px"
+              />
+              <!-- 类型 -->
+              <selectDict
+                :model-value="output.type"
+                @update:model-value="(value) => updateOutputType(index, value)"
+                dict-type="INPUT_TYPE"
+                size="small"
+                style="width: 80px"
+              />
+              <!-- 删除按钮 -->
+              <t-button variant="text" size="small" class="text-gray-400" @click="removeOutput(index)">
+                <t-icon name="remove" />
+              </t-button>
+            </div>
+          </div>
         </div>
       </t-collapse-panel>
     </t-collapse>
@@ -137,13 +196,18 @@
           <span class="text-sm font-medium">试运行输入</span>
         </div>
 
-        <!-- 输入变量 -->
-        <div class="mb-4">
+        <!-- 动态输入变量 -->
+        <div v-for="(input, index) in localConfig.inputs" :key="`test-input-${index}`" class="mb-4">
           <div class="text-xs text-gray-500 mb-1">
-            input
-            <span class="text-gray-400">String</span>
+            {{ input.name }}
+            <span class="text-gray-400">{{ input.type }}</span>
           </div>
-          <t-textarea v-model="testInput" placeholder="你好！" :autosize="{ minRows: 4, maxRows: 6 }" class="w-full" />
+          <t-textarea
+            v-model="testInputs[input.name]"
+            :placeholder="`请输入 ${input.name}`"
+            :autosize="{ minRows: 3, maxRows: 6 }"
+            class="w-full"
+          />
         </div>
 
         <!-- 运行按钮 -->
@@ -187,10 +251,22 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { ref, watch, reactive, nextTick, computed } from 'vue';
   import selectModel from '@/components/select/select-model.vue';
   import { MessagePlugin } from 'tdesign-vue-next';
   import { debugChat } from '@/api/chat/chat';
+  import { useVueFlow } from '@vue-flow/core';
+
+  interface InputVariable {
+    name: string;
+    type: string;
+    source?: string;
+  }
+
+  interface OutputVariable {
+    name: string;
+    type: string;
+  }
 
   interface NodeData {
     label: string;
@@ -205,20 +281,56 @@
     'update-node': [data: NodeData];
   }>();
 
+  // 获取 VueFlow 实例
+  const { nodes, edges } = useVueFlow();
+
   // 折叠面板激活状态
-  const activeNames = ref(['model', 'systemPrompt', 'userPrompt', 'output']);
+  const activeNames = ref(['model', 'input', 'systemPrompt', 'userPrompt', 'output']);
 
   // 运行测试相关状态
   const testRunnerVisible = ref(false);
-  const testInput = ref('你好！');
+  const testInputs = ref<Record<string, string>>({});
   const testStatus = ref<'idle' | 'running' | 'success' | 'error'>('idle');
   const testDuration = ref(1);
   const testTokens = ref(0);
   const testInputJson = ref({});
   const testOutputJson = ref({});
 
-  // 本地配置副本
-  const localConfig = ref({
+  // 标记是否正在更新配置，避免循环更新
+  const isUpdating = ref(false);
+
+  // 初始化输入变量
+  const initInputs = (): InputVariable[] => {
+    const configInputs = props.node?.data?.config?.inputs;
+    if (Array.isArray(configInputs) && configInputs.length > 0) {
+      return configInputs.map((input: any) => ({
+        name: input.name || 'input',
+        type: input.type || 'text',
+        source: input.source || '',
+      }));
+    }
+    // 默认一个输入变量
+    return [{ name: 'input', type: 'text', source: '' }];
+  };
+
+  // 初始化输出变量
+  const initOutputs = (): OutputVariable[] => {
+    const configOutputs = props.node?.data?.config?.outputs;
+    if (Array.isArray(configOutputs) && configOutputs.length > 0) {
+      return configOutputs.map((output: any) => ({
+        name: output.name || 'output',
+        type: output.type || 'text',
+      }));
+    }
+    // 默认两个输出变量
+    return [
+      { name: 'output', type: 'text' },
+      { name: 'reasoning_content', type: 'text' },
+    ];
+  };
+
+  // 本地配置副本 - 使用 reactive
+  const localConfig = reactive({
     label: props.node?.data?.label,
     model: props.node?.data?.config?.model,
     temperature: props.node?.data?.config?.temperature,
@@ -226,18 +338,34 @@
     topP: props.node?.data?.config?.topP,
     systemPrompt: props.node?.data?.config?.systemPrompt,
     userPrompt: props.node?.data?.config?.userPrompt,
-    outputVariable: props.node?.data?.config?.outputVariable,
-    outputType: props.node?.data?.config?.outputType,
-    inputVariable: props.node?.data?.config?.inputVariable,
-    inputType: props.node?.data?.config?.inputType,
+    inputs: initInputs(),
+    outputs: initOutputs(),
   });
+
+  // 初始化测试输入的默认值
+  const initTestInputs = () => {
+    const inputs: Record<string, string> = {};
+    localConfig.inputs.forEach((input) => {
+      inputs[input.name] = input.name === 'input' ? '你好！' : '';
+    });
+    testInputs.value = inputs;
+  };
+
+  // 初始化测试输入
+  initTestInputs();
 
   // 监听外部数据变化
   watch(
     () => props.node,
-    (newNode) => {
-      if (newNode) {
-        localConfig.value = {
+    (newNode, oldNode) => {
+      // 如果正在更新配置，跳过外部数据同步
+      if (isUpdating.value) {
+        return;
+      }
+
+      if (newNode && newNode.id !== oldNode?.id) {
+        // 只有当节点ID变化时才重新初始化（切换到不同节点）
+        Object.assign(localConfig, {
           label: newNode.data?.label,
           model: newNode.data?.config?.model,
           temperature: newNode.data?.config?.temperature,
@@ -245,32 +373,151 @@
           topP: newNode.data?.config?.topP ?? 1,
           systemPrompt: newNode.data?.config?.systemPrompt,
           userPrompt: newNode.data?.config?.userPrompt,
-          outputVariable: newNode.data?.config?.outputVariable,
-          outputType: newNode.data?.config?.outputType,
-          inputVariable: newNode.data?.config?.inputVariable,
-          inputType: newNode.data?.config?.inputType,
-        };
+          inputs: initInputs(),
+          outputs: initOutputs(),
+        });
+        // 重新初始化测试输入
+        initTestInputs();
       }
     },
     { deep: true },
   );
 
+  // 获取可用的数据源选项（上游节点的输出）- 使用 computed 确保响应式
+  const availableSourceOptions = computed(() => {
+    const options: Array<{ value: string; label: string }> = [];
+    const currentNodeId = props.node?.id;
+    
+    if (!currentNodeId) {
+      console.log('No current node ID');
+      return options;
+    }
+
+    try {
+      // 获取所有边和节点 - 使用 .value 访问 ref
+      const allEdges = edges.value || [];
+      const allNodes = nodes.value || [];
+
+      console.log('Current node ID:', currentNodeId);
+      console.log('All edges:', allEdges);
+      console.log('All nodes:', allNodes);
+
+      // 找到连接到当前节点的边（入边）
+      const incomingEdges = allEdges.filter((edge: any) => edge.target === currentNodeId);
+      console.log('Incoming edges:', incomingEdges);
+
+      // 遍历入边，获取源节点的输出变量
+      incomingEdges.forEach((edge: any) => {
+        const sourceNode = allNodes.find((node: any) => node.id === edge.source);
+        console.log('Source node:', sourceNode);
+        if (sourceNode) {
+          // 对于 start 节点，使用 inputs 作为输出；其他节点使用 outputs
+          let sourceOutputs = sourceNode.data?.config?.outputs || [];
+          if (sourceNode.type === 'start') {
+            sourceOutputs = sourceNode.data?.config?.inputs || [];
+          }
+          console.log('Source outputs:', sourceOutputs);
+          sourceOutputs.forEach((output: any) => {
+            options.push({
+              value: `${sourceNode.id}.${output.name}`,
+              label: `${sourceNode.data?.label || sourceNode.id} - ${output.name}`,
+            });
+          });
+        }
+      });
+
+      console.log('Final options:', options);
+    } catch (error) {
+      console.error('Error getting source options:', error);
+    }
+
+    return options;
+  });
+
+  // 添加输入变量
+  const addInput = () => {
+    localConfig.inputs.push({
+      name: `input${localConfig.inputs.length + 1}`,
+      type: 'text',
+      source: '',
+    });
+    updateConfig();
+  };
+
+  // 删除输入变量
+  const removeInput = (index: number) => {
+    localConfig.inputs.splice(index, 1);
+    updateConfig();
+  };
+
+  // 更新输入变量名
+  const updateInputName = (index: number, value: string) => {
+    localConfig.inputs[index].name = value;
+    nextTick(() => updateConfig());
+  };
+
+  // 更新输入变量类型
+  const updateInputType = (index: number, value: string) => {
+    localConfig.inputs[index].type = value;
+    nextTick(() => updateConfig());
+  };
+
+  // 更新输入变量数据源
+  const updateInputSource = (index: number, value: string) => {
+    localConfig.inputs[index].source = value;
+    nextTick(() => updateConfig());
+  };
+
+  // 添加输出变量
+  const addOutput = () => {
+    localConfig.outputs.push({
+      name: `output${localConfig.outputs.length + 1}`,
+      type: 'text',
+    });
+    updateConfig();
+  };
+
+  // 删除输出变量
+  const removeOutput = (index: number) => {
+    localConfig.outputs.splice(index, 1);
+    updateConfig();
+  };
+
+  // 更新输出变量名
+  const updateOutputName = (index: number, value: string) => {
+    localConfig.outputs[index].name = value;
+    nextTick(() => updateConfig());
+  };
+
+  // 更新输出变量类型
+  const updateOutputType = (index: number, value: string) => {
+    localConfig.outputs[index].type = value;
+    nextTick(() => updateConfig());
+  };
+
   // 更新配置
   const updateConfig = () => {
+    isUpdating.value = true;
+
     emit('update-node', {
-      label: localConfig.value.label,
+      label: localConfig.label,
       config: {
-        model: localConfig.value.model,
-        temperature: localConfig.value.temperature,
-        maxTokens: localConfig.value.maxTokens,
-        topP: localConfig.value.topP,
-        systemPrompt: localConfig.value.systemPrompt,
-        userPrompt: localConfig.value.userPrompt,
-        outputVariable: localConfig.value.outputVariable,
-        outputType: localConfig.value.outputType,
-        inputVariable: localConfig.value.inputVariable,
-        inputType: localConfig.value.inputType,
+        model: localConfig.model,
+        temperature: localConfig.temperature,
+        maxTokens: localConfig.maxTokens,
+        topP: localConfig.topP,
+        systemPrompt: localConfig.systemPrompt,
+        userPrompt: localConfig.userPrompt,
+        inputs: localConfig.inputs,
+        outputs: localConfig.outputs,
       },
+    });
+
+    // 延迟重置标志位，确保 props 更新完成
+    nextTick(() => {
+      setTimeout(() => {
+        isUpdating.value = false;
+      }, 100);
     });
   };
 
@@ -315,17 +562,28 @@
       const messages: Array<{ role: string; content: string }> = [];
 
       // 添加系统提示词
-      if (localConfig.value.systemPrompt) {
+      if (localConfig.systemPrompt) {
         messages.push({
           role: 'system',
-          content: localConfig.value.systemPrompt,
+          content: replaceVariables(localConfig.systemPrompt),
         });
       }
 
+      // 替换提示词中的变量引用
+      const replaceVariables = (template: string) => {
+        let result = template;
+        // 替换所有输入变量
+        localConfig.inputs.forEach((input) => {
+          const regex = new RegExp(`\\{\\{${input.name}\\}\\}`, 'g');
+          result = result.replace(regex, testInputs.value[input.name] || '');
+        });
+        return result;
+      };
+
       // 添加用户输入
-      const userContent = localConfig.value.userPrompt
-        ? localConfig.value.userPrompt.replace(/\{\{input\}\}/g, testInput.value)
-        : testInput.value;
+      const userContent = localConfig.userPrompt
+        ? replaceVariables(localConfig.userPrompt)
+        : testInputs.value[localConfig.inputs[0]?.name] || '';
 
       messages.push({
         role: 'user',
@@ -334,17 +592,19 @@
 
       // 构建请求数据
       const requestData = {
-        model: localConfig.value.model,
+        model: localConfig.model,
         messages,
-        temperature: localConfig.value.temperature,
-        max_tokens: localConfig.value.maxTokens,
-        top_p: localConfig.value.topP,
+        temperature: localConfig.temperature,
+        max_tokens: localConfig.maxTokens,
+        top_p: localConfig.topP,
       };
 
-      // 保存输入 JSON
-      testInputJson.value = {
-        [localConfig.value.inputVariable]: userContent,
-      };
+      // 保存输入 JSON - 包含所有输入变量
+      const inputJson: Record<string, any> = {};
+      localConfig.inputs.forEach((input) => {
+        inputJson[input.name] = testInputs.value[input.name] || '';
+      });
+      testInputJson.value = inputJson;
 
       // 调用调试 API 使用 fetchSSE
       let responseText = '';
@@ -375,11 +635,19 @@
             testTokens.value = Math.floor(responseText.length / 4); // 简单估算 token 数
             testStatus.value = 'success';
 
-            // 保存输出 JSON
-            testOutputJson.value = {
-              [localConfig.value.outputVariable]: responseText,
-              reasoning_content: reasoningContent, // 使用从接口获取的推理内容
-            };
+            // 动态构建输出 JSON，基于配置的输出变量
+            const outputJson: Record<string, any> = {};
+            localConfig.outputs.forEach((output) => {
+              if (output.name === 'reasoning_content') {
+                outputJson[output.name] = reasoningContent;
+              } else if (output.name === 'output' || localConfig.outputs.length === 1) {
+                outputJson[output.name] = responseText;
+              } else {
+                // 其他输出变量默认为空
+                outputJson[output.name] = '';
+              }
+            });
+            testOutputJson.value = outputJson;
 
             MessagePlugin.success(`测试运行成功，耗时 ${testDuration.value}s`);
           } else {
