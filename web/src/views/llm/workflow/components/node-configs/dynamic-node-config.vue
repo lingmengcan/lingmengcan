@@ -8,7 +8,7 @@
           <template #header>
             <div class="flex items-center justify-between w-full">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-700">{{ property.title || key }}</span>
+                <span class="font-medium text-gray-700">{{ property.title }}</span>
                 <span v-if="property.description" class="text-xs text-gray-400">{{ property.description }}</span>
               </div>
               <!-- 如果是数组类型，显示添加按钮 -->
@@ -27,11 +27,11 @@
           <div>
             <!-- 数组类型 -->
             <template v-if="property.type === 'array'">
-              <t-empty v-if="getArrayValue(key).length === 0" :description="`暂无${property.title || key}`" />
+              <t-empty v-if="getArrayValue(key).length === 0" />
               <div v-for="(item, index) in getArrayValue(key)" :key="index" class="mb-2">
                 <div class="flex items-center gap-2">
                   <!-- 渲染数组项的字段 -->
-                  <template v-for="(itemProp, itemKey) in property.items.properties" :key="itemKey">
+                  <template v-for="(itemProp, itemKey) in property.items?.properties" :key="itemKey">
                     <!-- 文本输入 -->
                     <t-input
                       v-if="itemProp.type === 'string' && !itemProp.enum"
@@ -39,7 +39,7 @@
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
                       :placeholder="itemProp.title || itemKey"
                       size="small"
-                      :style="getFieldStyle(itemKey, property.items.properties)"
+                      :style="getFieldStyle(itemKey)"
                     />
 
                     <!-- 数字输入 -->
@@ -49,7 +49,7 @@
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
                       :placeholder="itemProp.title || itemKey"
                       size="small"
-                      :style="getFieldStyle(itemKey, property.items.properties)"
+                      :style="getFieldStyle(itemKey)"
                     />
 
                     <!-- 布尔值 -->
@@ -67,7 +67,7 @@
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
                       :placeholder="itemProp.title || itemKey"
                       size="small"
-                      :style="getFieldStyle(itemKey, property.items.properties)"
+                      :style="getFieldStyle(itemKey)"
                     >
                       <t-option
                         v-for="(enumValue, enumIndex) in itemProp.enum"
@@ -85,7 +85,7 @@
                       placeholder="选择来源"
                       size="small"
                       clearable
-                      :style="getFieldStyle(itemKey, property.items.properties)"
+                      :style="getFieldStyle(itemKey)"
                     >
                       <t-option
                         v-for="option in getSourceOptions()"
@@ -107,7 +107,7 @@
             <!-- 对象类型 -->
             <template v-else-if="property.type === 'object'">
               <div v-for="(objProp, objKey) in property.properties" :key="objKey" class="mb-3">
-                <div class="text-xs text-gray-500 mb-1">{{ objProp.title || objKey }}</div>
+                <div class="text-xs text-gray-500 mb-1">{{ objProp.title }}</div>
 
                 <!-- 文本输入 -->
                 <t-input
@@ -225,7 +225,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, reactive, nextTick, computed } from 'vue';
+  import { ref, watch, reactive, nextTick } from 'vue';
   import { useVueFlow } from '@vue-flow/core';
 
   interface NodeData {
@@ -233,9 +233,34 @@
     config: Record<string, any>;
   }
 
+  interface JSONSchemaProperty {
+    type: string;
+    title?: string;
+    description?: string;
+    default?: any;
+    enum?: any[];
+    enumNames?: string[];
+    format?: string;
+    items?: {
+      type: string;
+      properties?: Record<string, JSONSchemaProperty>;
+      required?: string[];
+    };
+    properties?: Record<string, JSONSchemaProperty>;
+    required?: string[];
+    minItems?: number;
+    maxItems?: number;
+  }
+
+  interface JSONSchema {
+    type: string;
+    properties: Record<string, JSONSchemaProperty>;
+    required?: string[];
+  }
+
   const props = defineProps<{
     node: any;
-    schema: any; // JSON Schema
+    schema: JSONSchema;
   }>();
 
   const emit = defineEmits<{
@@ -278,7 +303,7 @@
         config[key] = existingValue || property.default || {};
       } else {
         // 简单类型
-        config[key] = existingValue !== undefined ? existingValue : (property.default || '');
+        config[key] = existingValue !== undefined ? existingValue : property.default || '';
       }
     });
 
@@ -314,15 +339,13 @@
   };
 
   // 获取字段样式
-  const getFieldStyle = (fieldKey: string, properties: any) => {
-    const fieldCount = Object.keys(properties).length;
-    
+  const getFieldStyle = (fieldKey: string) => {
     // 特殊字段的固定宽度
-    if (fieldKey === 'name') return 'width: 120px';
-    if (fieldKey === 'type') return 'width: 100px';
-    if (fieldKey === 'required') return 'width: 80px';
+    // if (fieldKey === 'name') return 'width: 120px';
+    // if (fieldKey === 'type') return 'width: 100px';
+    // if (fieldKey === 'required') return 'width: 80px';
     if (fieldKey === 'source') return 'flex: 1';
-    
+
     // 其他字段平均分配
     return 'flex: 1';
   };
