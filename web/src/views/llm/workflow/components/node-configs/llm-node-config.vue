@@ -157,7 +157,6 @@
                 @update:model-value="(value) => updateOutputName(index, value)"
                 placeholder="变量名"
                 size="small"
-                style="width: 120px"
               />
               <!-- 类型 -->
               <selectDict
@@ -165,7 +164,6 @@
                 @update:model-value="(value) => updateOutputType(index, value)"
                 dict-type="INPUT_TYPE"
                 size="small"
-                style="width: 80px"
               />
               <!-- 删除按钮 -->
               <t-button variant="text" size="small" class="text-gray-400" @click="removeOutput(index)">
@@ -387,9 +385,8 @@
   const availableSourceOptions = computed(() => {
     const options: Array<{ value: string; label: string }> = [];
     const currentNodeId = props.node?.id;
-    
+
     if (!currentNodeId) {
-      console.log('No current node ID');
       return options;
     }
 
@@ -398,25 +395,18 @@
       const allEdges = edges.value || [];
       const allNodes = nodes.value || [];
 
-      console.log('Current node ID:', currentNodeId);
-      console.log('All edges:', allEdges);
-      console.log('All nodes:', allNodes);
-
       // 找到连接到当前节点的边（入边）
       const incomingEdges = allEdges.filter((edge: any) => edge.target === currentNodeId);
-      console.log('Incoming edges:', incomingEdges);
 
       // 遍历入边，获取源节点的输出变量
       incomingEdges.forEach((edge: any) => {
         const sourceNode = allNodes.find((node: any) => node.id === edge.source);
-        console.log('Source node:', sourceNode);
         if (sourceNode) {
           // 对于 start 节点，使用 inputs 作为输出；其他节点使用 outputs
           let sourceOutputs = sourceNode.data?.config?.outputs || [];
           if (sourceNode.type === 'start') {
             sourceOutputs = sourceNode.data?.config?.inputs || [];
           }
-          console.log('Source outputs:', sourceOutputs);
           sourceOutputs.forEach((output: any) => {
             options.push({
               value: `${sourceNode.id}.${output.name}`,
@@ -425,8 +415,6 @@
           });
         }
       });
-
-      console.log('Final options:', options);
     } catch (error) {
       console.error('Error getting source options:', error);
     }
@@ -550,6 +538,17 @@
     });
   };
 
+  // 替换提示词中的变量引用
+  const replaceVariables = (template: string) => {
+    let result = template;
+    // 替换所有输入变量
+    localConfig.inputs.forEach((input) => {
+      const regex = new RegExp(`\\\\{\\\\{${input.name}\\\\}\\\\}`, 'g');
+      result = result.replace(regex, testInputs.value[input.name] || '');
+    });
+    return result;
+  };
+
   // 运行测试
   const runTest = async () => {
     if (testStatus.value === 'running') return;
@@ -568,17 +567,6 @@
           content: replaceVariables(localConfig.systemPrompt),
         });
       }
-
-      // 替换提示词中的变量引用
-      const replaceVariables = (template: string) => {
-        let result = template;
-        // 替换所有输入变量
-        localConfig.inputs.forEach((input) => {
-          const regex = new RegExp(`\\{\\{${input.name}\\}\\}`, 'g');
-          result = result.replace(regex, testInputs.value[input.name] || '');
-        });
-        return result;
-      };
 
       // 添加用户输入
       const userContent = localConfig.userPrompt

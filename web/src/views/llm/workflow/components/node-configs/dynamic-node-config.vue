@@ -29,32 +29,50 @@
             <template v-if="property.type === 'array'">
               <t-empty v-if="getArrayValue(key).length === 0" />
               <div v-for="(item, index) in getArrayValue(key)" :key="index" class="mb-2">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap w-full">
                   <!-- 渲染数组项的字段 -->
                   <template v-for="(itemProp, itemKey) in property.items?.properties" :key="itemKey">
-                    <!-- 文本输入 -->
-                    <t-input
-                      v-if="itemProp.type === 'string' && !itemProp.enum"
+                    <!-- 数据源选择 (特殊字段名: source) -->
+                    <t-select
+                      v-if="getFieldComponentType(itemKey, itemProp) === 'source'"
                       :model-value="item[itemKey]"
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
-                      :placeholder="itemProp.title || itemKey"
+                      placeholder="选择来源"
                       size="small"
-                      :style="getFieldStyle(itemKey)"
+                      clearable
+                      class="flex-1 min-w-[80px]"
+                    >
+                      <t-option
+                        v-for="option in sourceOptions"
+                        :key="option.value"
+                        :value="option.value"
+                        :label="option.label"
+                      />
+                    </t-select>
+
+                    <!-- 文本输入 -->
+                    <t-input
+                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'text'"
+                      :model-value="item[itemKey]"
+                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      :placeholder="itemProp.title"
+                      size="small"
+                      class="flex-1 min-w-[80px]"
                     />
 
                     <!-- 数字输入 -->
                     <t-input-number
-                      v-else-if="itemProp.type === 'number' || itemProp.type === 'integer'"
+                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'number'"
                       :model-value="item[itemKey]"
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
-                      :placeholder="itemProp.title || itemKey"
+                      :placeholder="itemProp.title"
                       size="small"
-                      :style="getFieldStyle(itemKey)"
+                      class="flex-1 min-w-[80px]"
                     />
 
                     <!-- 布尔值 -->
                     <t-switch
-                      v-else-if="itemProp.type === 'boolean'"
+                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'boolean'"
                       :model-value="item[itemKey]"
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
                       size="small"
@@ -62,36 +80,18 @@
 
                     <!-- 枚举选择 -->
                     <t-select
-                      v-else-if="itemProp.enum"
+                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'enum'"
                       :model-value="item[itemKey]"
                       @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
-                      :placeholder="itemProp.title || itemKey"
+                      :placeholder="itemProp.title"
                       size="small"
-                      :style="getFieldStyle(itemKey)"
+                      class="flex-1 min-w-[80px]"
                     >
                       <t-option
                         v-for="(enumValue, enumIndex) in itemProp.enum"
                         :key="enumValue"
                         :value="enumValue"
                         :label="itemProp.enumNames?.[enumIndex] || enumValue"
-                      />
-                    </t-select>
-
-                    <!-- 数据源选择 (特殊字段名: source) -->
-                    <t-select
-                      v-else-if="itemKey === 'source'"
-                      :model-value="item[itemKey]"
-                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
-                      placeholder="选择来源"
-                      size="small"
-                      clearable
-                      :style="getFieldStyle(itemKey)"
-                    >
-                      <t-option
-                        v-for="option in getSourceOptions()"
-                        :key="option.value"
-                        :value="option.value"
-                        :label="option.label"
                       />
                     </t-select>
                   </template>
@@ -103,120 +103,6 @@
                 </div>
               </div>
             </template>
-
-            <!-- 对象类型 -->
-            <template v-else-if="property.type === 'object'">
-              <div v-for="(objProp, objKey) in property.properties" :key="objKey" class="mb-3">
-                <div class="text-xs text-gray-500 mb-1">{{ objProp.title }}</div>
-
-                <!-- 文本输入 -->
-                <t-input
-                  v-if="objProp.type === 'string' && !objProp.enum"
-                  :model-value="localConfig[key]?.[objKey]"
-                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
-                  :placeholder="objProp.description || objProp.title"
-                  size="small"
-                />
-
-                <!-- 文本域 -->
-                <t-textarea
-                  v-else-if="objProp.type === 'string' && objProp.format === 'textarea'"
-                  :model-value="localConfig[key]?.[objKey]"
-                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
-                  :placeholder="objProp.description || objProp.title"
-                  size="small"
-                  :autosize="{ minRows: 3, maxRows: 8 }"
-                />
-
-                <!-- 数字输入 -->
-                <t-input-number
-                  v-else-if="objProp.type === 'number' || objProp.type === 'integer'"
-                  :model-value="localConfig[key]?.[objKey]"
-                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
-                  :placeholder="objProp.description || objProp.title"
-                  size="small"
-                />
-
-                <!-- 布尔值 -->
-                <t-switch
-                  v-else-if="objProp.type === 'boolean'"
-                  :model-value="localConfig[key]?.[objKey]"
-                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
-                  size="small"
-                />
-
-                <!-- 枚举选择 -->
-                <t-select
-                  v-else-if="objProp.enum"
-                  :model-value="localConfig[key]?.[objKey]"
-                  @update:model-value="(value) => updateObjectField(key, objKey, value)"
-                  :placeholder="objProp.description || objProp.title"
-                  size="small"
-                >
-                  <t-option
-                    v-for="(enumValue, enumIndex) in objProp.enum"
-                    :key="enumValue"
-                    :value="enumValue"
-                    :label="objProp.enumNames?.[enumIndex] || enumValue"
-                  />
-                </t-select>
-              </div>
-            </template>
-
-            <!-- 简单类型 -->
-            <template v-else>
-              <!-- 文本输入 -->
-              <t-input
-                v-if="property.type === 'string' && !property.enum"
-                :model-value="localConfig[key]"
-                @update:model-value="(value) => updateSimpleField(key, value)"
-                :placeholder="property.description || property.title"
-                size="small"
-              />
-
-              <!-- 文本域 -->
-              <t-textarea
-                v-else-if="property.type === 'string' && property.format === 'textarea'"
-                :model-value="localConfig[key]"
-                @update:model-value="(value) => updateSimpleField(key, value)"
-                :placeholder="property.description || property.title"
-                size="small"
-                :autosize="{ minRows: 3, maxRows: 8 }"
-              />
-
-              <!-- 数字输入 -->
-              <t-input-number
-                v-else-if="property.type === 'number' || property.type === 'integer'"
-                :model-value="localConfig[key]"
-                @update:model-value="(value) => updateSimpleField(key, value)"
-                :placeholder="property.description || property.title"
-                size="small"
-              />
-
-              <!-- 布尔值 -->
-              <t-switch
-                v-else-if="property.type === 'boolean'"
-                :model-value="localConfig[key]"
-                @update:model-value="(value) => updateSimpleField(key, value)"
-                size="small"
-              />
-
-              <!-- 枚举选择 -->
-              <t-select
-                v-else-if="property.enum"
-                :model-value="localConfig[key]"
-                @update:model-value="(value) => updateSimpleField(key, value)"
-                :placeholder="property.description || property.title"
-                size="small"
-              >
-                <t-option
-                  v-for="(enumValue, enumIndex) in property.enum"
-                  :key="enumValue"
-                  :value="enumValue"
-                  :label="property.enumNames?.[enumIndex] || enumValue"
-                />
-              </t-select>
-            </template>
           </div>
         </t-collapse-panel>
       </template>
@@ -225,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch, reactive, nextTick } from 'vue';
+  import { ref, watch, reactive, nextTick, computed } from 'vue';
   import { useVueFlow } from '@vue-flow/core';
 
   interface NodeData {
@@ -338,16 +224,18 @@
     return localConfig[key] || [];
   };
 
-  // 获取字段样式
-  const getFieldStyle = (fieldKey: string) => {
-    // 特殊字段的固定宽度
-    // if (fieldKey === 'name') return 'width: 120px';
-    // if (fieldKey === 'type') return 'width: 100px';
-    // if (fieldKey === 'required') return 'width: 80px';
-    if (fieldKey === 'source') return 'flex: 1';
+  // 获取字段组件类型
+  const getFieldComponentType = (fieldKey: string, fieldProp: JSONSchemaProperty): string => {
+    // 特殊字段优先级最高
+    if (fieldKey === 'source') return 'source';
 
-    // 其他字段平均分配
-    return 'flex: 1';
+    // 根据 schema 属性判断
+    if (fieldProp.enum) return 'enum';
+    if (fieldProp.type === 'boolean') return 'boolean';
+    if (fieldProp.type === 'number' || fieldProp.type === 'integer') return 'number';
+    if (fieldProp.type === 'string') return 'text';
+
+    return 'text'; // 默认文本
   };
 
   // 添加数组项
@@ -385,59 +273,67 @@
     }
   };
 
-  // 更新对象字段
-  const updateObjectField = (sectionKey: string, fieldKey: string, value: any) => {
-    if (!localConfig[sectionKey]) {
-      localConfig[sectionKey] = {};
+  // 获取所有祖先节点
+  const getAllAncestorNodes = (nodeId: string, allEdges: any[], allNodes: any[], visited = new Set<string>()): any[] => {
+    if (visited.has(nodeId)) {
+      return [];
     }
-    localConfig[sectionKey][fieldKey] = value;
-    nextTick(() => updateConfig());
+    visited.add(nodeId);
+
+    const ancestors: any[] = [];
+    // 找到所有指向该节点的边（入边）
+    const incomingEdges = allEdges.filter((edge: any) => edge.target === nodeId);
+
+    incomingEdges.forEach((edge: any) => {
+      const sourceNode = allNodes.find((node: any) => node.id === edge.source);
+      if (sourceNode) {
+        ancestors.push(sourceNode);
+        // 递归获取源节点的祖先
+        ancestors.push(...getAllAncestorNodes(edge.source, allEdges, allNodes, visited));
+      }
+    });
+
+    return ancestors;
   };
 
-  // 更新简单字段
-  const updateSimpleField = (key: string, value: any) => {
-    localConfig[key] = value;
-    nextTick(() => updateConfig());
-  };
-
-  // 获取数据源选项
-  const getSourceOptions = () => {
+  // 获取数据源选项 - 使用 computed 确保响应式
+  const sourceOptions = computed(() => {
     const options: Array<{ value: string; label: string }> = [];
     const currentNodeId = props.node?.id;
 
-    if (!currentNodeId) return options;
+    if (!currentNodeId) {
+      return options;
+    }
 
     try {
+      // 获取所有边和节点 - 使用 .value 访问 ref
       const allEdges = edges.value || [];
       const allNodes = nodes.value || [];
 
-      // 找到连接到当前节点的边（入边）
-      const incomingEdges = allEdges.filter((edge: any) => edge.target === currentNodeId);
+      // 获取所有祖先节点
+      const ancestorNodes = getAllAncestorNodes(currentNodeId, allEdges, allNodes);
 
-      // 遍历入边，获取源节点的输出变量
-      incomingEdges.forEach((edge: any) => {
-        const sourceNode = allNodes.find((node: any) => node.id === edge.source);
-        if (sourceNode) {
-          // 对于 start 节点，使用 inputs 作为输出；其他节点使用 outputs
-          let sourceOutputs = sourceNode.data?.config?.outputs || [];
-          if (sourceNode.type === 'start') {
-            sourceOutputs = sourceNode.data?.config?.inputs || [];
-          }
-
-          sourceOutputs.forEach((output: any) => {
-            options.push({
-              value: `${sourceNode.id}.${output.name}`,
-              label: `${sourceNode.data?.label || sourceNode.id} - ${output.name}`,
-            });
-          });
+      // 遍历所有祖先节点，获取它们的输出变量
+      ancestorNodes.forEach((ancestorNode: any) => {
+        // 对于 start 节点，使用 inputs 作为输出；其他节点使用 outputs
+        let ancestorOutputs = ancestorNode.data?.config?.outputs || [];
+        if (ancestorNode.type === 'start') {
+          ancestorOutputs = ancestorNode.data?.config?.inputs || [];
         }
+
+        ancestorOutputs.forEach((output: any) => {
+          options.push({
+            value: `${ancestorNode.id}.${output.name}`,
+            label: `${ancestorNode.data?.label || ancestorNode.id} - ${output.name}`,
+          });
+        });
       });
     } catch (error) {
       console.error('Error getting source options:', error);
     }
 
     return options;
-  };
+  });
 
   // 更新配置
   const updateConfig = () => {

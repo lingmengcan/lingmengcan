@@ -304,22 +304,21 @@
       // 首先尝试加载特定的配置组件
       const configPath = `/src/views/llm/workflow/components/node-configs/${nodeType}-node-config.vue`;
       const componentLoader = nodeConfigComponents[configPath];
-      
+
       if (componentLoader) {
         const module = (await componentLoader()) as any;
         return markRaw(module.default || module);
       }
-      
+
       // 如果找不到特定配置组件，使用通用的 index.vue 配置组件
-      console.log(`未找到 ${nodeType} 的专用配置组件，使用通用配置组件`);
       const indexPath = `/src/views/llm/workflow/components/node-configs/index.vue`;
       const indexLoader = nodeConfigComponents[indexPath];
-      
+
       if (indexLoader) {
         const module = (await indexLoader()) as any;
         return markRaw(module.default || module);
       }
-      
+
       console.error(`未找到通用配置组件: ${indexPath}`);
       return null;
     } catch (error) {

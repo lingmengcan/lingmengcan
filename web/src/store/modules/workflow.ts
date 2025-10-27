@@ -35,6 +35,7 @@ export interface NodeTypeInfo {
   config?: any;
   componentPath?: string;
   configSchema?: object;
+  displayField?: string; // 在节点上显示的额外信息字段名
 }
 
 export interface HistoryState {
@@ -632,6 +633,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
             config: config,
             componentPath: config.componentPath,
             configSchema: config.nodeConfigSchema,
+            displayField: config.displayField,
           };
         });
         

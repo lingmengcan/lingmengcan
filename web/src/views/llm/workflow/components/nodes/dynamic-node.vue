@@ -112,15 +112,22 @@
     const config = props.data.config;
     if (!config) return null;
 
-    // 如果有model字段，显示模型信息
-    if (config.model) {
+    // 从节点类型配置中获取要显示的字段
+    const nodeTypeInfo = workflowStore.availableNodeTypes.find((t) => t.type === props.type);
+    const displayField = nodeTypeInfo?.displayField;
+
+    if (displayField && config[displayField]) {
+      // 从 nodeConfigSchema 中获取字段的 title
+      const schema = nodeTypeInfo?.configSchema as any;
+      const fieldSchema = schema?.properties?.[displayField];
+      const label = fieldSchema?.title || displayField;
+
       return {
-        label: '模型',
-        value: config.model,
+        label,
+        value: config[displayField],
       };
     }
 
-    // 可以根据节点类型添加其他信息
     return null;
   });
 </script>
