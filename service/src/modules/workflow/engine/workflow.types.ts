@@ -72,6 +72,21 @@ export interface ConditionConfig {
   logicalOperator?: string;
 }
 
+export interface ConditionNodeConfig {
+  description?: string;
+  conditions: ConditionConfig[];
+  template?: string;
+  outputMapping?: {
+    trueOutput?: string;
+    falseOutput?: string;
+  };
+  advancedOptions?: {
+    caseSensitive?: boolean;
+    trimWhitespace?: boolean;
+    enableLogging?: boolean;
+  };
+}
+
 export interface LLMNodeConfig {
   model?: string;
   temperature?: number;

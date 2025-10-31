@@ -1,6 +1,7 @@
 <template>
   <div>
-    <DynamicNodeConfig v-if="schema" :node="node" :schema="schema" @update-node="handleUpdateNode" />
+    <ConditionNodeConfig v-if="nodeType === 'condition' && schema" :node="node" :schema="schema" @update-node="handleUpdateNode" />
+    <DynamicNodeConfig v-else-if="schema" :node="node" :schema="schema" @update-node="handleUpdateNode" />
     <t-empty v-else description="未找到节点配置" />
   </div>
 </template>
@@ -8,6 +9,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import DynamicNodeConfig from './dynamic-node-config.vue';
+  import ConditionNodeConfig from './condition-node-config.vue';
   import { useWorkflowStore } from '@/store/modules/workflow';
 
   interface NodeData {
@@ -24,6 +26,11 @@
   }>();
 
   const workflowStore = useWorkflowStore();
+
+  // 获取节点类型
+  const nodeType = computed(() => {
+    return props.node?.type;
+  });
 
   // 从插件配置中获取 JSON Schema
   const schema = computed(() => {
