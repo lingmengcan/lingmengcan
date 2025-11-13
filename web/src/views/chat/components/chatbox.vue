@@ -12,7 +12,56 @@
       </template>
     </t-button>
     <div class="flex-1 flex justify-center max-w-[1080px] mx-auto">
-      <t-chat
+      <t-chat ref="listRef" style="width: 100%">
+        <t-chat-message
+          v-for="(message, idx) in messages"
+          :key="message.id"
+          v-bind="messageProps[message.role]"
+          :role="message.role"
+          :content="message.content"
+        >
+          <template #actionbar>
+            <t-chat-actionbar
+              v-if="message.role === 'assistant' && message.status === 'complete'"
+              :action-bar="getChatActionBar(idx === messages.length - 1)"
+              :content="message.content[0].data"
+              :comment="message.role === 'assistant' ? message.comment : ''"
+              @actions="actionHandler"
+            />
+          </template>
+        </t-chat-message>
+      </t-chat>
+      <t-chat-sender
+        :loading="loading"
+        :textarea-props="{
+          placeholder: $t('views.chat.inputPlaceholder'),
+        }"
+        @send="inputEnter"
+        @file-select="fileSelect"
+        @stop="onStop"
+      >
+        <template #input-prefix>
+          <coversationParams v-model:modelValue="conversation" />
+        </template>
+        <template #footer-prefix>
+          <div class="flex items-center gap-2">
+            <t-tooltip content="切换模型">
+              <selectModel
+                v-model:model-name="conversation.llm"
+                class="llm-select rounded-full"
+                model-type="GENERAL_LLM"
+              />
+            </t-tooltip>
+            <t-button :theme="isThinked ? 'primary' : 'default'" variant="outline" shape="round" @click="checkClick">
+              <template #icon>
+                <t-icon name="system-sum" />
+              </template>
+              深度思考
+            </t-button>
+          </div>
+        </template>
+      </t-chat-sender>
+      <!-- <t-chatbot
         ref="chatRef"
         :clear-history="false"
         animation="gradient"
@@ -23,7 +72,7 @@
         style="max-height: calc(100vh - 100px)"
       >
         <template #content="{ item, index }">
-          <t-chat-reasoning v-if="item.reasoning?.length > 0" expand-icon-placement="right">
+          <t-chat-thinking v-if="item.reasoning?.length > 0" expand-icon-placement="right">
             <template #header>
               <t-chat-loading v-if="isStreamLoad && index === 0" :text="$t('views.chat.thinking')" />
               <div v-else style="display: flex; align-items: center">
@@ -35,65 +84,29 @@
               </div>
             </template>
             <t-chat-content v-if="item.reasoning.length > 0" :content="item.reasoning" />
-          </t-chat-reasoning>
+          </t-chat-thinking>
           <t-chat-content v-if="item.content.length > 0" :content="item.content" />
         </template>
         <template #actions="{ item, index }">
-          <t-chat-action
+          <t-chat-actionbar
             :content="item.content"
-            :operation-btn="index === 0 ? ['good', 'bad', 'replay', 'copy'] : ['good', 'bad', 'copy']"
-            @operation="handleOperation"
+            :action-bar="index === 0 ? ['good', 'bad', 'replay', 'copy'] : ['good', 'bad', 'copy']"
+            @actions="handleActions"
           />
         </template>
-        <template #footer>
-          <t-chat-sender
-            :stop-disabled="isStreamLoad"
-            :textarea-props="{
-              placeholder: $t('views.chat.inputPlaceholder'),
-            }"
-            @send="inputEnter"
-            @file-select="fileSelect"
-            @stop="onStop"
-          >
-            <template #header>
-              <div class="m-1">
-                <coversationParams v-model:modelValue="conversation" />
-              </div>
-            </template>
-            <template #prefix>
-              <div class="flex items-center gap-2">
-                <t-tooltip content="切换模型">
-                  <selectModel
-                    v-model:model-name="conversation.llm"
-                    class="llm-select rounded-full"
-                    model-type="GENERAL_LLM"
-                  />
-                </t-tooltip>
-                <t-button
-                  :theme="isThinked ? 'primary' : 'default'"
-                  variant="outline"
-                  shape="round"
-                  @click="checkClick"
-                >
-                  深度思考
-                </t-button>
-              </div>
-            </template>
-          </t-chat-sender>
-        </template>
-      </t-chat>
+      </t-chatbot> -->
     </div>
   </div>
 </template>
 <script setup lang="ts">
   import { onMounted, PropType, ref } from 'vue';
   import {
-    Chat as TChat,
-    ChatAction as TChatAction,
+    ChatBot as TChatbot,
+    ChatActionbar as TChatActionbar,
     ChatContent as TChatContent,
     ChatSender as TChatSender,
     ChatLoading as TChatLoading,
-    ChatReasoning as TChatReasoning,
+    ChatThinking as TChatThinking,
   } from '@tdesign-vue-next/chat';
   import { Button as TButton, Tooltip as TTooltip } from 'tdesign-vue-next';
   import { useRoute } from 'vue-router';
@@ -135,10 +148,11 @@
     maxTokens: 4096,
   });
 
-  interface ChatItem extends Message {
+  interface ChatItem extends Omit<Message, 'status'> {
     avatar?: string;
     name?: string;
     datetime?: string;
+    status?: string; // TDesign Chat 组件要求 status 为 string 类型
   }
 
   // 思考按钮
@@ -158,9 +172,9 @@
     isStreamLoad.value = false;
   };
 
-  const handleOperation = function (type: string, context: { e: MouseEvent }) {
+  const handleActions = function (type: string, options) {
     // 这里还不能用，等最新文档出来
-    console.log('type', type, context);
+    console.log('type', type, options);
     if (type === 'replay') {
       // 需要从当前聊天列表中获取对应的消息
       const currentMessage = chatList.value.find((msg) => msg.role === 'assistant');
@@ -196,7 +210,7 @@
       reasoning: '',
       sender: userStore.username,
       role: 'user',
-      status: 0,
+      status: '0', // TDesign Chat 组件要求 status 为 string 类型
       completed: 1,
 
       avatar: userStore.userInfo.avatar || defaultAvatar,
@@ -204,7 +218,12 @@
       name: userStore.username,
     };
 
-    const question = await chatStore.addChatByConversationId(newQuestion);
+    // 转换为 Message 类型保存到数据库
+    const questionMessage: Message = {
+      ...newQuestion,
+      status: Number(newQuestion.status || 0),
+    };
+    const question = await chatStore.addChatByConversationId(questionMessage);
     chatList.value.unshift(newQuestion);
 
     handleData(question!);
@@ -226,7 +245,7 @@
       conversationId: conversationId.value,
       previousId: question?.messageId,
       sender: 'lingmengcan',
-      status: 0,
+      status: '0', // TDesign Chat 组件要求 status 为 string 类型
       completed: 0,
     };
 
@@ -271,10 +290,12 @@
             }
 
             // 更新回答
-            chatStore.addChatByConversationId({
+            const answerMessage: Message = {
               ...answer,
+              status: Number(answer.status || 0),
               completed: 1,
-            });
+            };
+            chatStore.addChatByConversationId(answerMessage);
 
             // 控制终止按钮
             isStreamLoad.value = false;
@@ -297,8 +318,14 @@
       answer.content = '';
       answer.reasoning = '';
 
+      // 转换为 Message 类型
+      const answerMessage: Message = {
+        ...answer,
+        status: Number(answer.status || 0),
+      };
+
       const chatParams: ChatParams = {
-        message: answer,
+        message: answerMessage,
       };
 
       const isThinking = ref(false);
@@ -334,7 +361,11 @@
               answer.reasoning = msg;
             }
             // 更新回答
-            chatStore.updateChatByConversationId(answer);
+            const answerMessage: Message = {
+              ...answer,
+              status: Number(answer.status || 0),
+            };
+            chatStore.updateChatByConversationId(answerMessage);
 
             // 控制终止按钮
             isStreamLoad.value = false;
@@ -390,6 +421,7 @@
       if (conversation.value.messages) {
         chatList.value = conversation.value.messages.map((msg) => ({
           ...msg,
+          status: String(msg.status || 0), // TDesign Chat 组件要求 status 为 string 类型
           avatar: msg.role === 'assistant' ? logo : userStore.userInfo.avatar || defaultAvatar,
           name: msg.sender,
           datetime: msg.createdAt,
