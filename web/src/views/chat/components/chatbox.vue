@@ -12,21 +12,20 @@
       </template>
     </t-button>
     <div class="flex-1 flex justify-center max-w-[1080px] mx-auto">
-      <t-chat ref="listRef" style="width: 100%">
+      <t-chat ref="chatRef" style="width: 100%">
         <t-chat-message
-          v-for="(message, idx) in messages"
-          :key="message.id"
+          v-for="(message, idx) in chatList"
+          :key="message.messageId"
           v-bind="messageProps[message.role]"
           :role="message.role"
-          :content="message.content"
+          :content="formatMessageContent(message)"
+          :status="message.status"
         >
           <template #actionbar>
             <t-chat-actionbar
               v-if="message.role === 'assistant' && message.status === 'complete'"
-              :action-bar="getChatActionBar(idx === messages.length - 1)"
-              :content="message.content[0].data"
-              :comment="message.role === 'assistant' ? message.comment : ''"
-              @actions="actionHandler"
+              :action-bar="getChatActionBar(idx === chatList.length - 1)"
+              @actions="handleActions"
             />
           </template>
         </t-chat-message>
@@ -61,52 +60,18 @@
           </div>
         </template>
       </t-chat-sender>
-      <!-- <t-chatbot
-        ref="chatRef"
-        :clear-history="false"
-        animation="gradient"
-        :text-loading="loading"
-        :data="chatList"
-        :is-stream-load="isStreamLoad"
-        class="h-full overflow-y-auto"
-        style="max-height: calc(100vh - 100px)"
-      >
-        <template #content="{ item, index }">
-          <t-chat-thinking v-if="item.reasoning?.length > 0" expand-icon-placement="right">
-            <template #header>
-              <t-chat-loading v-if="isStreamLoad && index === 0" :text="$t('views.chat.thinking')" />
-              <div v-else style="display: flex; align-items: center">
-                <t-icon
-                  name="check-circle"
-                  style="color: var(--td-success-color-5); font-size: 20px; margin-right: 8px"
-                />
-                <span>{{ $t('views.chat.thought') }}</span>
-              </div>
-            </template>
-            <t-chat-content v-if="item.reasoning.length > 0" :content="item.reasoning" />
-          </t-chat-thinking>
-          <t-chat-content v-if="item.content.length > 0" :content="item.content" />
-        </template>
-        <template #actions="{ item, index }">
-          <t-chat-actionbar
-            :content="item.content"
-            :action-bar="index === 0 ? ['good', 'bad', 'replay', 'copy'] : ['good', 'bad', 'copy']"
-            @actions="handleActions"
-          />
-        </template>
-      </t-chatbot> -->
     </div>
   </div>
 </template>
 <script setup lang="ts">
   import { onMounted, PropType, ref } from 'vue';
   import {
-    ChatBot as TChatbot,
+    Chat as TChat,
     ChatActionbar as TChatActionbar,
-    ChatContent as TChatContent,
+    ChatMessage as TChatMessage,
     ChatSender as TChatSender,
-    ChatLoading as TChatLoading,
-    ChatThinking as TChatThinking,
+    TdChatMessageConfig,
+    TdChatActionsName,
   } from '@tdesign-vue-next/chat';
   import { Button as TButton, Tooltip as TTooltip } from 'tdesign-vue-next';
   import { useRoute } from 'vue-router';
@@ -134,7 +99,6 @@
   const conversationId = ref<string>((route.params as { conversationId: string }).conversationId);
 
   const loading = ref(false);
-  const isStreamLoad = ref(false);
   const isThinked = ref(true);
   const chatList = ref<ChatItem[]>([]);
 
@@ -148,12 +112,51 @@
     maxTokens: 4096,
   });
 
-  interface ChatItem extends Omit<Message, 'status'> {
+  interface ChatItem extends Message {
     avatar?: string;
     name?: string;
     datetime?: string;
-    status?: string; // TDesign Chat 组件要求 status 为 string 类型
+    reasoning?: string; // 用于前端显示的思考内容（从 content 中提取）
   }
+
+  // 消息属性配置
+  const messageProps: TdChatMessageConfig = {
+    user: {
+      variant: 'base',
+      placement: 'right',
+    },
+    assistant: {
+      placement: 'left',
+      chatContentProps: {
+        thinking: {
+          maxHeight: 100,
+        },
+      },
+    },
+  };
+
+  // 获取聊天操作栏配置
+  const getChatActionBar = (isLast: boolean): TdChatActionsName[] => {
+    let filterActions: TdChatActionsName[] = ['replay', 'good', 'bad', 'copy'];
+    if (!isLast) {
+      filterActions = filterActions.filter((item) => item !== 'replay') as TdChatActionsName[];
+    }
+    return filterActions;
+  };
+
+  // 格式化消息内容为数组格式（TDesign ChatMessage 要求 content 为数组）
+  const formatMessageContent = (message: ChatItem): any[] => {
+    if (!message.content) return [];
+    // 如果 content 已经是数组，直接返回
+    if (Array.isArray(message.content)) {
+      return message.content;
+    }
+    // 如果是字符串（兼容旧数据），转换为 text 类型的内容数组
+    if (typeof message.content === 'string') {
+      return [{ type: 'text', data: message.content }];
+    }
+    return [];
+  };
 
   // 思考按钮
   const checkClick = () => {
@@ -169,7 +172,6 @@
 
   const onStop = function () {
     loading.value = false;
-    isStreamLoad.value = false;
   };
 
   const handleActions = function (type: string, options) {
@@ -203,16 +205,12 @@
 
   //对话
   async function onConversation(inputValue: string) {
-    // 问题入库
+    // 问题入库 - 将文本转换为 JSON 数组格式
     const newQuestion: ChatItem = {
       conversationId: conversationId.value,
-      content: inputValue,
-      reasoning: '',
-      sender: userStore.username,
+      content: [{ type: 'text', data: inputValue }], // 转换为 TDesign ChatMessage 格式
       role: 'user',
-      status: '0', // TDesign Chat 组件要求 status 为 string 类型
-      completed: 1,
-
+      status: 'pending',
       avatar: userStore.userInfo.avatar || defaultAvatar,
       datetime: new Date().toISOString(),
       name: userStore.username,
@@ -220,8 +218,11 @@
 
     // 转换为 Message 类型保存到数据库
     const questionMessage: Message = {
-      ...newQuestion,
-      status: Number(newQuestion.status || 0),
+      messageId: undefined,
+      conversationId: newQuestion.conversationId,
+      content: newQuestion.content,
+      role: newQuestion.role,
+      status: newQuestion.status,
     };
     const question = await chatStore.addChatByConversationId(questionMessage);
     chatList.value.unshift(newQuestion);
@@ -231,22 +232,17 @@
 
   const handleData = async (question: Message) => {
     loading.value = true;
-    isStreamLoad.value = true;
 
-    // 空消息占位
+    // 空消息占位 - 使用 JSON 数组格式
     const answerEmpty: ChatItem = {
       avatar: logo,
       datetime: new Date().toISOString(),
-      content: '',
-      reasoning: '',
+      content: [], // 初始化为空数组
+      reasoning: '', // 用于前端显示的思考内容
       name: 'lingmengcan',
       role: 'assistant',
-
       conversationId: conversationId.value,
-      previousId: question?.messageId,
-      sender: 'lingmengcan',
-      status: '0', // TDesign Chat 组件要求 status 为 string 类型
-      completed: 0,
+      status: 'streaming', // 流式传输中
     };
 
     chatList.value.unshift(answerEmpty);
@@ -258,6 +254,9 @@
       };
 
       const isThinking = ref(false);
+      let textContent = ''; // 累积文本内容
+      let reasoningContent = ''; // 累积思考内容
+
       await fetchSSE(
         () => {
           return chat(chatParams);
@@ -266,7 +265,6 @@
           success(result) {
             loading.value = false;
             // 处理思考标记
-
             if (result.includes('<think>')) {
               isThinking.value = true;
               result = result.replace('<think>', '');
@@ -277,34 +275,80 @@
             }
 
             // 更新对应字段
+            if (!answer.content || !Array.isArray(answer.content)) {
+              answer.content = [];
+            }
+
             if (isThinking.value) {
-              answer.reasoning += result;
+              reasoningContent += result;
+              // 将思考内容存储为 reasoning 类型的内容块
+              const reasoningIndex = answer.content.findIndex((item: any) => item?.type === 'reasoning');
+              if (reasoningIndex >= 0) {
+                // 更新现有的 reasoning 内容
+                if (!answer.content[reasoningIndex].data) {
+                  answer.content[reasoningIndex].data = [];
+                }
+                const lastTextIndex = answer.content[reasoningIndex].data.findLastIndex(
+                  (item: any) => item?.type === 'text',
+                );
+                if (lastTextIndex >= 0) {
+                  answer.content[reasoningIndex].data[lastTextIndex] = { type: 'text', data: reasoningContent };
+                } else {
+                  answer.content[reasoningIndex].data.push({ type: 'text', data: reasoningContent });
+                }
+              } else {
+                // 创建新的 reasoning 内容块
+                answer.content.push({
+                  type: 'reasoning',
+                  data: [{ type: 'text', data: reasoningContent }],
+                });
+              }
+              // 同时保存到 reasoning 字段用于前端显示
+              answer.reasoning = reasoningContent;
             } else {
-              answer.content += result;
+              textContent += result;
+              // 更新 content 数组，保持最后一个 text 类型的内容块
+              const lastTextIndex = answer.content.findLastIndex((item: any) => item?.type === 'text');
+              if (lastTextIndex >= 0) {
+                answer.content[lastTextIndex] = { type: 'text', data: textContent };
+              } else {
+                answer.content.push({ type: 'text', data: textContent });
+              }
             }
           },
           complete(isOk, msg) {
             if (!isOk) {
-              answer.role = 'error';
-              answer.content = msg;
+              answer.status = 'error';
+              if (!answer.content || !Array.isArray(answer.content)) {
+                answer.content = [];
+              }
+              answer.content.push({ type: 'text', data: msg });
+            } else {
+              answer.status = 'complete';
             }
 
-            // 更新回答
+            // 更新回答到数据库
             const answerMessage: Message = {
-              ...answer,
-              status: Number(answer.status || 0),
-              completed: 1,
+              messageId: answer.messageId,
+              conversationId: answer.conversationId,
+              content: answer.content,
+              role: answer.role,
+              status: answer.status,
             };
             chatStore.addChatByConversationId(answerMessage);
 
             // 控制终止按钮
-            isStreamLoad.value = false;
             loading.value = false;
           },
         },
       );
     } catch (e: any) {
       console.error('Chat error:', e.message);
+      answer.status = 'error';
+      if (!answer.content || !Array.isArray(answer.content)) {
+        answer.content = [];
+      }
+      answer.content.push({ type: 'text', data: e.message });
     } finally {
       loading.value = false;
     }
@@ -313,15 +357,19 @@
   async function handleRegenerate(answer: ChatItem) {
     try {
       loading.value = true;
-      isStreamLoad.value = true;
 
-      answer.content = '';
+      // 重置内容
+      answer.content = [];
       answer.reasoning = '';
+      answer.status = 'streaming';
 
       // 转换为 Message 类型
       const answerMessage: Message = {
-        ...answer,
-        status: Number(answer.status || 0),
+        messageId: answer.messageId,
+        conversationId: answer.conversationId,
+        content: answer.content,
+        role: answer.role,
+        status: answer.status,
       };
 
       const chatParams: ChatParams = {
@@ -329,6 +377,9 @@
       };
 
       const isThinking = ref(false);
+      let textContent = ''; // 累积文本内容
+      let reasoningContent = ''; // 累积思考内容
+
       await fetchSSE(
         () => {
           return regenerate(chatParams);
@@ -337,7 +388,6 @@
           success(result) {
             loading.value = false;
             // 处理思考标记
-
             if (result.includes('<think>')) {
               isThinking.value = true;
               result = result.replace('<think>', '');
@@ -348,33 +398,77 @@
             }
 
             // 更新对应字段
+            if (!answer.content || !Array.isArray(answer.content)) {
+              answer.content = [];
+            }
+
             if (isThinking.value) {
-              answer.reasoning += result;
+              reasoningContent += result;
+              // 将思考内容存储为 reasoning 类型的内容块
+              const reasoningIndex = answer.content.findIndex((item: any) => item?.type === 'reasoning');
+              if (reasoningIndex >= 0) {
+                if (!answer.content[reasoningIndex].data) {
+                  answer.content[reasoningIndex].data = [];
+                }
+                const lastTextIndex = answer.content[reasoningIndex].data.findLastIndex(
+                  (item: any) => item?.type === 'text',
+                );
+                if (lastTextIndex >= 0) {
+                  answer.content[reasoningIndex].data[lastTextIndex] = { type: 'text', data: reasoningContent };
+                } else {
+                  answer.content[reasoningIndex].data.push({ type: 'text', data: reasoningContent });
+                }
+              } else {
+                answer.content.push({
+                  type: 'reasoning',
+                  data: [{ type: 'text', data: reasoningContent }],
+                });
+              }
+              answer.reasoning = reasoningContent;
             } else {
-              answer.content += result;
+              textContent += result;
+              // 更新 content 数组
+              const lastTextIndex = answer.content.findLastIndex((item: any) => item?.type === 'text');
+              if (lastTextIndex >= 0) {
+                answer.content[lastTextIndex] = { type: 'text', data: textContent };
+              } else {
+                answer.content.push({ type: 'text', data: textContent });
+              }
             }
           },
           complete(isOk, msg) {
             if (!isOk) {
-              answer.role = 'error';
-              answer.content = msg;
+              answer.status = 'error';
+              if (!answer.content || !Array.isArray(answer.content)) {
+                answer.content = [];
+              }
+              answer.content.push({ type: 'text', data: msg });
               answer.reasoning = msg;
+            } else {
+              answer.status = 'complete';
             }
             // 更新回答
             const answerMessage: Message = {
-              ...answer,
-              status: Number(answer.status || 0),
+              messageId: answer.messageId,
+              conversationId: answer.conversationId,
+              content: answer.content,
+              role: answer.role,
+              status: answer.status,
             };
             chatStore.updateChatByConversationId(answerMessage);
 
             // 控制终止按钮
-            isStreamLoad.value = false;
             loading.value = false;
           },
         },
       );
     } catch (e: any) {
       console.error('Chat error:', e.message);
+      answer.status = 'error';
+      if (!answer.content || !Array.isArray(answer.content)) {
+        answer.content = [];
+      }
+      answer.content.push({ type: 'text', data: e.message });
     } finally {
       loading.value = false;
     }
@@ -419,13 +513,27 @@
 
       // 将 conversation.messages 转换为 chatList 格式
       if (conversation.value.messages) {
-        chatList.value = conversation.value.messages.map((msg) => ({
-          ...msg,
-          status: String(msg.status || 0), // TDesign Chat 组件要求 status 为 string 类型
-          avatar: msg.role === 'assistant' ? logo : userStore.userInfo.avatar || defaultAvatar,
-          name: msg.sender,
-          datetime: msg.createdAt,
-        }));
+        chatList.value = conversation.value.messages.map((msg) => {
+          // 从 content 数组中提取 reasoning（如果有）
+          let reasoning = '';
+          if (Array.isArray(msg.content)) {
+            const reasoningContent = msg.content.find((item: any) => item?.type === 'reasoning');
+            if (reasoningContent?.data) {
+              reasoning = Array.isArray(reasoningContent.data)
+                ? reasoningContent.data.map((item: any) => item?.data || '').join('\n')
+                : '';
+            }
+          }
+
+          return {
+            ...msg,
+            status: msg.status || 'pending',
+            avatar: msg.role === 'assistant' ? logo : userStore.userInfo.avatar || defaultAvatar,
+            name: msg.role === 'assistant' ? 'lingmengcan' : userStore.username,
+            datetime: msg.createdAt,
+            reasoning, // 提取的思考内容
+          };
+        });
       }
     }
   });

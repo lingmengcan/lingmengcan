@@ -454,16 +454,18 @@ DROP TABLE IF EXISTS `message`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `message` (
   `message_id` varchar(36) COLLATE utf8mb4_bin NOT NULL,
-  `previous_id` varchar(36) COLLATE utf8mb4_bin NOT NULL DEFAULT '',
-  `file_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `conversation_id` varchar(36) COLLATE utf8mb4_bin NOT NULL,
-  `message_text` text COLLATE utf8mb4_bin NOT NULL,
-  `sender` enum('Human','Assistant','System') COLLATE utf8mb4_bin NOT NULL,
-  `completed` tinyint(1) NOT NULL DEFAULT '1',
-  `status` tinyint(1) NOT NULL DEFAULT '0',
-  `created_at` datetime NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`message_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=DYNAMIC;
+  `content` json DEFAULT NULL COMMENT '消息内容数组' NOT NULL DEFAULT '{}',
+  `role` enum('user','assistant','system') COLLATE utf8mb4_bin NOT NULL DEFAULT 'user' COMMENT '消息角色',
+  `status` enum('pending','streaming','complete','stop','error') COLLATE utf8mb4_bin NOT NULL DEFAULT 'pending' COMMENT '消息状态：pending-等待中，streaming-流式传输中，complete-已完成，stop-已停止，error-错误',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`message_id`) USING BTREE,
+  KEY `idx_conversation_id` (`conversation_id`) USING BTREE,
+  KEY `idx_role` (`role`) USING BTREE,
+  KEY `idx_status` (`status`) USING BTREE,
+  KEY `idx_created_at` (`created_at`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ROW_FORMAT=DYNAMIC COMMENT='消息表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 

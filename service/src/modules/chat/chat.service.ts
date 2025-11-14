@@ -32,6 +32,30 @@ export class ChatService {
     private readonly configService: ConfigService,
   ) {}
 
+  /**
+   * 从 JSON 数组格式的 content 中提取文本内容
+   * @param content AIMessageContent[] | UserMessageContent[] | string
+   * @returns 文本内容字符串
+   */
+  private extractTextFromContent(content: any): string {
+    if (!content) return '';
+
+    // 如果已经是字符串，直接返回
+    if (typeof content === 'string') {
+      return content;
+    }
+
+    // 如果是数组，提取所有 text 和 markdown 类型的内容
+    if (Array.isArray(content)) {
+      return content
+        .filter((item) => item && (item.type === 'text' || item.type === 'markdown'))
+        .map((item) => item.data || '')
+        .join('\n');
+    }
+
+    return '';
+  }
+
   //自由对话
   async chat(dto: ChatDto) {
     const { message } = dto;
@@ -95,7 +119,7 @@ export class ChatService {
       let sentCleanContentLength = 0;
 
       let thinkTagComplete = false;
-      
+
       for await (const chunk of await chain.stream({})) {
         // 获取内容 - 添加类型检查
         const content = chunk && typeof chunk === 'object' && 'content' in chunk ? (chunk as any).content || '' : '';
@@ -150,9 +174,24 @@ export class ChatService {
 
   //重新回答
   async regenerate(dto: ChatDto) {
-    // 获取问题
-    const message = await this.messageService.findByMessageId(dto.message.previousId);
-    return this.chatLlm(message);
+    // 获取当前消息（通过 messageId）
+    const message = await this.messageService.findOne(dto.message.messageId);
+    if (!message) {
+      throw new Error('消息不存在');
+    }
+
+    // 查找同对话中上一条用户消息
+    const conversation = await this.conversationService.findByConversationId(message.conversationId);
+    const userMessages = conversation.messages
+      .filter((msg) => msg.role === 'user' && msg.createdAt < message.createdAt)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const previousMessage = userMessages[0];
+    if (!previousMessage) {
+      throw new Error('未找到上一条用户消息');
+    }
+
+    return this.chatLlm(previousMessage);
   }
 
   // 调用大模型对话
@@ -165,32 +204,49 @@ export class ChatService {
     // This is where you will store your chat history.
     const messageHistory = new ChatMessageHistory();
 
+    // 获取历史消息，如果消息时间小于当前消息，则认为是历史消息
     conversation.messages.forEach((item) => {
-      // 获取历史消息，如果消息时间小于当前消息，并且文件id相同，则认为是历史消息，当时文件回答时，只获取当前文件的消息
-      if (item.createdAt < new Date(message.createdAt) && message.fileId === item.fileId) {
-        if (item.role === 'user') {
-          messageHistory.addMessage(new HumanMessage(item.content));
-        } else if (item.role === 'assistant') {
-          messageHistory.addMessage(new AIMessage(item.content));
+      if (item.createdAt < message.createdAt) {
+        const textContent = this.extractTextFromContent(item.content);
+        if (textContent) {
+          if (item.role === 'user') {
+            messageHistory.addMessage(new HumanMessage(textContent));
+          } else if (item.role === 'assistant') {
+            messageHistory.addMessage(new AIMessage(textContent));
+          }
         }
       }
     });
 
-    if (message.fileId) {
+    // 提取当前消息的文本内容
+    const messageText = this.extractTextFromContent(message.content);
+
+    // 检查 content 中是否包含 attachment 类型的文件信息
+    let fileId: string | null = null;
+    if (Array.isArray(message.content)) {
+      const attachmentContent = message.content.find((item) => item?.type === 'attachment');
+      if (attachmentContent?.data && Array.isArray(attachmentContent.data) && attachmentContent.data.length > 0) {
+        // 从 attachment 中提取文件ID（如果有的话）
+        // 这里需要根据实际的 attachment 数据结构来调整
+        fileId = attachmentContent.data[0]?.metadata?.fileId || null;
+      }
+    }
+
+    if (fileId) {
       const vectorStore = await Chroma.fromExistingCollection(
         new OpenAIEmbeddings(
           { openAIApiKey: model.apiKey, modelName: model.defaultEmbeddingModel },
           { basePath: model.baseUrl },
         ),
         {
-          collectionName: message.fileId,
+          collectionName: fileId,
           url: this.configService.get<string>('chromadb.db'),
         },
       );
 
-      return this.chatfileOpenAi(message.content, conversation, messageHistory, model, vectorStore);
+      return this.chatfileOpenAi(messageText, conversation, messageHistory, model, vectorStore);
     } else {
-      return this.chatOpenAi(message.content, conversation, messageHistory, model);
+      return this.chatOpenAi(messageText, conversation, messageHistory, model);
     }
   }
 

@@ -20,16 +20,12 @@ export interface Conversation {
 //消息
 export interface Message {
   messageId?: string;
-  previousId?: string;
   conversationId: string;
-  fileId?: string;
-  content?: string;
-  reasoning?: string;
-  status: number;
-  sender: string;
-  role: string;
+  content?: any; // AIMessageContent[] | UserMessageContent[] (JSON 数组格式)
+  role: 'user' | 'assistant' | 'system';
+  status: 'pending' | 'streaming' | 'complete' | 'stop' | 'error';
   createdAt?: string;
-  completed: number;
+  updatedAt?: string;
 }
 
 //提示词

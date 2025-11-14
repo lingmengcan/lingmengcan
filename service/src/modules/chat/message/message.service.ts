@@ -1,7 +1,7 @@
 import { Message } from './message.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -9,7 +9,6 @@ export class MessageService {
   constructor(
     @InjectRepository(Message)
     private repository: Repository<Message>,
-    private dataSource: DataSource,
   ) {}
 
   /**
@@ -23,7 +22,7 @@ export class MessageService {
 
   findByMessageId(messageId: string): Promise<Message> {
     return this.repository.findOne({
-      where: { messageId, status: 0 },
+      where: { messageId, status: 'complete' },
     });
   }
 
@@ -34,23 +33,9 @@ export class MessageService {
    */
   async findListByConversationId(conversationId: string) {
     const messages = await this.repository.find({
-      where: { status: 0, conversationId },
+      where: { conversationId },
       order: { createdAt: 'ASC' },
     });
-
-    // 按聊天问题记录排序
-    // const res = messages.reduce((acc, item) => {
-    //   if (item.sender === 'Human' || item.sender === 'System') {
-    //     acc.push(item);
-
-    //     const aiMessages = messages.filter((msg) => msg.previousId === item.messageId);
-
-    //     if (aiMessages?.length > 0) {
-    //       acc.push(...aiMessages);
-    //     }
-    //   }
-    //   return acc;
-    // }, [] as Message[]);
 
     return messages;
   }
@@ -58,7 +43,7 @@ export class MessageService {
   /**
    * 新增
    *
-   * @param menu 信息
+   * @param message 信息
    * @return 结果
    */
   async addMessage(message: Message) {
@@ -66,16 +51,10 @@ export class MessageService {
 
     const entity = new Message();
     entity.messageId = messageId;
-    entity.previousId = message.previousId;
     entity.conversationId = message.conversationId;
-    entity.fileId = message.fileId;
-    entity.content = message.content;
-    entity.sender = message.sender;
-    entity.role = message.role;
-    entity.reasoning = message.reasoning;
-    entity.completed = message.completed;
-    entity.status = message.status;
-    entity.createdAt = new Date();
+    entity.content = message.content || [];
+    entity.role = message.role || 'user';
+    entity.status = message.status || 'pending';
 
     return this.repository.save(entity);
   }
@@ -88,12 +67,15 @@ export class MessageService {
    */
   async updateMessage(message: Message) {
     const entity = await this.findOne(message.messageId);
-    entity.content = message.content;
-    entity.sender = message.sender;
-    entity.role = message.role;
-    entity.reasoning = message.reasoning;
-    entity.status = message.status;
-    entity.completed = message.completed;
+    if (message.content !== undefined) {
+      entity.content = message.content;
+    }
+    if (message.role !== undefined) {
+      entity.role = message.role;
+    }
+    if (message.status !== undefined) {
+      entity.status = message.status;
+    }
 
     return this.repository.save(entity);
   }
@@ -117,6 +99,6 @@ export class MessageService {
    * @return 结果
    */
   async clearMessagesByConversationId(conversationId: string) {
-    return await this.repository.update({ conversationId: conversationId }, { status: 1 });
+    return await this.repository.update({ conversationId: conversationId }, { status: 'error' });
   }
 }
