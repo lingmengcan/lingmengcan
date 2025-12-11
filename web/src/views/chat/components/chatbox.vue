@@ -11,77 +11,56 @@
         <t-icon name="chat-bubble" />
       </template>
     </t-button>
-    <div class="flex-1 flex justify-center max-w-[1080px] mx-auto">
-      <t-chat
-        ref="chatRef"
-        :clear-history="false"
-        animation="gradient"
-        :text-loading="loading"
-        :data="chatList"
-        :is-stream-load="isStreamLoad"
-        class="h-full overflow-y-auto"
-        style="max-height: calc(100vh - 100px)"
-      >
-        <template #content="{ item, index }">
-          <t-chat-reasoning v-if="item.reasoning?.length > 0" expand-icon-placement="right">
-            <template #header>
-              <t-chat-loading v-if="isStreamLoad && index === 0" :text="$t('views.chat.thinking')" />
-              <div v-else style="display: flex; align-items: center">
-                <t-icon
-                  name="check-circle"
-                  style="color: var(--td-success-color-5); font-size: 20px; margin-right: 8px"
-                />
-                <span>{{ $t('views.chat.thought') }}</span>
-              </div>
-            </template>
-            <t-chat-content v-if="item.reasoning.length > 0" :content="item.reasoning" />
-          </t-chat-reasoning>
-          <t-chat-content v-if="item.content.length > 0" :content="item.content" />
-        </template>
-        <template #actions="{ item, index }">
-          <t-chat-action
-            :content="item.content"
-            :operation-btn="index === 0 ? ['good', 'bad', 'replay', 'copy'] : ['good', 'bad', 'copy']"
-            @operation="handleOperation"
-          />
-        </template>
-        <template #footer>
-          <t-chat-sender
-            :stop-disabled="isStreamLoad"
-            :textarea-props="{
-              placeholder: $t('views.chat.inputPlaceholder'),
-            }"
-            @send="inputEnter"
-            @file-select="fileSelect"
-            @stop="onStop"
-          >
-            <template #header>
-              <div class="m-1">
-                <coversationParams v-model:modelValue="conversation" />
-              </div>
-            </template>
-            <template #prefix>
-              <div class="flex items-center gap-2">
-                <t-tooltip content="切换模型">
-                  <selectModel
-                    v-model:model-name="conversation.llm"
-                    class="llm-select rounded-full"
-                    model-type="GENERAL_LLM"
-                  />
-                </t-tooltip>
-                <t-button
-                  :theme="isThinked ? 'primary' : 'default'"
-                  variant="outline"
-                  shape="round"
-                  @click="checkClick"
-                >
-                  深度思考
-                </t-button>
-              </div>
-            </template>
-          </t-chat-sender>
-        </template>
+    <div class="flex-1 flex flex-col justify-center max-w-[1080px] mx-auto">
+      <t-chat ref="listRef" style="width: 100%; flex: 1; overflow-y: auto">
+        <t-chat-message
+          v-for="(message, idx) in chatList"
+          :key="message.messageId"
+          v-bind="messageProps[message.role]"
+          :role="message.role"
+          :content="formatMessageContent(message)"
+          :status="message.status"
+        >
+          <template #actionbar>
+            <t-chat-actionbar
+              v-if="message.role === 'assistant' && message.status === 'complete'"
+              :action-bar="getChatActionBar(idx === chatList.length - 1)"
+              :content="message.content[0].data"
+              @actions="handleActions"
+            />
+          </template>
+        </t-chat-message>
       </t-chat>
+      <t-chat-sender
+        ref="inputRef"
+        v-model="inputValue"
+        :loading="loading"
+        :textarea-props="{
+          placeholder: $t('views.chat.inputPlaceholder'),
+        }"
+        @send="inputEnter"
+        @file-select="fileSelect"
+        @stop="onStop"
+      >
+        <template #footer-prefix>
+          <div class="flex items-center gap-2">
+            <t-tooltip content="切换模型">
+              <selectModel
+                v-model:model-name="conversation.llm"
+                class="llm-select rounded-full"
+                model-type="GENERAL_LLM"
+              />
+            </t-tooltip>
+            <t-button :theme="isThinked ? 'primary' : 'default'" variant="outline" @click="checkClick">
+              <template #icon>
+                <t-icon name="system-sum" />
+              </template>
+              深度思考
+            </t-button>
+            <coversationParams v-model:modelValue="conversation" />
+          </div>
+        </template>
+      </t-chat-sender>
     </div>
   </div>
 </template>
@@ -89,11 +68,13 @@
   import { onMounted, PropType, ref } from 'vue';
   import {
     Chat as TChat,
-    ChatAction as TChatAction,
-    ChatContent as TChatContent,
+    ChatActionbar as TChatActionbar,
+    ChatMessage as TChatMessage,
     ChatSender as TChatSender,
-    ChatLoading as TChatLoading,
-    ChatReasoning as TChatReasoning,
+    TdChatMessageConfig,
+    TdChatActionsName,
+    TdChatListApi,
+    TdChatSenderApi,
   } from '@tdesign-vue-next/chat';
   import { Button as TButton, Tooltip as TTooltip } from 'tdesign-vue-next';
   import { useRoute } from 'vue-router';
@@ -104,6 +85,7 @@
   import { ChatParams, Conversation, Message } from '@/models/chat';
   import { chat, regenerate } from '@/api/chat/chat';
   import coversationParams from './coversation-params.vue';
+  import selectModel from '@/components/select/select-model.vue';
 
   defineProps({
     chatListVisable: {
@@ -120,25 +102,62 @@
   const conversationId = ref<string>((route.params as { conversationId: string }).conversationId);
 
   const loading = ref(false);
-  const isStreamLoad = ref(false);
   const isThinked = ref(true);
   const chatList = ref<ChatItem[]>([]);
 
-  const chatRef = ref();
+  // 状态管理
+  const listRef = ref<TdChatListApi | null>(null);
+  const inputRef = ref<TdChatSenderApi | null>(null);
+  const inputValue = ref<string>('');
 
   const conversation = ref<Conversation>({
     llm: 'qwen3-30b-a3b',
     systemPrompt: '',
     temperature: 0.5,
     topP: 1,
-    maxTokens: 7000,
+    maxTokens: 4096,
   });
 
   interface ChatItem extends Message {
     avatar?: string;
     name?: string;
-    datetime?: string;
   }
+
+  // 消息属性配置
+  const messageProps: TdChatMessageConfig = {
+    user: {
+      variant: 'base',
+      placement: 'right',
+    },
+    assistant: {
+      placement: 'left',
+      chatContentProps: {
+        thinking: {
+          maxHeight: 100,
+        },
+      },
+    },
+  };
+
+  // 获取聊天操作栏配置
+  const getChatActionBar = (isLast: boolean): TdChatActionsName[] => {
+    let filterActions: TdChatActionsName[] = ['replay', 'good', 'bad', 'copy'];
+    if (!isLast) {
+      filterActions = filterActions.filter((item) => item !== 'replay') as TdChatActionsName[];
+    }
+    return filterActions;
+  };
+
+  // 格式化消息内容为数组格式（TDesign ChatMessage 要求 content 为数组）
+  const formatMessageContent = (message: ChatItem): any[] => {
+    if (!message.content) return [];
+    // 如果 content 已经是数组，直接返回
+    if (Array.isArray(message.content)) {
+      return message.content;
+    }
+
+    return [];
+  };
 
   // 思考按钮
   const checkClick = () => {
@@ -154,12 +173,10 @@
 
   const onStop = function () {
     loading.value = false;
-    isStreamLoad.value = false;
   };
 
-  const handleOperation = function (type: string, context: { e: MouseEvent }) {
-    // 这里还不能用，等最新文档出来
-    console.log('type', type, context);
+  const handleActions = function (type: string, options) {
+    console.log('type', type, options);
     if (type === 'replay') {
       // 需要从当前聊天列表中获取对应的消息
       const currentMessage = chatList.value.find((msg) => msg.role === 'assistant');
@@ -188,49 +205,46 @@
 
   //对话
   async function onConversation(inputValue: string) {
-    // 问题入库
+    // 问题入库 - 将文本转换为 JSON 数组格式
     const newQuestion: ChatItem = {
       conversationId: conversationId.value,
-      content: inputValue,
-      reasoning: '',
-      sender: userStore.username,
+      content: [{ type: 'text', data: inputValue }], // 转换为 TDesign ChatMessage 格式
       role: 'user',
-      status: 0,
-      completed: 1,
-
+      status: 'complete',
       avatar: userStore.userInfo.avatar || defaultAvatar,
-      datetime: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       name: userStore.username,
     };
 
-    const question = await chatStore.addChatByConversationId(newQuestion);
-    chatList.value.unshift(newQuestion);
+    // 转换为 Message 类型保存到数据库
+    const questionMessage: Message = {
+      messageId: undefined,
+      conversationId: newQuestion.conversationId,
+      content: newQuestion.content,
+      role: newQuestion.role,
+      status: newQuestion.status,
+    };
+    const question = await chatStore.addChatByConversationId(questionMessage);
+    chatList.value.push(newQuestion);
 
     handleData(question!);
   }
 
   const handleData = async (question: Message) => {
     loading.value = true;
-    isStreamLoad.value = true;
 
-    // 空消息占位
+    // 空消息占位 - 使用 JSON 数组格式
     const answerEmpty: ChatItem = {
       avatar: logo,
-      datetime: new Date().toISOString(),
-      content: '',
-      reasoning: '',
+      content: [], // 初始化为空数组
       name: 'lingmengcan',
       role: 'assistant',
-
       conversationId: conversationId.value,
-      previousId: question?.messageId,
-      sender: 'lingmengcan',
-      status: 0,
-      completed: 0,
+      status: 'streaming', // 流式传输中
     };
 
-    chatList.value.unshift(answerEmpty);
-    const answer = chatList.value[0];
+    chatList.value.push(answerEmpty);
+    const answer = chatList.value[chatList.value.length - 1];
 
     try {
       const chatParams: ChatParams = {
@@ -238,6 +252,9 @@
       };
 
       const isThinking = ref(false);
+      let textContent = ''; // 累积文本内容
+      let reasoningContent = ''; // 累积思考内容
+
       await fetchSSE(
         () => {
           return chat(chatParams);
@@ -246,7 +263,6 @@
           success(result) {
             loading.value = false;
             // 处理思考标记
-
             if (result.includes('<think>')) {
               isThinking.value = true;
               result = result.replace('<think>', '');
@@ -257,32 +273,79 @@
             }
 
             // 更新对应字段
+            if (!answer.content || !Array.isArray(answer.content)) {
+              answer.content = [];
+            }
+
             if (isThinking.value) {
-              answer.reasoning += result;
+              reasoningContent += result;
+              // 将思考内容存储为 reasoning 类型的内容块
+              const reasoningIndex = answer.content.findIndex((item: any) => item?.type === 'reasoning');
+              if (reasoningIndex >= 0) {
+                // 更新现有的 reasoning 内容
+                if (!answer.content[reasoningIndex].data) {
+                  answer.content[reasoningIndex].data = [];
+                }
+                const lastTextIndex = answer.content[reasoningIndex].data.findLastIndex(
+                  (item: any) => item?.type === 'text',
+                );
+                if (lastTextIndex >= 0) {
+                  answer.content[reasoningIndex].data[lastTextIndex] = { type: 'text', data: reasoningContent };
+                } else {
+                  answer.content[reasoningIndex].data.push({ type: 'text', data: reasoningContent });
+                }
+              } else {
+                // 创建新的 reasoning 内容块
+                answer.content.push({
+                  type: 'reasoning',
+                  status: 'complete',
+                  data: [{ title: '已完成思考', text: reasoningContent }],
+                });
+              }
             } else {
-              answer.content += result;
+              textContent += result;
+              // 更新 content 数组，保持最后一个 text 类型的内容块
+              const lastTextIndex = answer.content.findLastIndex((item: any) => item?.type === 'text');
+              if (lastTextIndex >= 0) {
+                answer.content[lastTextIndex] = { type: 'text', data: textContent };
+              } else {
+                answer.content.push({ type: 'text', data: textContent });
+              }
             }
           },
           complete(isOk, msg) {
             if (!isOk) {
-              answer.role = 'error';
-              answer.content = msg;
+              answer.status = 'error';
+              if (!answer.content || !Array.isArray(answer.content)) {
+                answer.content = [];
+              }
+              answer.content.push({ type: 'text', data: msg });
+            } else {
+              answer.status = 'complete';
             }
 
-            // 更新回答
-            chatStore.addChatByConversationId({
-              ...answer,
-              completed: 1,
-            });
+            // 更新回答到数据库
+            const answerMessage: Message = {
+              messageId: answer.messageId,
+              conversationId: answer.conversationId,
+              content: answer.content,
+              role: answer.role,
+              status: answer.status,
+            };
+            chatStore.addChatByConversationId(answerMessage);
 
             // 控制终止按钮
-            isStreamLoad.value = false;
             loading.value = false;
           },
         },
       );
     } catch (e: any) {
       console.error('Chat error:', e.message);
+      answer.status = 'error';
+      if (!answer.content || !Array.isArray(answer.content)) {
+        answer.content = [];
+      }
+      answer.content.push({ type: 'text', data: e.message });
     } finally {
       loading.value = false;
     }
@@ -291,16 +354,28 @@
   async function handleRegenerate(answer: ChatItem) {
     try {
       loading.value = true;
-      isStreamLoad.value = true;
 
-      answer.content = '';
-      answer.reasoning = '';
+      // 重置内容
+      answer.content = [];
+      answer.status = 'streaming';
+
+      // 转换为 Message 类型
+      const answerMessage: Message = {
+        messageId: answer.messageId,
+        conversationId: answer.conversationId,
+        content: answer.content,
+        role: answer.role,
+        status: answer.status,
+      };
 
       const chatParams: ChatParams = {
-        message: answer,
+        message: answerMessage,
       };
 
       const isThinking = ref(false);
+      let textContent = ''; // 累积文本内容
+      let reasoningContent = ''; // 累积思考内容
+
       await fetchSSE(
         () => {
           return regenerate(chatParams);
@@ -309,7 +384,6 @@
           success(result) {
             loading.value = false;
             // 处理思考标记
-
             if (result.includes('<think>')) {
               isThinking.value = true;
               result = result.replace('<think>', '');
@@ -320,29 +394,75 @@
             }
 
             // 更新对应字段
+            if (!answer.content || !Array.isArray(answer.content)) {
+              answer.content = [];
+            }
+
             if (isThinking.value) {
-              answer.reasoning += result;
+              reasoningContent += result;
+              // 将思考内容存储为 reasoning 类型的内容块
+              const reasoningIndex = answer.content.findIndex((item: any) => item?.type === 'reasoning');
+              if (reasoningIndex >= 0) {
+                if (!answer.content[reasoningIndex].data) {
+                  answer.content[reasoningIndex].data = [];
+                }
+                const lastTextIndex = answer.content[reasoningIndex].data.findLastIndex(
+                  (item: any) => item?.type === 'text',
+                );
+                if (lastTextIndex >= 0) {
+                  answer.content[reasoningIndex].data[lastTextIndex] = { type: 'text', data: reasoningContent };
+                } else {
+                  answer.content[reasoningIndex].data.push({ type: 'text', data: reasoningContent });
+                }
+              } else {
+                answer.content.push({
+                  type: 'reasoning',
+                  data: [{ type: 'text', status: 'complete', data: reasoningContent }],
+                });
+              }
             } else {
-              answer.content += result;
+              textContent += result;
+              // 更新 content 数组
+              const lastTextIndex = answer.content.findLastIndex((item: any) => item?.type === 'text');
+              if (lastTextIndex >= 0) {
+                answer.content[lastTextIndex] = { type: 'text', data: textContent };
+              } else {
+                answer.content.push({ type: 'text', data: textContent });
+              }
             }
           },
           complete(isOk, msg) {
             if (!isOk) {
-              answer.role = 'error';
-              answer.content = msg;
-              answer.reasoning = msg;
+              answer.status = 'error';
+              if (!answer.content || !Array.isArray(answer.content)) {
+                answer.content = [];
+              }
+              answer.content.push({ type: 'text', data: msg });
+            } else {
+              answer.status = 'complete';
             }
             // 更新回答
-            chatStore.updateChatByConversationId(answer);
+            const answerMessage: Message = {
+              messageId: answer.messageId,
+              conversationId: answer.conversationId,
+              content: answer.content,
+              role: answer.role,
+              status: answer.status,
+            };
+            chatStore.updateChatByConversationId(answerMessage);
 
             // 控制终止按钮
-            isStreamLoad.value = false;
             loading.value = false;
           },
         },
       );
     } catch (e: any) {
       console.error('Chat error:', e.message);
+      answer.status = 'error';
+      if (!answer.content || !Array.isArray(answer.content)) {
+        answer.content = [];
+      }
+      answer.content.push({ type: 'text', data: e.message });
     } finally {
       loading.value = false;
     }
@@ -387,12 +507,14 @@
 
       // 将 conversation.messages 转换为 chatList 格式
       if (conversation.value.messages) {
-        chatList.value = conversation.value.messages.map((msg) => ({
-          ...msg,
-          avatar: msg.role === 'assistant' ? logo : userStore.userInfo.avatar || defaultAvatar,
-          name: msg.sender,
-          datetime: msg.createdAt,
-        }));
+        chatList.value = conversation.value.messages.map((msg) => {
+          return {
+            ...msg,
+            status: msg.status || 'pending',
+            avatar: msg.role === 'assistant' ? logo : userStore.userInfo.avatar || defaultAvatar,
+            name: msg.role === 'assistant' ? 'lingmengcan' : userStore.username,
+          };
+        });
       }
     }
   });

@@ -17,7 +17,7 @@ export const useDictStore = defineStore({
 
   actions: {
     // 按字典类型获取所有子字典列表
-    async getDictListByType(dictType: string | string[]): Promise<Dict[]> {
+    async getDictListByType(dictType: string | string[] | number | number[]): Promise<Dict[]> {
       const res = await getDictListByType(dictType);
 
       if (res && res.code === ResultEnum.SUCCESS) {

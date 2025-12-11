@@ -11,9 +11,8 @@
     copyApplication,
     publishApplication,
     unpublishApplication,
-    executeWorkflow,
   } from '@/api/llm/app';
-  import { Application, ApplicationParams } from '@/models/workflow';
+  import { Application, ApplicationParams } from '@/models/app';
   import selectStatus from '@/components/select/select-status.vue';
   import selectDict from '@/components/select/select-dict.vue';
 
@@ -34,11 +33,6 @@
     description: '',
     version: '1.0.0',
     status: 0,
-    workflowConfig: {
-      nodes: [],
-      edges: [],
-      variables: [],
-    },
   };
 
   const drawerFormData = ref({ ...appInitData });
@@ -128,10 +122,16 @@
 
   // 设计工作流
   const handleDesign = (row: Application) => {
-    router.push({
-      path: '/llm/workflow-designer',
-      query: { appId: row.appId },
-    });
+    // 如果应用有关联的工作流ID，跳转到工作流设计页面
+    if (row.workflowId) {
+      router.push({
+        path: '/canvas/llm-workflow/design',
+        query: { workflowId: row.workflowId },
+      });
+    } else {
+      // 如果没有关联工作流，提示用户先创建工作流
+      MessagePlugin.warning('该应用尚未关联工作流，请先创建工作流');
+    }
   };
 
   // 复制应用
@@ -207,22 +207,12 @@
     });
   };
 
-  // 执行工作流
-  const handleExecute = async (row: Application) => {
-    try {
-      LoadingPlugin(true);
-      const res = await executeWorkflow(row.appId);
-      if (res?.code === 0) {
-        MessagePlugin.success(t('views.llm.app.executeSuccess'));
-        // 可以跳转到执行结果页面
-        router.push({
-          path: '/llm/workflow-execution',
-          query: { executionId: res.data?.executionId },
-        });
-      }
-    } finally {
-      LoadingPlugin(false);
-    }
+  // 查看API文档
+  const handleViewApiDoc = (row: Application) => {
+    // 构建API文档链接
+    const apiDocUrl = `/chat/app/api/${row.appId}`;
+    // 在新窗口中打开API文档
+    window.open(apiDocUrl, '_blank');
   };
 
   // 提交新增/编辑
@@ -329,12 +319,12 @@
             <template #footer>
               <div class="flex justify-between items-center">
                 <span class="text-xs text-gray-500">v{{ item.version }}</span>
-                <div class="flex space-x-2">
+                <div class="flex gap-2">
                   <t-button size="small" theme="primary" @click="handleDesign(item)">
                     <template #icon>
                       <t-icon name="edit-1" />
                     </template>
-                    设计
+                    {{ $t('views.llm.app.design') }}
                   </t-button>
                   <t-dropdown>
                     <t-button size="small" variant="outline">
@@ -345,27 +335,27 @@
                     <t-dropdown-menu>
                       <t-dropdown-item @click="handleEdit(item)">
                         <t-icon name="edit" class="mr-1" />
-                        编辑
-                      </t-dropdown-item>
-                      <t-dropdown-item @click="handleExecute(item)" :disabled="item.status !== 1">
-                        <t-icon name="play-circle" class="mr-1" />
-                        执行
+                        {{ $t('views.llm.app.edit') }}
                       </t-dropdown-item>
                       <t-dropdown-item @click="handleCopy(item)">
                         <t-icon name="file-copy" class="mr-1" />
-                        复制
+                        {{ $t('views.llm.app.copy') }}
+                      </t-dropdown-item>
+                      <t-dropdown-item @click="handleViewApiDoc(item)">
+                        <t-icon name="api" class="mr-1" />
+                        {{ $t('views.llm.app.apiDoc') }}
                       </t-dropdown-item>
                       <t-dropdown-item v-if="item.status === 0" @click="handlePublish(item, true)">
                         <t-icon name="upload" class="mr-1" />
-                        发布
+                        {{ $t('views.llm.app.publish') }}
                       </t-dropdown-item>
                       <t-dropdown-item v-if="item.status === 1" @click="handlePublish(item, false)">
                         <t-icon name="download" class="mr-1" />
-                        取消发布
+                        {{ $t('views.llm.app.unpublish') }}
                       </t-dropdown-item>
-                      <t-dropdown-item @click="handleDelete(item)" theme="danger">
+                      <t-dropdown-item @click="handleDelete(item)" theme="error">
                         <t-icon name="delete" class="mr-1" />
-                        删除
+                        {{ $t('views.llm.app.delete') }}
                       </t-dropdown-item>
                     </t-dropdown-menu>
                   </t-dropdown>

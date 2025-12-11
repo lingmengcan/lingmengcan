@@ -1,16 +1,14 @@
-// 应用接口
-export interface Application {
-  appId: string;
-  appName: string;
-  appType: string;
-  appTypeName: string;
+// 工作流接口
+export interface Workflow {
+  workflowId: string;
+  workflowName: string;
   description: string;
   version: string;
   status: number;
-  workflowConfig: {
-    nodes: any[];
-    edges: any[];
-    variables: any[];
+  config: {
+    nodes: WorkflowNode[];
+    edges: WorkflowEdge[];
+    variables: WorkflowVariable[];
   };
   createdUser?: string;
   updatedUser?: string;
@@ -18,18 +16,17 @@ export interface Application {
   updatedAt?: string;
 }
 
-// 应用查询参数
-export interface ApplicationParams {
-  appName?: string;
-  appType?: string;
+// 工作流查询参数
+export interface WorkflowListParams {
+  workflowName?: string;
   status?: number;
   page: number;
   pageSize: number;
 }
 
-// 应用列表响应
-export interface ApplicationList {
-  list: Application[];
+// 工作流列表响应
+export interface WorkflowList {
+  list: Workflow[];
   count: number;
   page: number;
   pageSize: number;
@@ -38,7 +35,7 @@ export interface ApplicationList {
 // 工作流执行记录
 export interface WorkflowExecution {
   executionId: string;
-  appId: string;
+  workflowId: string;
   inputs?: any;
   outputs?: any;
   status: number;
@@ -50,21 +47,47 @@ export interface WorkflowExecution {
   createdAt: string;
 }
 
-// 工作流执行参数
-export interface WorkflowExecuteParams {
-  appId: string;
-  inputs?: any;
+// 工作流节点
+export interface WorkflowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: {
+    label: string;
+    config: any;
+    inputs?: NodeInput[];
+    outputs?: NodeOutput[];
+  };
+}
+
+// 工作流边
+export interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
+  type?: string;
+  animated?: boolean;
+}
+
+// 工作流变量
+export interface WorkflowVariable {
+  id: string;
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'json';
+  value: any;
+  description?: string;
 }
 
 // 节点类型
-export interface NodeType {
+export interface WorkflowNodeType {
   nodeType: string;
   nodeName: string;
   description: string;
   icon: string;
   category: string;
-  inputs: NodeInput[];
-  outputs: NodeOutput[];
+  configSchema?: any;
 }
 
 // 节点输入
@@ -81,3 +104,4 @@ export interface NodeOutput {
   type: string;
   description: string;
 }
+

@@ -153,6 +153,7 @@
         :keys="{ value: 'menuId', label: 'menuName', children: 'children' }"
         :expand-all="expandAll"
         :value="checkedKeys"
+        value-mode="all"
         style="max-height: 450px; overflow: auto"
         @change="checkedTree"
       />

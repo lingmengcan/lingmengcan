@@ -36,6 +36,9 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.tico/*
+.codebuddy/*
+.cursor/*
+
+.specify/*
 
 pnpm-lock.yaml

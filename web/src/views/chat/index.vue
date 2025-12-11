@@ -18,7 +18,7 @@
       systemPrompt: '',
       temperature: 0.5,
       topP: 1,
-      maxTokens: 7000,
+      maxTokens: 4096,
     };
 
     await chatStore.addConversation(newConversation);

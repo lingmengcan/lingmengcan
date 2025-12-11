@@ -27,4 +27,7 @@ coverage
 *.sln
 *.sw?
 
+.codebuddy/*
+.cursor/*
+
 pnpm-lock.yaml

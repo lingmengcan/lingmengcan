@@ -14,11 +14,11 @@
 
   const props = defineProps({
     dictType: {
-      type: [Array, String, null] as PropType<string | string[] | null>,
+      type: [Array, String, Number, null] as PropType<string | string[] | number | number[] | null>,
       default: null,
     },
     dictCode: {
-      type: [Array, String, null] as PropType<string | string[] | null>,
+      type: [Array, String, Number, null] as PropType<string | string[] | number | number[] | null>,
       default: null,
     },
     multiple: {
@@ -31,7 +31,15 @@
     },
   });
 
-  const selectValue = ref(props.dictCode);
+  // 确保值的类型一致性
+  const normalizeValue = (value: string | string[] | number | number[] | null) => {
+    if (value === 0 || value === '0') {
+      return '0'; // 统一将 0 和 '0' 转换为字符串 '0'
+    }
+    return value;
+  };
+
+  const selectValue = ref(normalizeValue(props.dictCode));
 
   const emit = defineEmits(['update:dictCode', 'update:dictName']);
 
@@ -40,7 +48,7 @@
 
   //监控父组件变化
   watchEffect(() => {
-    selectValue.value = props.dictCode;
+    selectValue.value = normalizeValue(props.dictCode);
   });
 
   const handleSelect = (value: string | (string | number)[], context: any) => {
