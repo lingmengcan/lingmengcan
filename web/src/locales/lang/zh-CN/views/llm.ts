@@ -6,7 +6,7 @@ export default {
     name: '模型名称',
     description: '模型描述',
     type: '模型类型',
-    apiType: '访问类型OpenAI/Ollama',
+    apiType: '访问类型',
     baseUrl: 'Base Url',
     apiKey: 'Api Key',
     defaultEmbeddingModel: '默认embedding模型',

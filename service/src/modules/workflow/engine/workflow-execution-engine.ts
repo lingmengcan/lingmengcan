@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { WorkflowNodeExecutor } from './workflow-node-executor';
 import { WorkflowContext } from './workflow-context';
-import { WorkflowConfig, WorkflowNode, WorkflowEdge } from './workflow.types';
+import { WorkflowNode, WorkflowEdge } from './workflow.types';
 import { LlmService } from '@/modules/model/llm.service';
-import { ChatOpenAI } from '@langchain/openai';
-import { Ollama } from '@langchain/ollama';
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from '@langchain/core/prompts';
+import { initChatModel } from 'langchain';
 
 /**
  * 工作流执行引擎
@@ -103,24 +102,15 @@ export class WorkflowExecutionEngine {
       throw new Error(`模型未找到: ${modelName}`);
     }
 
-    const isOllama = model.apiType === 'LLM_API_OLLAMA';
-
-    const llmInstance: any = isOllama
-      ? new Ollama({
-          model: model.modelName,
-          temperature: temperature ?? 0.7,
-          topP: top_p ?? 1,
-        })
-      : new ChatOpenAI(
-          {
-            openAIApiKey: model.apiKey,
-            temperature: temperature ?? 0.7,
-            topP: top_p,
-            maxTokens: max_tokens,
-            streaming: true,
-          },
-          { basePath: model.baseUrl },
-        );
+    // 创建模型实例
+    const llm = await initChatModel(model.modelName, {
+      temperature,
+      topP: top_p,
+      maxTokens: max_tokens,
+      streaming: true,
+      apiKey: model.apiKey,
+      baseUrl: model.baseUrl,
+    });
 
     const promptMessages = (messages as Array<{ role: string; content: string }>).map((m) => {
       if (m.role === 'system') return SystemMessagePromptTemplate.fromTemplate(m.content);
@@ -129,7 +119,7 @@ export class WorkflowExecutionEngine {
     });
 
     const prompt = ChatPromptTemplate.fromMessages(promptMessages);
-    const chain = prompt.pipe(llmInstance);
+    const chain = prompt.pipe(llm);
 
     let reasoning_content = '';
     let full_content = '';
@@ -235,7 +225,7 @@ export class WorkflowExecutionEngine {
     try {
       // 执行节点
       const result = await this.nodeExecutor.execute(node, context);
-      
+
       // 保存节点执行结果
       context.setNodeResult(node.id, result);
 
@@ -297,7 +287,7 @@ export class WorkflowExecutionEngine {
   ): Promise<any> {
     const conditionResult = result.data?.conditionResult;
     const nextNodeId = conditionResult ? nextNodeIds[0] : nextNodeIds[1];
-    
+
     if (nextNodeId) {
       const nextNode = nodeMap.get(nextNodeId);
       if (nextNode) {

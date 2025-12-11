@@ -1,7 +1,7 @@
-import { TextLoader } from 'langchain/document_loaders/fs/text';
 import { DocxLoader } from '@langchain/community/document_loaders/fs/docx';
 import { PDFLoader } from '@langchain/community/document_loaders/fs/pdf';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { TextLoader } from '@langchain/classic/document_loaders/fs/text';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OpenAIEmbeddings } from '@langchain/openai';
 
@@ -43,7 +43,7 @@ export class FileService {
     fileId: string,
     fileType: string,
     filePath: string,
-    basePath: string,
+    baseURL: string,
     openAIApiKey: string,
     modelName: string,
   ) {
@@ -67,8 +67,8 @@ export class FileService {
     // 文本切割,将文档拆分为块，这里要优化，不能只用中文符号切割
     const textSplitter = new RecursiveCharacterTextSplitter({
       // separators: ['\n\n', '\n', '。', '！', '？'],
-      chunkSize: 400,
-      chunkOverlap: 100,
+      chunkSize: 1000,
+      chunkOverlap: 200,
     });
 
     // 加载文档并拆分
@@ -76,9 +76,13 @@ export class FileService {
 
     const splitDocs = await textSplitter.splitDocuments(docs);
 
-    const embeddings = modelName
-      ? new OpenAIEmbeddings({ openAIApiKey, modelName }, { basePath })
-      : new OpenAIEmbeddings({ openAIApiKey }, { basePath });
+    const embeddings = new OpenAIEmbeddings({
+      openAIApiKey,
+      modelName,
+      configuration: {
+        baseURL,
+      },
+    });
 
     // 加载向量存储库
     await Chroma.fromDocuments(splitDocs, embeddings, {

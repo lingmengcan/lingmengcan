@@ -6,7 +6,7 @@ export default {
     name: 'Model Name',
     description: 'Model Description',
     type: 'Model Type',
-    apiType: 'OpenAI/Ollama',
+    apiType: 'Model Provider',
     baseUrl: 'Base Url',
     apiKey: 'Api Key',
     defaultEmbeddingModel: 'Default Embedding Model',

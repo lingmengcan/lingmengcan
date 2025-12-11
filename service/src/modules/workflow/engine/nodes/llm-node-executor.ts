@@ -3,9 +3,8 @@ import { BaseNodeExecutor } from './base-node-executor';
 import { WorkflowContext } from '../workflow-context';
 import { WorkflowNode, NodeExecutionResult, LLMNodeConfig, LLMRequest, LLMResponse } from '../workflow.types';
 import { LlmService } from '@/modules/model/llm.service';
-import { ChatOpenAI } from '@langchain/openai';
-import { Ollama } from '@langchain/ollama';
 import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from '@langchain/core/prompts';
+import { initChatModel } from 'langchain';
 
 /**
  * LLM节点执行器
@@ -21,17 +20,17 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
    */
   async execute(node: WorkflowNode, context: WorkflowContext): Promise<NodeExecutionResult> {
     const config = this.getNodeConfig<LLMNodeConfig>(node);
-    
+
     this.logNodeConfig(
-      node, 
-      context, 
-      `模型="${config.model}", 温度=${config.temperature}, 最大token=${config.maxTokens}`
+      node,
+      context,
+      `模型="${config.model}", 温度=${config.temperature}, 最大token=${config.maxTokens}`,
     );
 
     return this.safeExecute(node, context, async () => {
       const llmRequest = this.buildLLMRequest(config, context);
       const response = await this.callLLMAPI(llmRequest);
-      
+
       return this.createResult('llm', {
         output: response.output || '',
         reasoning_content: response.reasoning_content || '',
@@ -48,7 +47,7 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
   async *executeStream(node: WorkflowNode, context: WorkflowContext): AsyncGenerator<string> {
     const config = this.getNodeConfig<LLMNodeConfig>(node);
     const llmRequest = this.buildLLMRequest(config, context);
-    
+
     for await (const chunk of this.callLLMAPIStream(llmRequest)) {
       yield chunk;
     }
@@ -101,24 +100,18 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
       throw new Error(`模型未找到: ${modelName}`);
     }
 
-    const isOllama = model.apiType === 'LLM_API_OLLAMA';
-
-    const llmInstance: any = isOllama
-      ? new Ollama({
-          model: model.modelName,
-          temperature: temperature ?? 0.7,
-          topP: top_p ?? 1,
-        })
-      : new ChatOpenAI(
-          {
-            openAIApiKey: model.apiKey,
-            temperature: temperature ?? 0.7,
-            topP: top_p,
-            maxTokens: max_tokens,
-            streaming: true,
-          },
-          { basePath: model.baseUrl },
-        );
+    // 创建模型实例
+    const llm = await initChatModel(model.modelName, {
+      modelProvider: model.apiType,
+      temperature,
+      topP: top_p,
+      maxTokens: max_tokens,
+      streaming: true,
+      apiKey: model.apiKey,
+      configuration: {
+        baseURL: model.baseUrl,
+      },
+    });
 
     const promptMessages = messages.map((m) => {
       if (m.role === 'system') return SystemMessagePromptTemplate.fromTemplate(m.content);
@@ -127,7 +120,7 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
     });
 
     const prompt = ChatPromptTemplate.fromMessages(promptMessages);
-    const chain = prompt.pipe(llmInstance);
+    const chain = prompt.pipe(llm);
 
     let reasoning = '';
     let fullContent = '';
@@ -165,24 +158,18 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
       throw new Error(`模型未找到: ${modelName}`);
     }
 
-    const isOllama = model.apiType === 'LLM_API_OLLAMA';
-
-    const llmInstance: any = isOllama
-      ? new Ollama({
-          model: model.modelName,
-          temperature: temperature ?? 0.7,
-          topP: top_p ?? 1,
-        })
-      : new ChatOpenAI(
-          {
-            openAIApiKey: model.apiKey,
-            temperature: temperature ?? 0.7,
-            topP: top_p,
-            maxTokens: max_tokens,
-            streaming: true,
-          },
-          { basePath: model.baseUrl },
-        );
+    // 创建模型实例
+    const llm = await initChatModel(model.modelName, {
+      modelProvider: model.apiType,
+      temperature,
+      topP: top_p,
+      maxTokens: max_tokens,
+      streaming: true,
+      apiKey: model.apiKey,
+      configuration: {
+        baseURL: model.baseUrl,
+      },
+    });
 
     const promptMessages = messages.map((m) => {
       if (m.role === 'system') return SystemMessagePromptTemplate.fromTemplate(m.content);
@@ -191,7 +178,7 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
     });
 
     const prompt = ChatPromptTemplate.fromMessages(promptMessages);
-    const chain = prompt.pipe(llmInstance);
+    const chain = prompt.pipe(llm);
 
     let reasoning_content = '';
     let full_content = '';
