@@ -1,5 +1,15 @@
 import { IsNotEmpty, IsOptional } from 'class-validator';
 import { Entity, PrimaryColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { WorkflowConfig } from './engine/workflow.types';
+
+/**
+ * 工作流状态枚举
+ */
+export enum WorkflowStatus {
+  DRAFT = 0, // 草稿
+  PUBLISHED = 1, // 已发布
+  ARCHIVED = 2, // 已归档
+}
 
 @Entity({ name: 'workflow' })
 export class Workflow {
@@ -19,11 +29,11 @@ export class Workflow {
   version: string;
 
   @Column({ type: 'tinyint', width: 1, default: 0, name: 'status' })
-  status: number;
+  status: WorkflowStatus;
 
   @Column({ type: 'json', name: 'config' })
   @IsOptional()
-  config: any;
+  config: WorkflowConfig;
 
   @Column({ type: 'varchar', length: 32, name: 'created_user' })
   createdUser: string;

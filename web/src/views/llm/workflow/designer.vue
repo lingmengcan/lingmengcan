@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-  import { ref, onMounted, computed } from 'vue';
+  import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { MessagePlugin } from 'tdesign-vue-next';
-  import { getWorkflowDetail, editWorkflow, executeWorkflow } from '@/api/llm/workflow';
-  import { Workflow } from '@/models/workflow';
+  import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+  import { getWorkflowDetail, editWorkflow, publishWorkflow } from '@/api/llm/workflow';
+  import { Workflow, WorkflowStatus, WorkflowConfig } from '@/models/workflow';
   import WorkflowDesigner from './components/workflow-designer.vue';
 
   const route = useRoute();
@@ -13,7 +13,25 @@
   const workflow = ref<Workflow | null>(null);
   const loading = ref(true);
   const saving = ref(false);
-  const isRunning = ref(false);
+  const publishing = ref(false);
+
+  // 自动保存相关
+  const autoSaveInterval = ref<ReturnType<typeof setInterval> | null>(null);
+  const lastSaveTime = ref<Date | null>(null);
+  const hasUnsavedChanges = ref(false);
+  const AUTO_SAVE_DELAY = 30000; // 30秒自动保存
+
+  // 格式化最后保存时间
+  const lastSaveTimeText = computed(() => {
+    if (!lastSaveTime.value) return '';
+    return lastSaveTime.value.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  });
 
   // 加载工作流详情
   const loadWorkflow = async () => {
@@ -28,6 +46,7 @@
       const res = await getWorkflowDetail(workflowId.value);
       if (res?.code === 0) {
         workflow.value = res.data;
+        lastSaveTime.value = new Date();
       } else {
         MessagePlugin.error('加载工作流失败');
         router.back();
@@ -42,58 +61,96 @@
   };
 
   // 保存工作流
-  const saveWorkflow = async () => {
-    if (!workflow.value) return;
+  const saveWorkflow = async (showMessage = true) => {
+    if (!workflow.value || saving.value) return;
 
     try {
       saving.value = true;
       const res = await editWorkflow(workflow.value);
       if (res?.code === 0) {
-        MessagePlugin.success('保存成功');
+        lastSaveTime.value = new Date();
+        hasUnsavedChanges.value = false;
+        if (showMessage) {
+          MessagePlugin.success('保存成功');
+        }
+      } else if (showMessage) {
+        MessagePlugin.error('保存失败');
       }
     } catch (error) {
       console.error('Failed to save workflow:', error);
-      MessagePlugin.error('保存失败');
+      if (showMessage) {
+        MessagePlugin.error('保存失败');
+      }
     } finally {
       saving.value = false;
     }
   };
 
-  // 测试运行工作流
-  const testWorkflow = async () => {
+  // 发布工作流
+  const handlePublishWorkflow = async () => {
     if (!workflow.value) return;
 
+    // 先保存
+    await saveWorkflow(false);
+
+    // 验证工作流配置
+    const { config } = workflow.value;
+    if (!config?.nodes || config.nodes.length === 0) {
+      MessagePlugin.warning('请先添加工作流节点');
+      return;
+    }
+
+    const hasStartNode = config.nodes.some((node) => node.type === 'start');
+    const hasEndNode = config.nodes.some((node) => node.type === 'end');
+
+    if (!hasStartNode || !hasEndNode) {
+      MessagePlugin.warning('工作流必须包含开始节点和结束节点');
+      return;
+    }
+
     try {
-      isRunning.value = true;
-      const res = await executeWorkflow(workflowId.value);
+      publishing.value = true;
+      const res = await publishWorkflow(workflow.value.workflowId);
       if (res?.code === 0) {
-        MessagePlugin.success('测试运行成功');
-        // 跳转到执行结果页面
-        router.push({
-          path: '/llm/workflow-execution',
-          query: {
-            workflowId: workflowId.value,
-            executionId: res.data?.executionId,
-          },
-        });
+        workflow.value.status = WorkflowStatus.PUBLISHED;
+        MessagePlugin.success('发布成功');
+      } else {
+        MessagePlugin.error(res?.msg || '发布失败');
       }
-    } catch (error) {
-      console.error('Failed to test workflow:', error);
-      MessagePlugin.error('测试运行失败');
+    } catch (error: any) {
+      console.error('Failed to publish workflow:', error);
+      MessagePlugin.error(error?.response?.data?.message || '发布失败');
     } finally {
-      isRunning.value = false;
+      publishing.value = false;
     }
   };
 
   // 返回上一页
   const goBack = () => {
-    router.back();
+    if (hasUnsavedChanges.value) {
+      DialogPlugin.confirm({
+        header: '未保存的更改',
+        body: '您有未保存的更改，是否保存后再离开？',
+        confirmBtn: '保存并离开',
+        cancelBtn: '不保存',
+        onConfirm: async () => {
+          await saveWorkflow();
+          router.back();
+        },
+        onCancel: () => {
+          router.back();
+        },
+      });
+    } else {
+      router.back();
+    }
   };
 
   // 更新工作流配置
-  const updateWorkflowConfig = (config: any) => {
+  const updateWorkflowConfig = (config: WorkflowConfig) => {
     if (workflow.value) {
       workflow.value.config = config;
+      hasUnsavedChanges.value = true;
     }
   };
 
@@ -129,12 +186,19 @@
         try {
           const result = e.target?.result as string;
           const config = JSON.parse(result);
+          
+          // 验证导入的配置格式
+          if (!config.nodes || !Array.isArray(config.nodes)) {
+            throw new Error('无效的工作流配置格式');
+          }
+          
           if (workflow.value) {
             workflow.value.config = config;
+            hasUnsavedChanges.value = true;
             MessagePlugin.success('工作流导入成功');
           }
-        } catch (error) {
-          MessagePlugin.error('工作流文件格式错误');
+        } catch (error: any) {
+          MessagePlugin.error(error.message || '工作流文件格式错误');
         }
       };
       reader.readAsText(file);
@@ -152,8 +216,41 @@
     }
   };
 
+  // 启动自动保存
+  const startAutoSave = () => {
+    if (autoSaveInterval.value) return;
+    
+    autoSaveInterval.value = setInterval(() => {
+      if (hasUnsavedChanges.value && !saving.value) {
+        saveWorkflow(false);
+      }
+    }, AUTO_SAVE_DELAY);
+  };
+
+  // 停止自动保存
+  const stopAutoSave = () => {
+    if (autoSaveInterval.value) {
+      clearInterval(autoSaveInterval.value);
+      autoSaveInterval.value = null;
+    }
+  };
+
+  // 监听配置变化
+  watch(
+    () => workflow.value?.config,
+    () => {
+      hasUnsavedChanges.value = true;
+    },
+    { deep: true },
+  );
+
   onMounted(() => {
     loadWorkflow();
+    startAutoSave();
+  });
+
+  onUnmounted(() => {
+    stopAutoSave();
   });
 </script>
 
@@ -170,12 +267,18 @@
           </t-button>
 
           <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span class="text-sm font-medium text-gray-900">{{ workflow?.workflowName || 'lingmengcan' }}</span>
-            <t-icon name="chevron-down" class="text-gray-400" size="14px" />
+            <div
+              class="w-2 h-2 rounded-full"
+              :class="workflow?.status === 1 ? 'bg-green-500' : 'bg-yellow-500'"
+            ></div>
+            <span class="text-sm font-medium text-gray-900">{{ workflow?.workflowName || '加载中...' }}</span>
+            <t-tag v-if="workflow?.status === 1" theme="success" size="small">已发布</t-tag>
+            <t-tag v-else theme="warning" size="small">草稿</t-tag>
           </div>
 
-          <span class="text-xs text-gray-500">已自动保存 07-09 11:51:37</span>
+          <span v-if="lastSaveTime" class="text-xs text-gray-500">
+            {{ hasUnsavedChanges ? '有未保存的更改' : `已自动保存 ${lastSaveTimeText}` }}
+          </span>
         </div>
 
         <div class="flex items-center space-x-2">
@@ -183,8 +286,18 @@
             <t-button variant="text" size="small" class="text-gray-600" @click="viewExecutionHistory">
               <t-icon name="history" />
             </t-button>
-            <t-button theme="primary" size="small" @click="saveWorkflow" :loading="saving">保存</t-button>
-            <t-button theme="primary" size="small" @click="saveWorkflow" :loading="saving">发布</t-button>
+            <t-button theme="default" size="small" @click="saveWorkflow(true)" :loading="saving">
+              保存
+            </t-button>
+            <t-button
+              theme="primary"
+              size="small"
+              @click="handlePublishWorkflow"
+              :loading="publishing"
+              :disabled="workflow?.status === 1"
+            >
+              {{ workflow?.status === 1 ? '已发布' : '发布' }}
+            </t-button>
             <t-dropdown>
               <t-button variant="text" size="small" class="text-gray-600">
                 <t-icon name="more" />
@@ -215,7 +328,6 @@
             v-model="workflow.config"
             :workflow-id="workflowId"
             @update:model-value="updateWorkflowConfig"
-            @test-workflow="testWorkflow"
             class="h-full"
           />
         </t-loading>

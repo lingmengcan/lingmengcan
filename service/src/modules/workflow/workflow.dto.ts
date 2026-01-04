@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsNumber, IsString, IsArray, IsObject, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsNumber, IsString, IsBoolean, IsIn, Min, Max } from 'class-validator';
+import { WorkflowConfig } from './engine/workflow.types';
 
 /**
  * 工作流列表查询 DTO
@@ -10,14 +11,18 @@ export class WorkflowListDto {
 
   @IsOptional()
   @IsNumber()
+  @IsIn([0, 1, 2])
   status?: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(1)
   page: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(1)
+  @Max(100)
   pageSize: number;
 }
 
@@ -43,11 +48,11 @@ export class WorkflowDto {
 
   @IsOptional()
   @IsNumber()
+  @IsIn([0, 1, 2])
   status?: number;
 
   @IsOptional()
-  @IsObject()
-  config?: any;
+  config?: WorkflowConfig;
 }
 
 /**
@@ -59,12 +64,17 @@ export class WorkflowExecuteDto {
   workflowId: string;
 
   @IsOptional()
-  @IsObject()
-  inputs?: any;
+  inputs?: Record<string, any>;
 
   @IsOptional()
   @IsBoolean()
-  stream?: boolean; // 是否流式输出
+  stream?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1000)
+  @Max(300000)
+  timeout?: number; // 执行超时时间（毫秒），默认 60 秒
 }
 
 /**
@@ -77,10 +87,13 @@ export class WorkflowExecutionListDto {
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(1)
   page: number;
 
   @IsNotEmpty()
   @IsNumber()
+  @Min(1)
+  @Max(100)
   pageSize: number;
 }
 

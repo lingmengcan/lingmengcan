@@ -10,7 +10,7 @@
     publishWorkflow,
     unpublishWorkflow,
   } from '@/api/llm/workflow';
-  import { Workflow } from '@/models/workflow';
+  import { Workflow, WorkflowStatus, WorkflowStatusText, WorkflowConfig } from '@/models/workflow';
 
   const router = useRouter();
 
@@ -29,7 +29,7 @@
   // 搜索条件
   const searchForm = reactive({
     workflowName: '',
-    status: undefined,
+    status: undefined as WorkflowStatus | undefined,
   });
 
   // 新增工作流抽屉
@@ -57,9 +57,9 @@
 
   // 状态选项
   const statusOptions = [
-    { value: 0, label: '草稿' },
-    { value: 1, label: '已发布' },
-    { value: 2, label: '已归档' },
+    { value: WorkflowStatus.DRAFT, label: WorkflowStatusText[WorkflowStatus.DRAFT] },
+    { value: WorkflowStatus.PUBLISHED, label: WorkflowStatusText[WorkflowStatus.PUBLISHED] },
+    { value: WorkflowStatus.ARCHIVED, label: WorkflowStatusText[WorkflowStatus.ARCHIVED] },
   ];
 
   // 获取工作流列表
@@ -78,7 +78,7 @@
         total.value = res.data.count;
         pagination.total = res.data.count;
       } else {
-        MessagePlugin.error('获取工作流列表失败');
+        MessagePlugin.error(res?.message || '获取工作流列表失败');
       }
     } catch (error) {
       console.error('Failed to fetch workflows:', error);
@@ -118,12 +118,12 @@
           workflowName: addForm.workflowName,
           description: addForm.description,
           version: '1.0.0',
-          status: 0,
+          status: WorkflowStatus.DRAFT,
           config: {
             nodes: [],
             edges: [],
             variables: [],
-          },
+          } as WorkflowConfig,
         };
 
         const res = await addWorkflow(newWorkflow);
@@ -136,7 +136,7 @@
           addForm.workflowName = '';
           addForm.description = '';
         } else {
-          MessagePlugin.error('创建工作流失败');
+          MessagePlugin.error(res?.message || '创建工作流失败');
         }
       } catch (error) {
         console.error('Failed to add workflow:', error);
@@ -144,12 +144,18 @@
       }
     } else {
       console.log('Validate Errors: ', firstError, validateResult);
-      MessagePlugin.error('表单验证失败');
+      MessagePlugin.error(firstError || '表单验证失败');
     }
   };
 
   // 删除工作流
   const handleDeleteWorkflow = (workflow: Workflow) => {
+    // 已发布的工作流不能直接删除
+    if (workflow.status === WorkflowStatus.PUBLISHED) {
+      MessagePlugin.warning('已发布的工作流需要先取消发布才能删除');
+      return;
+    }
+
     DialogPlugin.confirm({
       header: '确认删除',
       body: `确定要删除工作流"${workflow.workflowName}"吗？此操作不可恢复。`,
@@ -164,7 +170,7 @@
             MessagePlugin.success('删除工作流成功');
             fetchWorkflowList();
           } else {
-            MessagePlugin.error('删除工作流失败');
+            MessagePlugin.error(res?.message || '删除工作流失败');
           }
         } catch (error) {
           console.error('Failed to delete workflow:', error);
@@ -184,6 +190,11 @@
 
   // 执行复制
   const onCopy = async () => {
+    if (!copyData.value.newName.trim()) {
+      MessagePlugin.warning('请输入新工作流名称');
+      return;
+    }
+
     try {
       const res = await copyWorkflow(copyData.value.workflowId, copyData.value.newName);
       if (res?.code === 0) {
@@ -191,7 +202,7 @@
         MessagePlugin.success('复制工作流成功');
         fetchWorkflowList();
       } else {
-        MessagePlugin.error('复制工作流失败');
+        MessagePlugin.error(res?.message || '复制工作流失败');
       }
     } catch (error) {
       console.error('Failed to copy workflow:', error);
@@ -201,17 +212,31 @@
 
   // 发布工作流
   const handlePublishWorkflow = async (workflow: Workflow) => {
+    // 验证工作流配置
+    if (!workflow.config?.nodes || workflow.config.nodes.length === 0) {
+      MessagePlugin.warning('工作流没有节点配置，无法发布');
+      return;
+    }
+
+    const hasStartNode = workflow.config.nodes.some((node) => node.type === 'start');
+    const hasEndNode = workflow.config.nodes.some((node) => node.type === 'end');
+
+    if (!hasStartNode || !hasEndNode) {
+      MessagePlugin.warning('工作流必须包含开始节点和结束节点');
+      return;
+    }
+
     try {
       const res = await publishWorkflow(workflow.workflowId);
       if (res?.code === 0) {
         MessagePlugin.success('发布工作流成功');
         fetchWorkflowList();
       } else {
-        MessagePlugin.error('发布工作流失败');
+        MessagePlugin.error(res?.message || '发布工作流失败');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to publish workflow:', error);
-      MessagePlugin.error('发布工作流失败');
+      MessagePlugin.error(error?.response?.data?.message || '发布工作流失败');
     }
   };
 
@@ -223,7 +248,7 @@
         MessagePlugin.success('取消发布成功');
         fetchWorkflowList();
       } else {
-        MessagePlugin.error('取消发布失败');
+        MessagePlugin.error(res?.message || '取消发布失败');
       }
     } catch (error) {
       console.error('Failed to unpublish workflow:', error);
@@ -248,13 +273,13 @@
   };
 
   // 获取状态标签类型
-  const getStatusTagType = (status: number) => {
+  const getStatusTagType = (status: WorkflowStatus) => {
     switch (status) {
-      case 0:
+      case WorkflowStatus.DRAFT:
         return 'warning';
-      case 1:
+      case WorkflowStatus.PUBLISHED:
         return 'success';
-      case 2:
+      case WorkflowStatus.ARCHIVED:
         return 'default';
       default:
         return 'default';
@@ -262,22 +287,13 @@
   };
 
   // 获取状态标签文本
-  const getStatusText = (status: number) => {
-    switch (status) {
-      case 0:
-        return '草稿';
-      case 1:
-        return '已发布';
-      case 2:
-        return '已归档';
-      default:
-        return '未知';
-    }
+  const getStatusText = (status: WorkflowStatus) => {
+    return WorkflowStatusText[status] || '未知';
   };
 
   // 格式化日期
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
+    if (!dateStr) return '-';
     const date = new Date(dateStr);
     return date.toLocaleString('zh-CN', {
       year: 'numeric',

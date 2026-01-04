@@ -11,8 +11,8 @@
         <t-icon name="chat-bubble" />
       </template>
     </t-button>
-    <div class="flex-1 flex flex-col justify-center max-w-[1080px] mx-auto">
-      <t-chat ref="listRef" style="width: 100%; flex: 1; overflow-y: auto">
+    <div class="flex-1 flex flex-col justify-center mx-auto">
+      <t-chat ref="listRef">
         <t-chat-message
           v-for="(message, idx) in chatList"
           :key="message.messageId"

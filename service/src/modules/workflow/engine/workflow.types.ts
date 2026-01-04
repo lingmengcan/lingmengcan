@@ -8,6 +8,8 @@ export interface WorkflowNode {
   data?: {
     label?: string;
     config?: Record<string, any>;
+    inputs?: NodeInput[];
+    outputs?: NodeOutput[];
     [key: string]: any;
   };
   position?: {
@@ -20,14 +22,38 @@ export interface WorkflowEdge {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: string;
+  targetHandle?: string;
   type?: string;
+  animated?: boolean;
   data?: Record<string, any>;
+}
+
+export interface WorkflowVariable {
+  id: string;
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'json';
+  value: any;
+  description?: string;
 }
 
 export interface WorkflowConfig {
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
-  variables: Record<string, any>;
+  variables: WorkflowVariable[];
+}
+
+export interface NodeInput {
+  name: string;
+  type: string;
+  required: boolean;
+  description?: string;
+}
+
+export interface NodeOutput {
+  name: string;
+  type: string;
+  description?: string;
 }
 
 export interface NodeExecutionResult {
