@@ -248,33 +248,35 @@
   // 执行工作流
   const executeWorkflow = async () => {
     try {
-      // 构建API请求参数
-      const apiParams = {
-        workflowId: inputData.value.workflowId,
-        parameters: {
-          input: inputData.value.parameters.input,
-        },
-        stream: inputData.value.stream,
+      // 构建API请求参数 - 使用 inputs 而非 parameters，与后端 DTO 保持一致
+      const inputs: Record<string, any> = {
+        input: inputData.value.parameters.input,
       };
 
-      // 如果有图片参数，添加到parameters中
+      // 如果有图片参数，添加到inputs中
       if (inputData.value.parameters.image.trim()) {
         try {
           // 尝试解析为JSON（file_id格式）
           const imageData = JSON.parse(inputData.value.parameters.image);
-          (apiParams.parameters as any).image = imageData;
+          inputs.image = imageData;
         } catch {
           // 如果不是JSON，则作为URL处理
-          (apiParams.parameters as any).image = inputData.value.parameters.image;
+          inputs.image = inputData.value.parameters.image;
         }
       }
+
+      const apiParams = {
+        workflowId: inputData.value.workflowId,
+        inputs,
+        stream: inputData.value.stream,
+      };
 
       addLog('info', '调用API: /openapi/v1/workflow/execute');
       addLog('info', '请求参数: ' + JSON.stringify(apiParams, null, 2));
 
       if (apiParams.stream) {
         // 流式读取 SSE
-        const res = await executeWorkflowStream(apiParams.workflowId, apiParams.parameters);
+        const res = await executeWorkflowStream(apiParams.workflowId, inputs);
         const reader = res.body?.getReader();
         if (!reader) throw new Error('浏览器不支持流式读取');
 
@@ -301,6 +303,12 @@
               // 首帧元信息：保存 executionId
               if (json.meta && json.meta.executionId) {
                 executionId.value = json.meta.executionId;
+                addLog('info', '执行ID: ' + json.meta.executionId);
+                continue;
+              }
+              // 处理错误帧
+              if (json.error) {
+                addLog('error', '后端错误: ' + json.error);
                 continue;
               }
               const piece = json.content || '';
@@ -311,7 +319,8 @@
                 addLog('info', piece);
               }
             } catch (e) {
-              // 忽略非JSON帧
+              // 记录非JSON帧便于调试
+              addLog('warning', '无法解析帧: ' + payload);
             }
           }
         }
@@ -337,8 +346,8 @@
           addLog('warning', '未获得可见输出');
         }
       } else {
-        // 非流式：使用调试接口，绕过“未发布无法执行”限制
-        const response = await debugExecuteWorkflow(apiParams.workflowId, apiParams.parameters);
+        // 非流式：使用调试接口，绕过"未发布无法执行"限制
+        const response = await debugExecuteWorkflow(apiParams.workflowId, inputs);
         responseData.value = response;
 
         if (response.code === 0) {
