@@ -4,25 +4,19 @@ import type { Node, Edge } from '@vue-flow/core';
 import { MarkerType } from '@vue-flow/core';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { getPluginList } from '@/api/llm/plugin';
+import type { WorkflowVariable as ModelWorkflowVariable, WorkflowConfig as ModelWorkflowConfig, WorkflowNode as ModelWorkflowNode } from '@/models/workflow';
 
-// 类型定义
-export interface WorkflowVariable {
-  name: string;
-  type: string;
-  value: any;
-}
-
-export interface WorkflowConfig {
-  nodes: WorkflowNode[];
-  edges: Edge[];
-  variables: WorkflowVariable[];
-}
+// 重新导出类型以保持兼容性
+export type WorkflowVariable = ModelWorkflowVariable;
+export type WorkflowConfig = ModelWorkflowConfig;
 
 export type WorkflowNode = Node & {
   selected: boolean;
   data: {
     label: string;
     config: Record<string, any>;
+    inputs?: Array<{ name: string; type: string; required: boolean; description?: string }>;
+    outputs?: Array<{ name: string; type: string; description?: string }>;
   };
 };
 

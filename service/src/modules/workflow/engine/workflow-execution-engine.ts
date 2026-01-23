@@ -104,12 +104,15 @@ export class WorkflowExecutionEngine {
 
     // 创建模型实例
     const llm = await initChatModel(model.modelName, {
+      modelProvider: model.apiType,
       temperature,
       topP: top_p,
       maxTokens: max_tokens,
       streaming: true,
       apiKey: model.apiKey,
-      baseUrl: model.baseUrl,
+      configuration: {
+        baseURL: model.baseUrl,
+      },
     });
 
     const promptMessages = (messages as Array<{ role: string; content: string }>).map((m) => {

@@ -13,11 +13,12 @@ Lingmengcan is an end-to-end AI application development platform powered by larg
 
 ## ✨ Key Features
 
-- **🤖 Multi-Model Support**: Compatible with OpenAI, Ollama, and other LLMs
-- **💬 Intelligent Chat**: Multi-turn conversations, context memory, role-playing
+- **🤖 Multi-Model Support**: Compatible with OpenAI, Ollama, DeepSeek and other LLMs
+- **💬 Intelligent Chat**: Multi-turn conversations, context memory, streaming output
 - **📚 Knowledge Base RAG**: Document upload, vectorization, intelligent retrieval enhancement
 - **🎨 AI Image Generation**: Integrated Stable Diffusion for text-to-image generation
-- **🔄 Workflow**: Visual process orchestration with complex business logic support
+- **🔄 Workflow Engine**: Drag-and-drop visual designer with rich node types and real-time debugging
+- **🧩 Plugin Marketplace**: Extensible plugin system supporting custom node development
 - **👥 Permission Management**: Complete RBAC permission system
 - **🔒 Private Deployment**: Fully local operation without external dependencies
 
@@ -47,7 +48,8 @@ NestJS + TypeScript
 - **Chat System**: Multi-turn conversations, history, streaming output
 - **Knowledge Base**: Document parsing, vectorization, similarity search
 - **Model Management**: Multi-model configuration, load balancing, monitoring
-- **Workflow**: Node orchestration, conditional branches, loop control
+- **Workflow Engine**: Visual designer, node orchestration, real-time debugging
+- **Plugin Marketplace**: Plugin management, dynamic loading, custom extensions
 - **Drawing System**: Stable Diffusion integration, parameter adjustment
 
 ## 🚀 Quick Start
@@ -234,13 +236,45 @@ Complete enterprise-level admin system
 - 📊 Usage statistics
 - 🔄 Version management and rollback
 
-### 🔄 Workflow Orchestrator (New Feature)
-- 🎨 Visual process designer
-- 🔀 Conditional branches and loop control
-- 🤖 Multi-AI model collaboration
-- ⏰ Scheduled task execution
-- 📊 Execution monitoring and logs
-- 🔧 Custom node development
+### 🔄 Workflow Engine (New Feature)
+Visual drag-and-drop workflow designer powered by Vue Flow:
+
+![Workflow Designer](images/workflow.png)
+
+**Designer Features**:
+- 🎨 Drag-and-drop canvas with node connections
+- 🔍 Canvas zoom, auto-layout, minimap navigation
+- ↩️ Undo/Redo history support
+- 💾 Auto-save (30s interval)
+- 📤 Import/Export workflows (JSON format)
+
+**Rich Node Types**:
+| Node Type | Description |
+|-----------|-------------|
+| **LLM Node** | LLM API calls with model selection, temperature/top_p/max_tokens, system/user prompts |
+| **Condition Node** | IF/ELIF/ELSE branches with AND/OR logic combinations |
+| **HTTP Node** | External API calls (GET/POST/PUT/DELETE), headers, auth, timeout/retry |
+| **Loop Node** | Three loop modes: for (count), while (condition), foreach (iterate) |
+| **Parallel Node** | Parallel branch execution with strategies: wait all/any/race mode |
+| **Database Node** | Database CRUD operations with multi-datasource support |
+| **Transform Node** | Data format transformation and processing |
+
+**Real-time Debugging**:
+- 🐛 Integrated debug panel
+- 📊 Stream/non-stream execution modes
+- 📝 Execution logs viewer
+- 🖼️ Text and image input support
+
+### 🧩 Plugin Marketplace (New Feature)
+Extensible plugin system for custom workflow nodes:
+
+![Plugin Marketplace](images/plugin.png)
+
+- 📦 **Plugin Categories**: AI plugins, Rule plugins, Logic plugins, HTTP plugins, Custom plugins
+- 🔌 **Dynamic Loading**: Auto-load enabled plugins in workflow designer
+- ⚙️ **JSON Schema Config**: Define node configuration forms via JSON Schema
+- 📋 **Version Control**: Plugin versioning and author tracking
+- 🎯 **Search & Filter**: Quick search and category filtering
 
 
 ## 📁 Project Structure
