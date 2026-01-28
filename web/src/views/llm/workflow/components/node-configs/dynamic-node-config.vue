@@ -17,7 +17,7 @@
                 variant="text"
                 size="small"
                 class="text-blue-500"
-                @click.stop="addArrayItem(key, property)"
+                @click.stop="addArrayItem(key as string, property)"
               >
                 <t-icon name="add" />
               </t-button>
@@ -27,16 +27,16 @@
           <div>
             <!-- 数组类型 -->
             <template v-if="property.type === 'array'">
-              <t-empty v-if="getArrayValue(key).length === 0" />
+              <t-empty v-if="getArrayValue(key as string).length === 0" />
               <div v-for="(item, index) in getArrayValue(key)" :key="index" class="mb-2">
                 <div class="flex items-center gap-2 flex-wrap w-full">
                   <!-- 渲染数组项的字段 -->
                   <template v-for="(itemProp, itemKey) in property.items?.properties" :key="itemKey">
                     <!-- 数据源选择 (特殊字段名: source) -->
                     <t-select
-                      v-if="getFieldComponentType(itemKey, itemProp) === 'source'"
+                      v-if="getFieldComponentType(itemKey as string, itemProp) === 'source'"
                       :model-value="item[itemKey]"
-                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      @update:model-value="(value: any) => updateArrayItem(key as string, index as number, itemKey as string, value)"
                       placeholder="选择来源"
                       size="small"
                       clearable
@@ -52,9 +52,9 @@
 
                     <!-- 文本输入 -->
                     <t-input
-                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'text'"
+                      v-else-if="getFieldComponentType(itemKey as string, itemProp) === 'text'"
                       :model-value="item[itemKey]"
-                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      @update:model-value="(value: any) => updateArrayItem(key as string, index as number, itemKey as string, value)"
                       :placeholder="itemProp.title"
                       size="small"
                       class="flex-1 min-w-[80px]"
@@ -62,9 +62,9 @@
 
                     <!-- 数字输入 -->
                     <t-input-number
-                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'number'"
+                      v-else-if="getFieldComponentType(itemKey as string, itemProp) === 'number'"
                       :model-value="item[itemKey]"
-                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      @update:model-value="(value: any) => updateArrayItem(key as string, index as number, itemKey as string, value)"
                       :placeholder="itemProp.title"
                       size="small"
                       class="flex-1 min-w-[80px]"
@@ -72,17 +72,17 @@
 
                     <!-- 布尔值 -->
                     <t-switch
-                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'boolean'"
+                      v-else-if="getFieldComponentType(itemKey as string, itemProp) === 'boolean'"
                       :model-value="item[itemKey]"
-                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      @update:model-value="(value: any) => updateArrayItem(key as string, index as number, itemKey as string, value)"
                       size="small"
                     />
 
                     <!-- 枚举选择 -->
                     <t-select
-                      v-else-if="getFieldComponentType(itemKey, itemProp) === 'enum'"
+                      v-else-if="getFieldComponentType(itemKey as string, itemProp) === 'enum'"
                       :model-value="item[itemKey]"
-                      @update:model-value="(value) => updateArrayItem(key, index, itemKey, value)"
+                      @update:model-value="(value: any) => updateArrayItem(key as string, index as number, itemKey as string, value)"
                       :placeholder="itemProp.title"
                       size="small"
                       class="flex-1 min-w-[80px]"
@@ -97,11 +97,87 @@
                   </template>
 
                   <!-- 删除按钮 -->
-                  <t-button variant="text" size="small" class="text-gray-400" @click="removeArrayItem(key, index)">
+                  <t-button variant="text" size="small" class="text-gray-400" @click="removeArrayItem(key as string, index as number)">
                     <t-icon name="remove" />
                   </t-button>
                 </div>
               </div>
+            </template>
+
+            <!-- 简单类型字段 -->
+            <template v-else>
+              <!-- 文本输入 -->
+              <t-input
+                v-if="getFieldComponentType(key as string, property) === 'text'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value: any) => updateSimpleField(key as string, value)"
+                :placeholder="property.title"
+                size="small"
+                class="w-full"
+              />
+
+              <!-- 多行文本 -->
+              <t-textarea
+                v-else-if="getFieldComponentType(key as string, property) === 'textarea'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value: any) => updateSimpleField(key as string, value)"
+                :placeholder="property.title"
+                :autosize="{ minRows: 3, maxRows: 8 }"
+                class="w-full"
+              />
+
+              <!-- 数字输入 -->
+              <t-input-number
+                v-else-if="getFieldComponentType(key as string, property) === 'number'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value: any) => updateSimpleField(key as string, value)"
+                :placeholder="property.title"
+                size="small"
+                class="w-full"
+              />
+
+              <!-- 布尔值 -->
+              <t-switch
+                v-else-if="getFieldComponentType(key as string, property) === 'boolean'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value: any) => updateSimpleField(key as string, value)"
+                size="small"
+              />
+
+              <!-- 枚举选择 -->
+              <t-select
+                v-else-if="getFieldComponentType(key as string, property) === 'enum'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value: any) => updateSimpleField(key as string, value)"
+                :placeholder="property.title"
+                size="small"
+                class="w-full"
+              >
+                <t-option
+                  v-for="(enumValue, enumIndex) in property.enum"
+                  :key="enumValue"
+                  :value="enumValue"
+                  :label="property.enumNames?.[enumIndex] || enumValue"
+                />
+              </t-select>
+
+              <!-- 数据源选择 -->
+              <t-select
+                v-else-if="getFieldComponentType(key as string, property) === 'source'"
+                :model-value="localConfig[key]"
+                @update:model-value="(value: any) => updateSimpleField(key as string, value)"
+                placeholder="选择数据来源"
+                size="small"
+                clearable
+                class="w-full"
+              >
+                <t-option
+                  v-for="option in sourceOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :label="option.label"
+                />
+              </t-select>
             </template>
           </div>
         </t-collapse-panel>
@@ -233,9 +309,21 @@
     if (fieldProp.enum) return 'enum';
     if (fieldProp.type === 'boolean') return 'boolean';
     if (fieldProp.type === 'number' || fieldProp.type === 'integer') return 'number';
-    if (fieldProp.type === 'string') return 'text';
+    if (fieldProp.type === 'string') {
+      // 检查是否需要多行文本
+      if (fieldProp.format === 'textarea' || fieldKey === 'prompt' || fieldKey === 'systemPrompt' || fieldKey === 'template') {
+        return 'textarea';
+      }
+      return 'text';
+    }
 
     return 'text'; // 默认文本
+  };
+
+  // 更新简单字段值
+  const updateSimpleField = (key: string, value: any) => {
+    localConfig[key] = value;
+    nextTick(() => updateConfig());
   };
 
   // 添加数组项

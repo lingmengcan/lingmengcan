@@ -257,8 +257,11 @@
     drawerTitle.value = t('views.llm.plugin.edit');
     showDrawer.value = true;
 
-    // 赋值
-    drawerFormData.value = { ...pluginInitData, ...item };
+    // 赋值，确保 config 是字符串格式
+    const configStr = typeof item.config === 'object' 
+      ? JSON.stringify(item.config, null, 2) 
+      : (item.config || '');
+    drawerFormData.value = { ...pluginInitData, ...item, config: configStr };
   };
 
   const handleAddandEdit = async ({ validateResult, firstError, e }) => {
@@ -302,7 +305,10 @@
   const formatJsonConfig = () => {
     if (drawerFormData.value.config) {
       try {
-        const parsed = JSON.parse(drawerFormData.value.config);
+        // 如果已经是对象，直接格式化；如果是字符串，先解析
+        const parsed = typeof drawerFormData.value.config === 'object'
+          ? drawerFormData.value.config
+          : JSON.parse(drawerFormData.value.config);
         drawerFormData.value.config = JSON.stringify(parsed, null, 2);
       } catch (error) {
         MessagePlugin.error('JSON格式错误，无法格式化');

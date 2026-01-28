@@ -57,10 +57,25 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
    * 构建LLM请求
    */
   private buildLLMRequest(config: LLMNodeConfig, context: WorkflowContext): LLMRequest {
-    const { model, temperature, maxTokens, topP, systemPrompt, userPrompt, variableName } = config;
+    const { model, temperature, maxTokens, topP, systemPrompt, userPrompt, variableName, inputs } = config;
 
-    // 获取输入数据
-    const inputData = context.getVariableValue(variableName || 'input');
+    // 获取输入数据 - 兼容新旧两种方式
+    let inputData: any;
+    
+    if (inputs && Array.isArray(inputs) && inputs.length > 0) {
+      // 新方式：从 inputs 数组获取
+      const firstInput = inputs[0];
+      if (firstInput.source) {
+        // 从指定来源获取
+        inputData = context.getVariableValue(firstInput.source);
+      } else {
+        // 从全局变量获取
+        inputData = context.getVariableValue(firstInput.name);
+      }
+    } else {
+      // 旧方式：使用 variableName
+      inputData = context.getVariableValue(variableName || 'input');
+    }
 
     // 构建消息数组
     const messages: Array<{ role: string; content: string }> = [];
@@ -69,12 +84,12 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
     if (systemPrompt) {
       messages.push({
         role: 'system',
-        content: systemPrompt,
+        content: context.replaceVariables(systemPrompt),
       });
     }
 
     // 添加用户输入
-    const userContent = userPrompt ? context.replaceVariables(userPrompt) : String(inputData);
+    const userContent = userPrompt ? context.replaceVariables(userPrompt) : String(inputData ?? '');
     messages.push({
       role: 'user',
       content: userContent,

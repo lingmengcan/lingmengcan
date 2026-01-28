@@ -72,11 +72,42 @@ export const useWorkflowStore = defineStore('workflow', () => {
   
   const canRedo = computed(() => historyIndex.value < history.value.length - 1);
   
-  const workflowConfig = computed((): WorkflowConfig => ({
-    nodes: nodes.value,
-    edges: edges.value,
+  /**
+   * 清理节点数据，移除 Vue Flow 运行时状态
+   */
+  const cleanNode = (node: WorkflowNode): any => ({
+    id: node.id,
+    type: node.type,
+    position: node.position,
+    data: {
+      label: node.data?.label,
+      config: node.data?.config,
+    },
+  });
+
+  /**
+   * 清理边数据，移除冗余的 sourceNode/targetNode
+   */
+  const cleanEdge = (edge: Edge): any => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    sourceHandle: edge.sourceHandle || null,
+    targetHandle: edge.targetHandle || null,
+    type: edge.type,
+    animated: edge.animated,
+  });
+
+  /**
+   * 获取清理后的工作流配置（用于保存/导出）
+   */
+  const getCleanWorkflowConfig = (): WorkflowConfig => ({
+    nodes: nodes.value.map(cleanNode),
+    edges: edges.value.map(cleanEdge),
     variables: variables.value,
-  }));
+  });
+
+  const workflowConfig = computed((): WorkflowConfig => getCleanWorkflowConfig());
   
   // ========== 节点管理方法 ==========
   
@@ -526,8 +557,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * 设置工作流配置
    */
-  const setWorkflowConfig = (config: WorkflowConfig) => {
+  const setWorkflowConfig = (config: WorkflowConfig, force = false) => {
     if (!config) return;
+    
+    // 强制更新或使用浅比较
+    if (force) {
+      nodes.value = config.nodes || [];
+      edges.value = config.edges || [];
+      variables.value = config.variables || [];
+      clearNodeSelection();
+      return;
+    }
     
     // 使用浅比较避免深度 JSON 序列化的性能问题
     const currentConfig = workflowConfig.value;
@@ -603,19 +643,28 @@ export const useWorkflowStore = defineStore('workflow', () => {
       });
       
       if (res && res.data && res.data.list) {
-        const workflowPlugins = res.data.list.filter((plugin) => {
-          try {
-            JSON.parse(plugin.config || '{}');
-            return true;
-          } catch (parseError) {
-            console.warn(`插件 ${plugin.pluginId} 的config字段解析失败:`, parseError);
-            return false;
+        // 解析配置的辅助函数
+        const parseConfig = (config: any): Record<string, any> => {
+          if (!config) return {};
+          if (typeof config === 'object') return config;
+          if (typeof config === 'string') {
+            try {
+              return JSON.parse(config);
+            } catch {
+              return {};
+            }
           }
+          return {};
+        };
+
+        const workflowPlugins = res.data.list.filter((plugin) => {
+          const config = parseConfig(plugin.config);
+          return config && typeof config === 'object';
         });
         
         // 设置可用节点类型
         availableNodeTypes.value = workflowPlugins.map((plugin) => {
-          const config = JSON.parse(plugin.config || '{}');
+          const config = parseConfig(plugin.config);
           const nodeType = config.nodeType || plugin.pluginType || 'custom';
           
           return {
@@ -733,6 +782,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     setWorkflowConfig,
     resetWorkflow,
     getDefaultNodeConfig,
+    getCleanWorkflowConfig,
     
     // 节点类型管理
     loadNodeTypesFromPlugins,
