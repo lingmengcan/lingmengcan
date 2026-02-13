@@ -2,14 +2,35 @@
  * 工作流相关类型定义
  */
 
+// 统一的变量类型枚举
+export type VariableType = 'text' | 'json' | 'number' | 'boolean' | 'array' | 'object';
+
+// 节点输入变量定义
+export interface NodeInputVariable {
+  name: string;
+  type: VariableType;
+  source?: string; // 格式: "nodeId.variableName" - 数据来源
+  required?: boolean;
+  description?: string;
+}
+
+// 节点输出变量定义
+export interface NodeOutputVariable {
+  name: string;
+  type: VariableType;
+  description?: string;
+}
+
 export interface WorkflowNode {
   id: string;
   type: string;
   data?: {
     label?: string;
-    config?: Record<string, any>;
-    inputs?: NodeInput[];
-    outputs?: NodeOutput[];
+    config?: {
+      inputs?: NodeInputVariable[];
+      outputs?: NodeOutputVariable[];
+      [key: string]: any;
+    };
     [key: string]: any;
   };
   position?: {
@@ -43,6 +64,7 @@ export interface WorkflowConfig {
   variables: WorkflowVariable[];
 }
 
+// 兼容旧版本的类型别名
 export interface NodeInput {
   name: string;
   type: string;
@@ -59,6 +81,7 @@ export interface NodeOutput {
 export interface NodeExecutionResult {
   type: string;
   data: any;
+  outputs?: Record<string, any>; // 节点输出变量的实际值
   timestamp?: string;
 }
 
@@ -91,6 +114,8 @@ export interface WorkflowExecutionResult {
   variables: Record<string, any>;
 }
 
+// ==================== 节点配置类型 ====================
+
 export interface ConditionConfig {
   variable: string;
   operator: string;
@@ -100,8 +125,8 @@ export interface ConditionConfig {
 
 export interface ConditionNodeConfig {
   description?: string;
+  inputs?: NodeInputVariable[];
   conditions: ConditionConfig[];
-  template?: string;
   outputMapping?: {
     trueOutput?: string;
     falseOutput?: string;
@@ -120,42 +145,81 @@ export interface LLMNodeConfig {
   topP?: number;
   systemPrompt?: string;
   userPrompt?: string;
-  outputVariable?: string;
-  outputType?: string;
-  variableName?: string;
-  inputType?: string;
+  variableName?: string; // 输入变量名
+  outputVariable?: string; // 输出变量名
+  outputType?: VariableType; // 输出类型
+  inputs?: NodeInputVariable[];
+  outputs?: NodeOutputVariable[];
 }
 
 export interface HttpNodeConfig {
   method: string;
   url: string;
-  headers?: Record<string, string>;
+  headers?: Array<{ key: string; value: string }> | Record<string, string>;
   body?: any;
+  bodyType?: string;
   timeout?: number;
   retryCount?: number;
+  errorHandling?: 'fail' | 'continue' | 'default';
+  inputs?: NodeInputVariable[];
+  outputs?: NodeOutputVariable[];
 }
 
 export interface LoopNodeConfig {
-  maxIterations?: number;
+  loopType: 'foreach' | 'for' | 'while';
+  iterateVariable?: string;
+  startIndex?: number;
+  endIndex?: number;
+  step?: number;
   condition?: string;
-  loopType?: string;
-  variableName?: string;
+  maxIterations?: number;
+  breakCondition?: string;
+  aggregation?: 'collect' | 'sum' | 'concat' | 'last' | 'first';
+  inputs?: NodeInputVariable[];
+  outputs?: NodeOutputVariable[];
 }
 
 export interface ParallelNodeConfig {
-  parallelCount?: number;
-  parallelType?: string;
+  strategy?: 'all' | 'any' | 'race';
+  timeout?: number;
+  errorHandling?: 'fail-fast' | 'continue' | 'ignore';
+  mergeStrategy?: 'collect' | 'merge' | 'first' | 'last';
+  inputs?: NodeInputVariable[];
+  outputs?: NodeOutputVariable[];
 }
 
 export interface TransformNodeConfig {
-  transformation?: string;
-  transformationType?: string;
+  transformType: 'mapping' | 'filter' | 'format' | 'script' | 'extract' | 'merge';
+  rules?: Array<{
+    sourceField: string;
+    targetField: string;
+    transform: string;
+    defaultValue?: string;
+  }>;
+  filterCondition?: string;
+  inputFormat?: string;
+  outputFormat?: string;
+  customScript?: string;
+  errorHandling?: 'skip' | 'fail' | 'default';
+  inputs?: NodeInputVariable[];
+  outputs?: NodeOutputVariable[];
 }
 
 export interface DatabaseNodeConfig {
-  operation: string;
-  table?: string;
-  query?: string;
-  connectionString?: string;
-  timeout?: number;
+  dataSource?: string;
+  operationType: 'select' | 'insert' | 'update' | 'delete' | 'raw';
+  tableName?: string;
+  fields?: Array<{ name: string; alias?: string; value?: string }>;
+  conditions?: Array<{
+    field: string;
+    operator: string;
+    value: string;
+    logicalOperator?: string;
+  }>;
+  sql?: string;
+  orderBy?: string;
+  limit?: number;
+  errorHandling?: 'fail' | 'continue' | 'rollback';
+  inputs?: NodeInputVariable[];
+  outputs?: NodeOutputVariable[];
 }

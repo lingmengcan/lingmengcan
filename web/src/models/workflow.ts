@@ -122,12 +122,21 @@ export interface NodeInput {
   type: string;
   required: boolean;
   description?: string;
+  default?: any;
 }
 
 // 节点输出
 export interface NodeOutput {
   name: string;
   type: string;
+  description?: string;
+}
+
+// 输入参数类型（用于调试面板）
+export interface InputParam {
+  name: string;
+  type: string;
+  required: boolean;
   description?: string;
 }
 

@@ -60,6 +60,36 @@ export class WorkflowExecutionEngine {
       throw new Error('工作流配置无效：没有节点');
     }
 
+    // 找到开始节点，处理输入
+    const startNode = nodes.find((n: any) => n.type === 'start');
+    let processedInputs = inputs;
+    
+    if (startNode) {
+      const startConfig = startNode.data?.config || {};
+      // 兼容新旧两种配置方式
+      if (startConfig.inputs && Array.isArray(startConfig.inputs) && startConfig.inputs.length > 0) {
+        // 新方式: 使用 inputs 数组
+        processedInputs = {};
+        for (const inputDef of startConfig.inputs) {
+          const name = inputDef.name || 'input';
+          let value = inputs?.[name];
+          // 如果只有一个输入定义且inputs是简单值
+          if (value === undefined && startConfig.inputs.length === 1 && typeof inputs !== 'object') {
+            value = inputs;
+          }
+          if (value !== undefined) {
+            processedInputs[name] = value;
+          }
+        }
+      } else if (startConfig.variableName) {
+        // 旧方式: 使用 variableName
+        const variableName = startConfig.variableName || 'input';
+        if (typeof inputs !== 'object') {
+          processedInputs = { [variableName]: inputs };
+        }
+      }
+    }
+
     const llmNode = nodes.find((n: any) => n.type === 'llm');
     if (!llmNode) {
       throw new Error('当前仅支持对包含 LLM 节点的工作流进行流式执行');
@@ -68,10 +98,26 @@ export class WorkflowExecutionEngine {
     const config = llmNode.data?.config || {};
     const { model, temperature, maxTokens, topP, systemPrompt, userPrompt, variableName } = config;
 
-    // 构建用户输入
-    const inputData = inputs?.[variableName || 'input'] ?? inputs;
+    // 构建用户输入 - 兼容新旧两种方式
+    let inputData: any;
+    
+    // 新方式：从 inputs 数组获取
+    if (config.inputs && Array.isArray(config.inputs) && config.inputs.length > 0) {
+      const firstInput = config.inputs[0];
+      if (firstInput.source) {
+        // 如果有source，从处理后的inputs中获取
+        const [, varName] = firstInput.source.split('.');
+        inputData = processedInputs?.[varName] ?? processedInputs;
+      } else {
+        inputData = processedInputs?.[firstInput.name] ?? processedInputs;
+      }
+    } else {
+      // 旧方式：使用 variableName
+      inputData = processedInputs?.[variableName || 'input'] ?? processedInputs;
+    }
+    
     const userContent = userPrompt
-      ? this.replaceVariables(userPrompt, { inputs, variables: {}, nodeResults: new Map() })
+      ? this.replaceVariables(userPrompt, { inputs: processedInputs, variables: {}, nodeResults: new Map() })
       : String(inputData ?? '');
 
     const messages: Array<{ role: string; content: string }> = [];

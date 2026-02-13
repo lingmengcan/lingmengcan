@@ -25,39 +25,63 @@
       <div class="px-6 py-4 border-b border-gray-200">
         <h4 class="text-sm font-medium text-gray-700 mb-4">输入参数 (parameters)</h4>
 
-        <!-- parameters 参数 -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-600 mb-2">
-            parameters
-            <span class="text-red-500">*</span>
-          </label>
-          <div class="space-y-3">
-            <!-- input 子参数 -->
+        <!-- 动态输入参数 -->
+        <div class="space-y-3">
+          <template v-for="input in startNodeInputs" :key="input.name">
             <div>
-              <label class="block text-xs text-gray-500 mb-1">input</label>
+              <label class="block text-sm font-medium text-gray-600 mb-2">
+                {{ input.name }}
+                <span v-if="input.required" class="text-red-500">*</span>
+                <span v-if="input.description" class="text-xs text-gray-400 ml-2">{{ input.description }}</span>
+              </label>
+              <!-- 文本类型 -->
               <t-textarea
-                v-model="inputData.parameters.input"
-                placeholder="请输入文本内容"
+                v-if="input.type === 'string' || input.type === 'text'"
+                v-model="inputData.parameters[input.name]"
+                :placeholder="`请输入${input.name}`"
+                :autosize="{ minRows: 2, maxRows: 4 }"
+                class="w-full"
+              />
+              <!-- 数字类型 -->
+              <t-input-number
+                v-else-if="input.type === 'number' || input.type === 'integer'"
+                v-model="inputData.parameters[input.name]"
+                :placeholder="`请输入${input.name}`"
+                class="w-full"
+              />
+              <!-- 布尔类型 -->
+              <t-switch
+                v-else-if="input.type === 'boolean'"
+                v-model="inputData.parameters[input.name]"
+              />
+              <!-- 默认文本输入 -->
+              <t-textarea
+                v-else
+                v-model="inputData.parameters[input.name]"
+                :placeholder="`请输入${input.name}`"
                 :autosize="{ minRows: 2, maxRows: 4 }"
                 class="w-full"
               />
             </div>
+          </template>
 
-            <!-- image 子参数 -->
-            <div>
-              <label class="block text-xs text-gray-500 mb-1">image (可选)</label>
-              <t-textarea
-                v-model="inputData.parameters.image"
-                placeholder="请输入图片RL，例如：https://example.com/image.png"
-                :autosize="{ minRows: 2, maxRows: 4 }"
-                class="w-full"
-              />
-            </div>
+          <!-- 如果没有配置输入参数，显示默认的 input 字段 -->
+          <div v-if="startNodeInputs.length === 0">
+            <label class="block text-sm font-medium text-gray-600 mb-2">
+              input
+              <span class="text-red-500">*</span>
+            </label>
+            <t-textarea
+              v-model="inputData.parameters.input"
+              placeholder="请输入文本内容"
+              :autosize="{ minRows: 2, maxRows: 4 }"
+              class="w-full"
+            />
           </div>
         </div>
 
         <!-- stream 参数 -->
-        <div class="mb-4">
+        <div class="mt-4">
           <label class="block text-sm font-medium text-gray-600 mb-2">stream</label>
           <div class="flex items-center gap-3">
             <t-checkbox v-model="inputData.stream">流式执行</t-checkbox>
@@ -166,9 +190,17 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { ref, watch, computed } from 'vue';
   import { MessagePlugin } from 'tdesign-vue-next';
   import { executeWorkflowStream, debugExecuteWorkflow } from '@/api/llm/workflow';
+
+  // 输入参数类型
+  interface InputParam {
+    name: string;
+    type: string;
+    required: boolean;
+    description?: string;
+  }
 
   // Props
   const props = defineProps<{
@@ -182,13 +214,21 @@
     close: [];
   }>();
 
+  // 从 startNode 获取输入参数配置
+  const startNodeInputs = computed<InputParam[]>(() => {
+    const inputs = props.startNode?.data?.config?.inputs || [];
+    return inputs.map((input: any) => ({
+      name: input.name || '',
+      type: input.type || 'string',
+      required: input.required !== false,
+      description: input.description || '',
+    }));
+  });
+
   // 响应式状态
   const inputData = ref({
     workflowId: props.workflowId,
-    parameters: {
-      input: '',
-      image: '',
-    },
+    parameters: {} as Record<string, any>,
     stream: true,
   });
   const isRunning = ref(false);
@@ -203,6 +243,34 @@
       data?: any;
     }>
   >([]);
+
+  // 初始化输入参数
+  const initInputParameters = () => {
+    const params: Record<string, any> = {};
+    startNodeInputs.value.forEach((input) => {
+      if (input.type === 'number' || input.type === 'integer') {
+        params[input.name] = 0;
+      } else if (input.type === 'boolean') {
+        params[input.name] = false;
+      } else {
+        params[input.name] = '';
+      }
+    });
+    // 如果没有配置输入参数，添加默认的 input 字段
+    if (startNodeInputs.value.length === 0) {
+      params.input = '';
+    }
+    inputData.value.parameters = params;
+  };
+
+  // 监听 startNode 变化，重新初始化输入参数
+  watch(
+    () => props.startNode,
+    () => {
+      initInputParameters();
+    },
+    { immediate: true, deep: true },
+  );
 
   // 开始调试
   const startDebug = async () => {
@@ -219,9 +287,25 @@
         return;
       }
 
-      if (!inputData.value.parameters.input.trim()) {
-        addLog('error', '请输入文本内容');
-        MessagePlugin.error('请输入文本内容');
+      // 验证必填的输入参数
+      const missingParams: string[] = [];
+      startNodeInputs.value.forEach((input) => {
+        if (input.required) {
+          const value = inputData.value.parameters[input.name];
+          if (value === undefined || value === null || value === '') {
+            missingParams.push(input.name);
+          }
+        }
+      });
+      // 如果没有配置输入参数，检查默认的 input 字段
+      if (startNodeInputs.value.length === 0 && !inputData.value.parameters.input?.trim()) {
+        missingParams.push('input');
+      }
+
+      if (missingParams.length > 0) {
+        const msg = `请填写必填参数: ${missingParams.join(', ')}`;
+        addLog('error', msg);
+        MessagePlugin.error(msg);
         return;
       }
 
@@ -248,22 +332,8 @@
   // 执行工作流
   const executeWorkflow = async () => {
     try {
-      // 构建API请求参数 - 使用 inputs 而非 parameters，与后端 DTO 保持一致
-      const inputs: Record<string, any> = {
-        input: inputData.value.parameters.input,
-      };
-
-      // 如果有图片参数，添加到inputs中
-      if (inputData.value.parameters.image.trim()) {
-        try {
-          // 尝试解析为JSON（file_id格式）
-          const imageData = JSON.parse(inputData.value.parameters.image);
-          inputs.image = imageData;
-        } catch {
-          // 如果不是JSON，则作为URL处理
-          inputs.image = inputData.value.parameters.image;
-        }
-      }
+      // 构建API请求参数 - 直接使用 parameters 中的所有参数
+      const inputs: Record<string, any> = { ...inputData.value.parameters };
 
       const apiParams = {
         workflowId: inputData.value.workflowId,

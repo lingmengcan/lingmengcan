@@ -6,6 +6,7 @@ export class WorkflowContext {
   private inputs: any;
   private variables: Record<string, any>;
   private nodeResults: Map<string, any>;
+  private nodeOutputs: Map<string, Record<string, any>>; // nodeId -> { outputName: value }
   private executionLog: Array<{
     nodeId: string;
     nodeType: string;
@@ -20,6 +21,7 @@ export class WorkflowContext {
     this.inputs = inputs;
     this.variables = { ...variables };
     this.nodeResults = new Map();
+    this.nodeOutputs = new Map();
     this.executionLog = [];
   }
 
@@ -73,6 +75,30 @@ export class WorkflowContext {
   }
 
   /**
+   * 设置节点输出变量
+   */
+  setNodeOutput(nodeId: string, outputName: string, value: any): void {
+    if (!this.nodeOutputs.has(nodeId)) {
+      this.nodeOutputs.set(nodeId, {});
+    }
+    this.nodeOutputs.get(nodeId)![outputName] = value;
+  }
+
+  /**
+   * 获取节点输出变量
+   */
+  getNodeOutput(nodeId: string, outputName: string): any {
+    return this.nodeOutputs.get(nodeId)?.[outputName];
+  }
+
+  /**
+   * 获取节点的所有输出
+   */
+  getNodeOutputs(nodeId: string): Record<string, any> | undefined {
+    return this.nodeOutputs.get(nodeId);
+  }
+
+  /**
    * 记录执行日志
    */
   logExecution(
@@ -103,8 +129,18 @@ export class WorkflowContext {
 
   /**
    * 获取变量值（支持多种来源）
+   * 优先级: inputs > nodeOutputs > variables > nodeResults
    */
   getVariableValue(variable: string): any {
+    // 支持 nodeId.variableName 格式
+    if (variable.includes('.')) {
+      const [nodeId, varName] = variable.split('.');
+      const nodeOutput = this.getNodeOutput(nodeId, varName);
+      if (nodeOutput !== undefined) {
+        return nodeOutput;
+      }
+    }
+
     // 从输入中查找
     if (this.inputs && this.inputs[variable] !== undefined) {
       return this.inputs[variable];
@@ -146,6 +182,40 @@ export class WorkflowContext {
    */
   private getNestedVariableValue(path: string): string {
     try {
+      // 处理 nodeId.variableName.subProperty 格式
+      const parts = path.split('.');
+      
+      // 首先尝试获取 nodeId.variableName 格式的值
+      if (parts.length >= 2) {
+        const nodeId = parts[0];
+        const varName = parts[1];
+        let current = this.getNodeOutput(nodeId, varName);
+        
+        if (current !== undefined) {
+          // 继续处理剩余路径
+          for (let i = 2; i < parts.length; i++) {
+            const part = parts[i];
+            // 处理数组索引 [n]
+            const arrayMatch = part.match(/^([^\[]+)?\[(\d+)\]$/);
+            if (arrayMatch) {
+              const propName = arrayMatch[1];
+              const index = parseInt(arrayMatch[2]);
+              if (propName && current && typeof current === 'object') {
+                current = current[propName];
+              }
+              if (Array.isArray(current)) {
+                current = current[index];
+              }
+            } else if (current && typeof current === 'object') {
+              current = current[part];
+            } else {
+              return '';
+            }
+          }
+          return current !== null && current !== undefined ? String(current) : '';
+        }
+      }
+
       // 处理数组索引访问，如 variable[0]
       const arrayIndexMatch = path.match(/^([^[]+)\[(\d+)\]$/);
       if (arrayIndexMatch) {
@@ -158,7 +228,6 @@ export class WorkflowContext {
       }
 
       // 处理对象属性访问，如 variable.subProperty
-      const parts = path.split('.');
       let current = this.getVariableValue(parts[0]);
 
       for (let i = 1; i < parts.length; i++) {

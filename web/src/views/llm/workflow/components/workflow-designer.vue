@@ -160,6 +160,8 @@
   // 使用标志位避免循环更新
   let isUpdatingFromStore = false;
   let isUpdatingFromProps = false;
+  let pendingWorkflowIdChange = false; // 标记 workflowId 已变化，等待 modelValue 更新
+  let isInitializing = true; // 标记是否正在初始化，初始化期间不同步到父组件
 
   // 调试相关方法
   const handleDebugWorkflow = () => {
@@ -175,6 +177,10 @@
   watch(
     () => workflowStore.workflowConfig,
     (newConfig) => {
+      // 初始化期间不同步空数据到父组件
+      if (isInitializing) {
+        return;
+      }
       if (!isUpdatingFromProps) {
         isUpdatingFromStore = true;
         emit('update:modelValue', newConfig);
@@ -186,15 +192,45 @@
     { deep: true },
   );
 
-  // 监听 props 变化，同步到 store
+  // 监听 workflowId 变化，设置标记等待 modelValue 更新
+  watch(
+    () => props.workflowId,
+    (newId, oldId) => {
+      if (newId && oldId && newId !== oldId) {
+        // 标记 workflowId 已变化
+        pendingWorkflowIdChange = true;
+        // 重置 store 状态
+        workflowStore.clearSelection();
+        workflowStore.clearHistory();
+      }
+    },
+  );
+
+  // 监听 modelValue 变化，同步到 store
   watch(
     () => props.modelValue,
     (newValue) => {
-      if (!isUpdatingFromStore && workflowStore.isNodeTypesLoaded) {
+      const shouldForceUpdate = pendingWorkflowIdChange;
+      
+      // 如果节点类型还没加载完，跳过（等 onMounted 完成后会处理）
+      if (!workflowStore.isNodeTypesLoaded) {
+        return;
+      }
+      
+      if (!isUpdatingFromStore) {
         isUpdatingFromProps = true;
-        workflowStore.setWorkflowConfig(newValue);
+        // 如果 workflowId 刚变化过，强制更新
+        workflowStore.setWorkflowConfig(newValue, shouldForceUpdate);
+        
+        if (shouldForceUpdate) {
+          pendingWorkflowIdChange = false; // 重置标记
+        }
+        
         nextTick(() => {
           isUpdatingFromProps = false;
+          if (shouldForceUpdate) {
+            workflowStore.saveToHistory();
+          }
         });
       }
     },
@@ -354,16 +390,26 @@
   };
 
   onMounted(async () => {
+    // 标记正在初始化
+    isInitializing = true;
+    
+    // 立即清空旧数据，避免闪烁
+    workflowStore.resetWorkflow();
+    
     // 初始化 store
     await workflowStore.initialize();
 
     // 从插件市场加载节点
     await loadNodeTypesComponents();
-
-    // 设置初始数据
+    
+    // 节点类型加载完成后，设置配置
     if (props.modelValue) {
-      workflowStore.setWorkflowConfig(props.modelValue);
+      workflowStore.setWorkflowConfig(props.modelValue, true);
     }
+    
+    // 初始化完成
+    isInitializing = false;
+    pendingWorkflowIdChange = false;
   });
 </script>
 

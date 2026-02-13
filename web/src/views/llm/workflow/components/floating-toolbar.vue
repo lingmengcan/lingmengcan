@@ -247,7 +247,7 @@
 
   // 添加节点
   const handleAddNode = (plugin: Plugin) => {
-    const config = JSON.parse(plugin.config || '{}');
+    const config = typeof plugin.config === 'string' ? JSON.parse(plugin.config || '{}') : (plugin.config || {});
     const nodeType = config.nodeType || plugin.pluginType;
     workflowStore.addNode(nodeType);
     showNodeSelector.value = false;
