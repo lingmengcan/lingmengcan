@@ -35,8 +35,6 @@
   // 新增工作流抽屉
   const showAddDrawer = ref(false);
   const drawerTitle = ref('新增工作流');
-  const formRef = ref<any>(null);
-  const drawerFormRef = ref<any>(null);
 
   const addForm = reactive({
     workflowName: '',
@@ -422,7 +420,7 @@
                 <t-icon name="file-copy" class="mr-1" />
                 复制
               </t-dropdown-item>
-              <t-dropdown-item @click="handleDeleteWorkflow(row)" theme="danger">
+              <t-dropdown-item @click="handleDeleteWorkflow(row)" theme="error">
                 <t-icon name="delete" class="mr-1" />
                 删除
               </t-dropdown-item>

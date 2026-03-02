@@ -1,11 +1,11 @@
 <template>
   <div class="relative cursor-pointer node-container">
     <div class="bg-white border border-gray-200 rounded-lg w-60 shadow-sm hover:shadow-md transition-shadow">
-      <!-- 节点头部 -->
+      <!-- 头部 -->
       <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-        <div class="flex items-center">
-          <t-icon name="fork" class="text-blue-600 mr-2" />
-          <span class="font-medium text-gray-800">{{ data.label }}</span>
+        <div class="flex items-center gap-2">
+          <t-icon name="fork" class="text-lg text-gray-700" />
+          <span class="text-sm font-medium text-gray-700">{{ data.label }}</span>
         </div>
       </div>
 
@@ -13,7 +13,7 @@
       <div class="px-3 py-2 flex flex-col gap-2">
         <!-- IF 分支 -->
         <div class="relative flex items-center justify-between">
-          <span class="text-xs text-gray-500">CASE 1</span>
+          <span class="text-xs text-gray-400">CASE 1</span>
           <div class="flex items-center">
             <span class="text-xs font-medium text-gray-700 mr-2">IF</span>
           </div>
@@ -36,7 +36,7 @@
           :key="`elif-${index}`"
           class="relative flex items-center justify-between"
         >
-          <span class="text-xs text-gray-500">CASE {{ index + 2 }}</span>
+          <span class="text-xs text-gray-400">CASE {{ index + 2 }}</span>
           <div class="flex items-center">
             <span class="text-xs font-medium text-gray-700 mr-2">ELIF</span>
           </div>
@@ -55,7 +55,7 @@
 
         <!-- ELSE 分支 -->
         <div class="relative flex items-center justify-between">
-          <span class="text-xs text-gray-500"></span>
+          <span class="text-xs text-gray-400"></span>
           <div class="flex items-center">
             <span class="text-xs font-medium text-gray-700 mr-2">ELSE</span>
           </div>

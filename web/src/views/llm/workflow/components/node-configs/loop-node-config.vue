@@ -230,5 +230,6 @@
   .compact-form-item :deep(.t-form__label) {
     color: #999;
     font-size: 12px;
+    text-align: left;
   }
 </style>

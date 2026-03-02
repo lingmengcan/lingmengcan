@@ -253,7 +253,7 @@
   import selectModel from '@/components/select/select-model.vue';
   import { MessagePlugin } from 'tdesign-vue-next';
   import { debugChat } from '@/api/chat/chat';
-  import { useVueFlow } from '@vue-flow/core';
+  import { useWorkflowStore } from '@/store/modules/workflow';
 
   interface InputVariable {
     name: string;
@@ -279,8 +279,8 @@
     'update-node': [data: NodeData];
   }>();
 
-  // 获取 VueFlow 实例
-  const { nodes, edges } = useVueFlow();
+  // 使用 workflow store（比 useVueFlow() 更可靠，避免 provide/inject 上下文问题）
+  const workflowStore = useWorkflowStore();
 
   // 折叠面板激活状态
   const activeNames = ref(['model', 'input', 'systemPrompt', 'userPrompt', 'output']);
@@ -381,7 +381,48 @@
     { deep: true },
   );
 
-  // 获取可用的数据源选项（上游节点的输出）- 使用 computed 确保响应式
+  // 递归获取所有上游祖先节点
+  const getAllAncestorNodes = (
+    nodeId: string,
+    allEdges: any[],
+    allNodes: any[],
+    visited: Set<string> = new Set(),
+  ): any[] => {
+    const ancestors: any[] = [];
+    if (visited.has(nodeId)) return ancestors;
+    visited.add(nodeId);
+
+    const incomingEdges = allEdges.filter((edge: any) => edge.target === nodeId);
+    incomingEdges.forEach((edge: any) => {
+      const sourceNode = allNodes.find((node: any) => node.id === edge.source);
+      if (sourceNode) {
+        ancestors.push(sourceNode);
+        ancestors.push(...getAllAncestorNodes(sourceNode.id, allEdges, allNodes, visited));
+      }
+    });
+    return ancestors;
+  };
+
+  // 获取节点的输出变量列表
+  const getNodeOutputs = (node: any): Array<{ name: string; type?: string }> => {
+    // start 节点用 inputs 作为输出
+    if (node.type === 'start') {
+      return node.data?.config?.inputs || [];
+    }
+    // 优先用显式 outputs
+    const outputs = node.data?.config?.outputs;
+    if (Array.isArray(outputs) && outputs.length > 0) {
+      return outputs;
+    }
+    // 兜底：用 outputVariable 字段
+    const outputVar = node.data?.config?.outputVariable;
+    if (outputVar) {
+      return [{ name: outputVar, type: 'json' }];
+    }
+    return [];
+  };
+
+  // 获取可用的数据源选项（所有上游祖先节点的输出）- 使用 computed 确保响应式
   const availableSourceOptions = computed(() => {
     const options: Array<{ value: string; label: string }> = [];
     const currentNodeId = props.node?.id;
@@ -391,29 +432,20 @@
     }
 
     try {
-      // 获取所有边和节点 - 使用 .value 访问 ref
-      const allEdges = edges.value || [];
-      const allNodes = nodes.value || [];
+      const allEdges = workflowStore.edges || [];
+      const allNodes = workflowStore.nodes || [];
 
-      // 找到连接到当前节点的边（入边）
-      const incomingEdges = allEdges.filter((edge: any) => edge.target === currentNodeId);
+      // 获取所有上游祖先节点（不只是直接前驱）
+      const ancestorNodes = getAllAncestorNodes(currentNodeId, allEdges, allNodes);
 
-      // 遍历入边，获取源节点的输出变量
-      incomingEdges.forEach((edge: any) => {
-        const sourceNode = allNodes.find((node: any) => node.id === edge.source);
-        if (sourceNode) {
-          // 对于 start 节点，使用 inputs 作为输出；其他节点使用 outputs
-          let sourceOutputs = sourceNode.data?.config?.outputs || [];
-          if (sourceNode.type === 'start') {
-            sourceOutputs = sourceNode.data?.config?.inputs || [];
-          }
-          sourceOutputs.forEach((output: any) => {
-            options.push({
-              value: `${sourceNode.id}.${output.name}`,
-              label: `${sourceNode.data?.label || sourceNode.id} - ${output.name}`,
-            });
+      ancestorNodes.forEach((ancestorNode: any) => {
+        const nodeOutputs = getNodeOutputs(ancestorNode);
+        nodeOutputs.forEach((output: any) => {
+          options.push({
+            value: `${ancestorNode.id}.${output.name}`,
+            label: `${ancestorNode.data?.label || ancestorNode.id} - ${output.name}`,
           });
-        }
+        });
       });
     } catch (error) {
       console.error('Error getting source options:', error);

@@ -205,15 +205,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
   };
   
   /**
-   * 更新节点数据
+   * 更新节点数据（对 config 做深度合并，确保 outputs 等字段不被覆盖丢失）
    */
   const updateNode = (nodeId: string, updatedData: Partial<WorkflowNode['data']>) => {
     const nodeIndex = nodes.value.findIndex((n) => n.id === nodeId);
     if (nodeIndex !== -1) {
-      // 创建新的数据对象，确保引用发生变化
+      const existingData = nodes.value[nodeIndex].data;
+      
+      // 对 config 做深度合并，而不是浅层替换
+      const mergedConfig = updatedData.config
+        ? { ...existingData.config, ...updatedData.config }
+        : existingData.config;
+      
       const newData = {
-        ...nodes.value[nodeIndex].data,
+        ...existingData,
         ...updatedData,
+        config: mergedConfig,
       };
       
       const updatedNode = {
@@ -555,6 +562,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
   // ========== 数据管理 ==========
   
   /**
+   * 确保节点 config 中包含 outputs 字段（兼容旧数据）
+   */
+  const ensureNodeOutputs = (nodeList: any[]) => {
+    nodeList.forEach((node: any) => {
+      if (node.type && node.data?.config && !node.data.config.outputs) {
+        const defaultConfig = BUILTIN_DEFAULT_CONFIGS[node.type as string];
+        if (defaultConfig?.outputs) {
+          node.data.config.outputs = JSON.parse(JSON.stringify(defaultConfig.outputs));
+        }
+      }
+    });
+    return nodeList;
+  };
+
+  /**
    * 设置工作流配置
    */
   const setWorkflowConfig = (config: WorkflowConfig, force = false) => {
@@ -562,7 +584,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     
     // 强制更新或使用浅比较
     if (force) {
-      nodes.value = config.nodes || [];
+      nodes.value = ensureNodeOutputs(config.nodes || []);
       edges.value = config.edges || [];
       variables.value = config.variables || [];
       clearNodeSelection();
@@ -579,7 +601,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     
     if (nodesChanged || edgesChanged || variablesChanged) {
       // 批量更新，减少响应式触发次数
-      nodes.value = config.nodes || [];
+      nodes.value = ensureNodeOutputs(config.nodes || []);
       edges.value = config.edges || [];
       variables.value = config.variables || [];
       
@@ -608,9 +630,110 @@ export const useWorkflowStore = defineStore('workflow', () => {
   };
   
   /**
+   * 内置节点类型的默认配置（参考 Dify/n8n 等成熟方案，硬编码确保可靠性）
+   */
+  const BUILTIN_DEFAULT_CONFIGS: Record<string, Record<string, any>> = {
+    start: {
+      inputs: [{ name: 'input', type: 'text' }],
+    },
+    end: {
+      outputs: [{ name: 'output', type: 'text' }],
+    },
+    llm: {
+      model: '',
+      temperature: 0.7,
+      maxTokens: 4096,
+      topP: 1,
+      systemPrompt: '',
+      userPrompt: '',
+      inputs: [{ name: 'input', type: 'text', source: '' }],
+      outputs: [
+        { name: 'output', type: 'text' },
+        { name: 'reasoning_content', type: 'text' },
+      ],
+    },
+    condition: {
+      ifConditions: [{ variable: '', operator: '', value: '', logic: 'AND' }],
+      elifCases: [],
+      outputs: [{ name: 'output', type: 'text' }],
+    },
+    http: {
+      method: 'GET',
+      url: '',
+      params: {},
+      headers: {},
+      body: '',
+      bodyType: 'none',
+      timeout: 120,
+      retryCount: 3,
+      authEnabled: false,
+      authType: 'bearer',
+      authToken: '',
+      outputs: [
+        { name: 'statusCode', type: 'number' },
+        { name: 'headers', type: 'json' },
+        { name: 'body', type: 'text' },
+      ],
+    },
+    database: {
+      operationType: 'select',
+      dataSource: 'default',
+      tableName: '',
+      fields: [],
+      conditions: [],
+      sql: '',
+      outputVariable: 'output',
+      limit: 100,
+      orderBy: '',
+      errorHandling: 'fail',
+      outputs: [{ name: 'output', type: 'json' }],
+    },
+    transform: {
+      transformType: 'mapping',
+      inputFormat: 'json',
+      outputFormat: 'json',
+      rules: [],
+      outputVariable: 'output',
+      errorHandling: 'skip',
+      defaultValue: '',
+      customScript: '',
+      outputs: [{ name: 'output', type: 'json' }],
+    },
+    loop: {
+      loopType: 'for',
+      maxIterations: 10,
+      condition: '',
+      breakCondition: '',
+      outputVariable: 'output',
+      outputType: 'array',
+      aggregation: 'collect',
+      outputs: [{ name: 'output', type: 'json' }],
+    },
+    parallel: {
+      branchCount: 2,
+      strategy: 'all',
+      branches: [
+        { name: '分支1', enabled: true, timeout: 30, retryCount: 0 },
+        { name: '分支2', enabled: true, timeout: 30, retryCount: 0 },
+      ],
+      mergeStrategy: 'collect',
+      outputVariable: 'output',
+      errorHandling: 'fail-fast',
+      timeout: 60,
+      outputs: [{ name: 'output', type: 'json' }],
+    },
+  };
+
+  /**
    * 获取默认节点配置
    */
   const getDefaultNodeConfig = (nodeType: string) => {
+    // 优先使用内置默认配置
+    if (BUILTIN_DEFAULT_CONFIGS[nodeType]) {
+      return JSON.parse(JSON.stringify(BUILTIN_DEFAULT_CONFIGS[nodeType]));
+    }
+
+    // 自定义节点类型：从 schema 提取默认值
     if (availableNodeTypes.value && Array.isArray(availableNodeTypes.value)) {
       const nodeTypeInfo = availableNodeTypes.value.find((t) => t.type === nodeType);
       if (nodeTypeInfo?.configSchema) {
