@@ -58,6 +58,15 @@ const llmRoutes: RouteRecordRaw[] = [
           icon: 'plugin',
         },
       },
+      {
+        path: '/llm/datasource',
+        name: 'LLMDatasource',
+        component: () => import('@/views/llm/datasource/index.vue'),
+        meta: {
+          title: '数据源管理',
+          icon: 'server',
+        },
+      },
     ],
   },
 ];

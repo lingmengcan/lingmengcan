@@ -63,10 +63,15 @@
           </div>
           <template #footer>
             <div class="flex justify-between items-center">
-              <t-tag theme="primary" variant="light" size="small">{{ item.pluginTypeName }}</t-tag>
-              <div class="text-blue-600 hover:text-blue-800 transition-colors">
-                {{ $t('views.llm.plugin.view') }}
+              <div class="flex items-center gap-2">
+                <t-tag theme="primary" variant="light" size="small">{{ item.pluginTypeName }}</t-tag>
+                <t-tag :theme="item.status === 0 ? 'success' : 'default'" variant="light" size="small">
+                  {{ item.status === 0 ? '启用' : '禁用' }}
+                </t-tag>
               </div>
+              <t-button variant="text" size="small" theme="primary" @click.stop="handleToggleStatus(item)">
+                {{ item.status === 0 ? '禁用' : '启用' }}
+              </t-button>
             </div>
           </template>
         </t-card>
@@ -119,16 +124,31 @@
       </t-form-item>
       <t-form-item :label="$t('views.llm.plugin.config')" name="config">
         <div style="width: 100%">
+          <!-- 快速模板按钮 -->
+          <div class="mb-2 flex items-center gap-2 flex-wrap">
+            <span class="text-xs text-gray-500">快速模板：</span>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('basic')">基本节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('llm')">LLM 节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('http')">HTTP 节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('database')">数据库节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('condition')">条件节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('transform')">转换节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('loop')">循环节点</t-button>
+            <t-button variant="outline" size="small" @click="applyConfigTemplate('parallel')">并行节点</t-button>
+          </div>
+
           <!-- 编辑模式 -->
           <t-textarea
             v-model="drawerFormData.config"
             :placeholder="$t('views.llm.plugin.placeholder.config')"
-            :autosize="{ minRows: 6, maxRows: 10 }"
+            :autosize="{ minRows: 8, maxRows: 16 }"
             class="font-mono text-sm"
             @focus="formatJsonConfig"
           />
 
-          <div class="mt-2 text-xs text-gray-500">提示：请输入有效的JSON格式配置</div>
+          <div class="mt-2 text-xs text-gray-500">
+            提示：请输入有效的JSON格式配置。nodeType 必须与节点类型匹配（如 http、database、condition 等）
+          </div>
         </div>
       </t-form-item>
       <t-form-item :label="$t('common.status')" name="status">
@@ -147,7 +167,7 @@
   import { LoadingPlugin, MessagePlugin } from 'tdesign-vue-next';
   import { useI18n } from 'vue-i18n';
   import { Plugin } from '@/models/plugin';
-  import { getPluginList, addPlugin, editPlugin } from '@/api/llm/plugin';
+  import { getPluginList, addPlugin, editPlugin, changePluginStatus } from '@/api/llm/plugin';
   import { useDictStore } from '@/store/modules/dict';
 
   const { t } = useI18n();
@@ -172,9 +192,6 @@
 
   const showDrawer = ref(false);
   const drawerTitle = ref('');
-
-  const formRef = ref(null);
-  const drawerFormRef = ref(null);
 
   // 新增/修改弹窗数据初始化
   const pluginInitData: Plugin = {
@@ -258,9 +275,7 @@
     showDrawer.value = true;
 
     // 赋值，确保 config 是字符串格式
-    const configStr = typeof item.config === 'object' 
-      ? JSON.stringify(item.config, null, 2) 
-      : (item.config || '');
+    const configStr = typeof item.config === 'object' ? JSON.stringify(item.config, null, 2) : item.config || '';
     drawerFormData.value = { ...pluginInitData, ...item, config: configStr };
   };
 
@@ -306,14 +321,219 @@
     if (drawerFormData.value.config) {
       try {
         // 如果已经是对象，直接格式化；如果是字符串，先解析
-        const parsed = typeof drawerFormData.value.config === 'object'
-          ? drawerFormData.value.config
-          : JSON.parse(drawerFormData.value.config);
+        const parsed =
+          typeof drawerFormData.value.config === 'object'
+            ? drawerFormData.value.config
+            : JSON.parse(drawerFormData.value.config);
         drawerFormData.value.config = JSON.stringify(parsed, null, 2);
       } catch (error) {
         MessagePlugin.error('JSON格式错误，无法格式化');
         console.warn('配置不是有效的JSON格式:', error);
       }
+    }
+  };
+
+  // 切换插件状态
+  const handleToggleStatus = async (item: Plugin) => {
+    if (!item.pluginId) return;
+    const newStatus = item.status === 0 ? 1 : 0;
+    try {
+      const res = await changePluginStatus(item.pluginId, newStatus);
+      if (res?.code === 0) {
+        MessagePlugin.success(newStatus === 0 ? '已启用' : '已禁用');
+        query(page.value, pageSize.value);
+      } else {
+        MessagePlugin.error(res?.message || '操作失败');
+      }
+    } catch (error) {
+      console.error('切换状态失败:', error);
+      MessagePlugin.error('操作失败');
+    }
+  };
+
+  // 配置模板
+  const CONFIG_TEMPLATES: Record<string, object> = {
+    basic: {
+      nodeType: 'custom',
+      componentPath: 'dynamic-node.vue',
+      displayField: '',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          input: {
+            type: 'text',
+            title: '输入',
+            default: '',
+          },
+        },
+      },
+    },
+    llm: {
+      nodeType: 'llm',
+      componentPath: 'dynamic-node.vue',
+      displayField: 'model',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          model: { type: 'text', title: '模型', default: '' },
+          systemPrompt: { type: 'textarea', title: '系统提示词', default: '' },
+          userPrompt: { type: 'textarea', title: '用户提示词', default: '' },
+          temperature: { type: 'number', title: '温度', default: 0.7 },
+          maxTokens: { type: 'number', title: '最大Token', default: 4096 },
+        },
+      },
+    },
+    http: {
+      nodeType: 'http',
+      componentPath: 'http-node.vue',
+      displayField: 'url',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          method: {
+            type: 'enum',
+            title: '请求方法',
+            default: 'GET',
+            enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+            enumNames: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+          },
+          url: { type: 'text', title: 'URL', default: '' },
+          timeout: { type: 'number', title: '超时(ms)', default: 30000 },
+          retryCount: { type: 'number', title: '重试次数', default: 0 },
+        },
+      },
+    },
+    database: {
+      nodeType: 'database',
+      componentPath: 'database-node.vue',
+      displayField: 'tableName',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          operationType: {
+            type: 'enum',
+            title: '操作类型',
+            default: 'select',
+            enum: ['select', 'insert', 'update', 'delete', 'execute'],
+            enumNames: ['查询', '插入', '更新', '删除', '执行SQL'],
+          },
+          tableName: { type: 'text', title: '表名', default: '' },
+          limit: { type: 'number', title: '限制条数', default: 100 },
+        },
+      },
+    },
+    condition: {
+      nodeType: 'condition',
+      componentPath: 'condition-node.vue',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          ifConditions: {
+            type: 'array',
+            title: 'IF条件',
+            items: {
+              type: 'object',
+              properties: {
+                variable: { type: 'text', title: '变量' },
+                operator: {
+                  type: 'enum',
+                  title: '操作符',
+                  enum: [
+                    '==',
+                    '!=',
+                    '>',
+                    '<',
+                    '>=',
+                    '<=',
+                    'contains',
+                    'not_contains',
+                    'starts_with',
+                    'ends_with',
+                    'is_empty',
+                    'is_not_empty',
+                  ],
+                  enumNames: [
+                    '等于',
+                    '不等于',
+                    '大于',
+                    '小于',
+                    '大于等于',
+                    '小于等于',
+                    '包含',
+                    '不包含',
+                    '开头是',
+                    '结尾是',
+                    '为空',
+                    '不为空',
+                  ],
+                },
+                value: { type: 'text', title: '值' },
+              },
+            },
+          },
+        },
+      },
+    },
+    transform: {
+      nodeType: 'transform',
+      componentPath: 'transform-node.vue',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          transformType: {
+            type: 'enum',
+            title: '转换类型',
+            default: 'mapping',
+            enum: ['mapping', 'filter', 'aggregate', 'format', 'custom'],
+            enumNames: ['字段映射', '数据过滤', '数据聚合', '格式转换', '自定义'],
+          },
+          inputFormat: { type: 'text', title: '输入格式', default: 'json' },
+          outputFormat: { type: 'text', title: '输出格式', default: 'json' },
+        },
+      },
+    },
+    loop: {
+      nodeType: 'loop',
+      componentPath: 'loop-node.vue',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          loopType: {
+            type: 'enum',
+            title: '循环类型',
+            default: 'for',
+            enum: ['for', 'while', 'foreach'],
+            enumNames: ['计数循环', '条件循环', '遍历循环'],
+          },
+          maxIterations: { type: 'number', title: '最大迭代次数', default: 10 },
+        },
+      },
+    },
+    parallel: {
+      nodeType: 'parallel',
+      componentPath: 'parallel-node.vue',
+      nodeConfigSchema: {
+        type: 'object',
+        properties: {
+          strategy: {
+            type: 'enum',
+            title: '执行策略',
+            default: 'all',
+            enum: ['all', 'any', 'race'],
+            enumNames: ['等待全部完成', '任一完成即结束', '竞速模式'],
+          },
+          timeout: { type: 'number', title: '超时(秒)', default: 60 },
+        },
+      },
+    },
+  };
+
+  // 应用配置模板
+  const applyConfigTemplate = (templateKey: string) => {
+    const template = CONFIG_TEMPLATES[templateKey];
+    if (template) {
+      drawerFormData.value.config = JSON.stringify(template, null, 2);
+      MessagePlugin.success(`已应用「${templateKey}」模板`);
     }
   };
 

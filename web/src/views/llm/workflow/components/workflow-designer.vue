@@ -163,8 +163,9 @@
   let pendingWorkflowIdChange = false; // 标记 workflowId 已变化，等待 modelValue 更新
   let isInitializing = true; // 标记是否正在初始化，初始化期间不同步到父组件
 
-  // 调试相关方法
+  // 调试相关方法（与节点配置面板互斥）
   const handleDebugWorkflow = () => {
+    workflowStore.clearSelection();
     showDebugPanel.value = true;
   };
 
@@ -274,6 +275,7 @@
   });
 
   onNodeClick((event) => {
+    showDebugPanel.value = false;
     workflowStore.setSelectedNode(event.node);
   });
 

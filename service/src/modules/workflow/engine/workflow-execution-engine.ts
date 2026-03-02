@@ -1,10 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WorkflowNodeExecutor } from './workflow-node-executor';
 import { WorkflowContext } from './workflow-context';
-import { WorkflowNode, WorkflowEdge } from './workflow.types';
-import { LlmService } from '@/modules/model/llm.service';
-import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from '@langchain/core/prompts';
-import { initChatModel } from 'langchain';
+import { WorkflowNode, WorkflowEdge, ParallelNodeConfig } from './workflow.types';
+import { ParallelNodeExecutor } from './nodes/parallel-node-executor';
 
 /**
  * 工作流执行引擎
@@ -12,9 +10,11 @@ import { initChatModel } from 'langchain';
  */
 @Injectable()
 export class WorkflowExecutionEngine {
+  private readonly logger = new Logger(WorkflowExecutionEngine.name);
+
   constructor(
     private readonly nodeExecutor: WorkflowNodeExecutor,
-    private readonly llmService: LlmService,
+    private readonly parallelNodeExecutor: ParallelNodeExecutor,
   ) {}
 
   /**
@@ -53,185 +53,78 @@ export class WorkflowExecutionEngine {
 
   /**
    * 流式执行工作流中的LLM节点
+   * 先按拓扑顺序执行 LLM 节点之前的所有前置节点，再对 LLM 节点做流式执行
    */
   async *executeStream(workflow: any, inputs: any): AsyncGenerator<string> {
-    const { nodes } = workflow.config || {};
+    const config = workflow.config;
+    const { nodes, edges, variables } = config;
     if (!nodes || nodes.length === 0) {
       throw new Error('工作流配置无效：没有节点');
     }
 
-    // 找到开始节点，处理输入
+    // 构建节点映射和边映射
+    const nodeMap = this.buildNodeMap(nodes);
+    const edgeMap = this.buildEdgeMap(edges || []);
+
+    // 找到开始节点
     const startNode = nodes.find((n: any) => n.type === 'start');
-    let processedInputs = inputs;
-    
-    if (startNode) {
-      const startConfig = startNode.data?.config || {};
-      // 兼容新旧两种配置方式
-      if (startConfig.inputs && Array.isArray(startConfig.inputs) && startConfig.inputs.length > 0) {
-        // 新方式: 使用 inputs 数组
-        processedInputs = {};
-        for (const inputDef of startConfig.inputs) {
-          const name = inputDef.name || 'input';
-          let value = inputs?.[name];
-          // 如果只有一个输入定义且inputs是简单值
-          if (value === undefined && startConfig.inputs.length === 1 && typeof inputs !== 'object') {
-            value = inputs;
-          }
-          if (value !== undefined) {
-            processedInputs[name] = value;
-          }
-        }
-      } else if (startConfig.variableName) {
-        // 旧方式: 使用 variableName
-        const variableName = startConfig.variableName || 'input';
-        if (typeof inputs !== 'object') {
-          processedInputs = { [variableName]: inputs };
-        }
-      }
+    if (!startNode) {
+      throw new Error('工作流配置无效：没有开始节点');
     }
 
+    // 找到 LLM 节点
     const llmNode = nodes.find((n: any) => n.type === 'llm');
     if (!llmNode) {
       throw new Error('当前仅支持对包含 LLM 节点的工作流进行流式执行');
     }
 
-    const config = llmNode.data?.config || {};
-    const { model, temperature, maxTokens, topP, systemPrompt, userPrompt, variableName } = config;
+    // 创建执行上下文
+    const context = new WorkflowContext(inputs, variables);
 
-    // 构建用户输入 - 兼容新旧两种方式
-    let inputData: any;
-    
-    // 新方式：从 inputs 数组获取
-    if (config.inputs && Array.isArray(config.inputs) && config.inputs.length > 0) {
-      const firstInput = config.inputs[0];
-      if (firstInput.source) {
-        // 如果有source，从处理后的inputs中获取
-        const [, varName] = firstInput.source.split('.');
-        inputData = processedInputs?.[varName] ?? processedInputs;
-      } else {
-        inputData = processedInputs?.[firstInput.name] ?? processedInputs;
+    // 按拓扑顺序收集 LLM 节点之前的所有前置节点
+    const preNodes = this.collectPreNodes(startNode.id, llmNode.id, edgeMap);
+
+    // 依次执行所有前置节点（包括 start 节点）
+    for (const preNodeId of preNodes) {
+      const preNode = nodeMap.get(preNodeId);
+      if (preNode) {
+        const result = await this.nodeExecutor.execute(preNode, context);
+        context.setNodeResult(preNode.id, result);
       }
-    } else {
-      // 旧方式：使用 variableName
-      inputData = processedInputs?.[variableName || 'input'] ?? processedInputs;
     }
-    
-    const userContent = userPrompt
-      ? this.replaceVariables(userPrompt, { inputs: processedInputs, variables: {}, nodeResults: new Map() })
-      : String(inputData ?? '');
 
-    const messages: Array<{ role: string; content: string }> = [];
-    if (systemPrompt) {
-      messages.push({ role: 'system', content: systemPrompt });
-    }
-    messages.push({ role: 'user', content: userContent });
-
-    const requestData = {
-      model: model || 'lingmengcan',
-      messages,
-      temperature: temperature ?? 0.7,
-      max_tokens: maxTokens ?? 4096,
-      top_p: topP ?? 1,
-    };
-
-    yield* this.callLLMAPIStream(requestData);
+    // 现在 context 中已经有了所有前置节点的输出，使用 LLM 节点执行器的流式方法
+    yield* this.nodeExecutor.executeStreamLLM(llmNode, context);
   }
 
   /**
-   * 调用LLM API（流式）
+   * 按 BFS 收集从 startId 到 targetId 之间的所有前置节点（不包含 targetId）
    */
-  private async *callLLMAPIStream(requestData: any): AsyncGenerator<string> {
-    const { model: modelName, messages, temperature, max_tokens, top_p } = requestData || {};
+  private collectPreNodes(
+    startId: string,
+    targetId: string,
+    edgeMap: Map<string, string[]>,
+  ): string[] {
+    const visited = new Set<string>();
+    const order: string[] = [];
+    const queue: string[] = [startId];
 
-    const model = await this.llmService.findByModelName(modelName);
-    if (!model) {
-      throw new Error(`模型未找到: ${modelName}`);
-    }
+    while (queue.length > 0) {
+      const nodeId = queue.shift()!;
+      if (visited.has(nodeId)) continue;
+      if (nodeId === targetId) continue; // 不执行目标 LLM 节点
+      visited.add(nodeId);
+      order.push(nodeId);
 
-    // 创建模型实例
-    const llm = await initChatModel(model.modelName, {
-      modelProvider: model.apiType,
-      temperature,
-      topP: top_p,
-      maxTokens: max_tokens,
-      streaming: true,
-      apiKey: model.apiKey,
-      configuration: {
-        baseURL: model.baseUrl,
-      },
-    });
-
-    const promptMessages = (messages as Array<{ role: string; content: string }>).map((m) => {
-      if (m.role === 'system') return SystemMessagePromptTemplate.fromTemplate(m.content);
-      if (m.role === 'user') return HumanMessagePromptTemplate.fromTemplate(m.content);
-      return HumanMessagePromptTemplate.fromTemplate(m.content);
-    });
-
-    const prompt = ChatPromptTemplate.fromMessages(promptMessages);
-    const chain = prompt.pipe(llm);
-
-    let reasoning_content = '';
-    let full_content = '';
-    let sentCleanLength = 0;
-    let thinkTagComplete = false;
-
-    for await (const chunk of await chain.stream({})) {
-      const content =
-        chunk && typeof chunk === 'object' && 'content' in (chunk as any) ? (chunk as any).content || '' : '';
-      full_content += content;
-
-      const thinkMatch = full_content.match(/<think>([\s\S]*?)<\/think>/);
-      if (thinkMatch && !thinkTagComplete) {
-        reasoning_content = thinkMatch[1].trim();
-        thinkTagComplete = true;
-        full_content = full_content.replace(/<think>[\s\S]*?<\/think>/g, '');
-        sentCleanLength = 0;
-      }
-
-      if (!thinkTagComplete && full_content.includes('<think>')) {
-        continue;
-      }
-
-      const newClean = full_content.substring(sentCleanLength);
-      sentCleanLength = full_content.length;
-      if (newClean) {
-        yield JSON.stringify({ content: newClean, reasoning_content }) + '\n';
+      const nextIds = edgeMap.get(nodeId) || [];
+      for (const nextId of nextIds) {
+        if (!visited.has(nextId)) {
+          queue.push(nextId);
+        }
       }
     }
 
-    const finalThinkMatch = full_content.match(/<think>([\s\S]*?)<\/think>/);
-    if (finalThinkMatch) {
-      reasoning_content = finalThinkMatch[1].trim();
-    }
-
-    yield JSON.stringify({ content: '', reasoning_content }) + '\n';
-  }
-
-  /**
-   * 替换提示词中的变量引用
-   */
-  private replaceVariables(template: string, context: any): string {
-    return template.replace(/\{\{([^}]+)\}\}/g, (match, variablePath) => {
-      const trimmedPath = variablePath.trim();
-      const value = this.getVariableValue(trimmedPath, context);
-      return value !== null && value !== undefined ? String(value) : match;
-    });
-  }
-
-  /**
-   * 获取变量值
-   */
-  private getVariableValue(variable: string, context: any): any {
-    if (context.inputs && context.inputs[variable] !== undefined) {
-      return context.inputs[variable];
-    }
-    if (context.variables && context.variables[variable] !== undefined) {
-      return context.variables[variable];
-    }
-    if (context.nodeResults && context.nodeResults.has(variable)) {
-      return context.nodeResults.get(variable);
-    }
-    return undefined;
+    return order;
   }
 
   /**
@@ -313,7 +206,7 @@ export class WorkflowExecutionEngine {
       case 'loop':
         return await this.handleLoopNode(currentNode, currentResult, context, nodeMap, edgeMap);
       case 'parallel':
-        return await this.handleParallelNode(nextNodeIds, context, nodeMap, edgeMap);
+        return await this.handleParallelNode(currentNode, currentResult, nextNodeIds, context, nodeMap, edgeMap);
       default:
         // 普通节点：执行第一个后续节点
         const nextNode = nodeMap.get(nextNodeIds[0]);
@@ -374,20 +267,168 @@ export class WorkflowExecutionEngine {
 
   /**
    * 处理并行节点的后续执行
+   * 支持 strategy(all/any/race)、timeout、errorHandling(fail-fast/continue/ignore)
    */
   private async handleParallelNode(
+    currentNode: WorkflowNode,
+    currentResult: any,
     nextNodeIds: string[],
     context: WorkflowContext,
     nodeMap: Map<string, WorkflowNode>,
     edgeMap: Map<string, string[]>,
   ): Promise<any> {
-    // 并行执行所有后续节点
-    const parallelResults = await Promise.all(
-      nextNodeIds.map(async (nextNodeId) => {
-        const nextNode = nodeMap.get(nextNodeId);
-        return nextNode ? await this.executeNode(nextNode, context, nodeMap, edgeMap) : null;
-      }),
+    const config = (currentNode.data?.config || {}) as ParallelNodeConfig;
+    const {
+      strategy = 'all',
+      timeout = 60,
+      errorHandling = 'fail-fast',
+    } = config;
+
+    const timeoutMs = timeout * 1000;
+    const branchResults: Array<{
+      branchId: string;
+      nodeId: string;
+      status: 'completed' | 'failed' | 'timeout';
+      result: any;
+      error?: string;
+      duration: number;
+      timestamp: string;
+    }> = [];
+
+    // 为每个分支创建一个带超时的执行 Promise
+    const branchPromises = nextNodeIds.map((nextNodeId, index) => {
+      const nextNode = nodeMap.get(nextNodeId);
+      if (!nextNode) {
+        return Promise.resolve({
+          branchId: `branch_${index + 1}`,
+          nodeId: nextNodeId,
+          status: 'failed' as const,
+          result: null,
+          error: `节点 ${nextNodeId} 不存在`,
+          duration: 0,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const startTime = Date.now();
+
+      // 分支执行 Promise
+      const executionPromise = this.executeNode(nextNode, context, nodeMap, edgeMap)
+        .then((result) => ({
+          branchId: `branch_${index + 1}`,
+          nodeId: nextNodeId,
+          status: 'completed' as const,
+          result,
+          duration: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+        }))
+        .catch((error) => ({
+          branchId: `branch_${index + 1}`,
+          nodeId: nextNodeId,
+          status: 'failed' as const,
+          result: null,
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+        }));
+
+      // 超时 Promise
+      const timeoutPromise = new Promise<typeof branchResults[0]>((resolve) =>
+        setTimeout(() => {
+          resolve({
+            branchId: `branch_${index + 1}`,
+            nodeId: nextNodeId,
+            status: 'timeout' as const,
+            result: null,
+            error: `分支执行超时 (${timeout}s)`,
+            duration: timeoutMs,
+            timestamp: new Date().toISOString(),
+          });
+        }, timeoutMs),
+      );
+
+      return Promise.race([executionPromise, timeoutPromise]);
+    });
+
+    // 根据策略执行
+    try {
+      switch (strategy) {
+        case 'race': {
+          // 返回最先完成的分支结果
+          const firstResult = await Promise.race(branchPromises);
+          branchResults.push(firstResult);
+          break;
+        }
+
+        case 'any': {
+          // 等待任一成功完成
+          const results = await Promise.allSettled(branchPromises);
+          for (const r of results) {
+            const val = r.status === 'fulfilled' ? r.value : {
+              branchId: 'unknown',
+              nodeId: 'unknown',
+              status: 'failed' as const,
+              result: null,
+              error: (r as PromiseRejectedResult).reason?.message || 'Unknown error',
+              duration: 0,
+              timestamp: new Date().toISOString(),
+            };
+            branchResults.push(val);
+          }
+          break;
+        }
+
+        case 'all':
+        default: {
+          // 等待所有分支完成
+          if (errorHandling === 'fail-fast') {
+            // fail-fast: 任一失败则立即抛出
+            const results = await Promise.all(branchPromises);
+            branchResults.push(...results);
+
+            const failedBranch = branchResults.find((b) => b.status === 'failed');
+            if (failedBranch) {
+              throw new Error(`并行分支 ${failedBranch.branchId} 执行失败: ${failedBranch.error}`);
+            }
+          } else {
+            // continue/ignore: 收集所有结果，不中断
+            const results = await Promise.allSettled(branchPromises);
+            for (const r of results) {
+              if (r.status === 'fulfilled') {
+                branchResults.push(r.value);
+              } else {
+                branchResults.push({
+                  branchId: 'unknown',
+                  nodeId: 'unknown',
+                  status: 'failed',
+                  result: null,
+                  error: r.reason?.message || 'Unknown error',
+                  duration: 0,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+            }
+          }
+          break;
+        }
+      }
+    } catch (error) {
+      if (errorHandling === 'fail-fast') {
+        throw error;
+      }
+      this.logger.warn(`并行执行部分失败: ${error instanceof Error ? error.message : error}`);
+    }
+
+    // 调用 ParallelNodeExecutor 合并结果
+    const mergedNodeResult = this.parallelNodeExecutor.mergeResults(
+      currentNode,
+      context,
+      branchResults,
     );
-    return parallelResults.filter((r) => r !== null);
+
+    // 更新节点结果
+    context.setNodeResult(currentNode.id, mergedNodeResult);
+
+    return mergedNodeResult;
   }
 }

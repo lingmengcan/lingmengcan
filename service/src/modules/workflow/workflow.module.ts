@@ -6,6 +6,7 @@ import { Workflow } from './workflow.entity';
 import { WorkflowExecution } from './workflow-execution.entity';
 import { Plugin } from '@/modules/plugin/plugin.entity';
 import { ModelModule } from '@/modules/model/model.module';
+import { DatasourceModule } from '@/modules/datasource/datasource.module';
 import { WorkflowExecutionEngine } from './engine/workflow-execution-engine';
 import { WorkflowNodeExecutor } from './engine/workflow-node-executor';
 import { LLMNodeExecutor } from './engine/nodes/llm-node-executor';
@@ -17,7 +18,7 @@ import { TransformNodeExecutor } from './engine/nodes/transform-node-executor';
 import { DatabaseNodeExecutor } from './engine/nodes/database-node-executor';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Workflow, WorkflowExecution, Plugin]), ModelModule],
+  imports: [TypeOrmModule.forFeature([Workflow, WorkflowExecution, Plugin]), ModelModule, DatasourceModule],
   controllers: [WorkflowController],
   providers: [
     WorkflowService,

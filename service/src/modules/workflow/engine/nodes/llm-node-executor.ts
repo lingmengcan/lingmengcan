@@ -3,7 +3,7 @@ import { BaseNodeExecutor } from './base-node-executor';
 import { WorkflowContext } from '../workflow-context';
 import { WorkflowNode, NodeExecutionResult, LLMNodeConfig, LLMRequest, LLMResponse } from '../workflow.types';
 import { LlmService } from '@/modules/model/llm.service';
-import { ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate } from '@langchain/core/prompts';
+import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { initChatModel } from 'langchain';
 
 /**
@@ -59,22 +59,27 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
   private buildLLMRequest(config: LLMNodeConfig, context: WorkflowContext): LLMRequest {
     const { model, temperature, maxTokens, topP, systemPrompt, userPrompt, variableName, inputs } = config;
 
-    // 获取输入数据 - 兼容新旧两种方式
-    let inputData: any;
-    
+    // 解析所有输入变量并注册到 context，使提示词模板中可以用 {{变量名}} 引用
+    const resolvedInputs: Record<string, any> = {};
+
     if (inputs && Array.isArray(inputs) && inputs.length > 0) {
-      // 新方式：从 inputs 数组获取
-      const firstInput = inputs[0];
-      if (firstInput.source) {
-        // 从指定来源获取
-        inputData = context.getVariableValue(firstInput.source);
-      } else {
-        // 从全局变量获取
-        inputData = context.getVariableValue(firstInput.name);
+      for (const input of inputs) {
+        let value: any;
+        if (input.source) {
+          // 从指定来源获取（格式: nodeId.outputName）
+          value = context.getVariableValue(input.source);
+        } else {
+          // 从全局变量获取
+          value = context.getVariableValue(input.name);
+        }
+        resolvedInputs[input.name] = value;
+        // 注册到 context 中，这样 replaceVariables 就能用 {{inputName}} 引用
+        context.setVariable(input.name, value);
       }
-    } else {
+    } else if (variableName) {
       // 旧方式：使用 variableName
-      inputData = context.getVariableValue(variableName || 'input');
+      const value = context.getVariableValue(variableName || 'input');
+      resolvedInputs[variableName || 'input'] = value;
     }
 
     // 构建消息数组
@@ -89,7 +94,14 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
     }
 
     // 添加用户输入
-    const userContent = userPrompt ? context.replaceVariables(userPrompt) : String(inputData ?? '');
+    let userContent: string;
+    if (userPrompt) {
+      userContent = context.replaceVariables(userPrompt);
+    } else {
+      // 没有用户提示词模板时，取第一个输入作为内容
+      const firstInputValue = Object.values(resolvedInputs)[0];
+      userContent = String(firstInputValue ?? '');
+    }
     messages.push({
       role: 'user',
       content: userContent,
@@ -128,20 +140,16 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
       },
     });
 
-    const promptMessages = messages.map((m) => {
-      if (m.role === 'system') return SystemMessagePromptTemplate.fromTemplate(m.content);
-      if (m.role === 'user') return HumanMessagePromptTemplate.fromTemplate(m.content);
-      return HumanMessagePromptTemplate.fromTemplate(m.content);
+    const chatMessages = messages.map((m) => {
+      if (m.role === 'system') return new SystemMessage(m.content);
+      return new HumanMessage(m.content);
     });
-
-    const prompt = ChatPromptTemplate.fromMessages(promptMessages);
-    const chain = prompt.pipe(llm);
 
     let reasoning = '';
     let fullContent = '';
     let thinkTagComplete = false;
 
-    for await (const chunk of await chain.stream({})) {
+    for await (const chunk of await llm.stream(chatMessages)) {
       const content =
         chunk && typeof chunk === 'object' && 'content' in (chunk as any) ? (chunk as any).content || '' : '';
       fullContent += content;
@@ -186,21 +194,17 @@ export class LLMNodeExecutor extends BaseNodeExecutor {
       },
     });
 
-    const promptMessages = messages.map((m) => {
-      if (m.role === 'system') return SystemMessagePromptTemplate.fromTemplate(m.content);
-      if (m.role === 'user') return HumanMessagePromptTemplate.fromTemplate(m.content);
-      return HumanMessagePromptTemplate.fromTemplate(m.content);
+    const chatMessages = messages.map((m) => {
+      if (m.role === 'system') return new SystemMessage(m.content);
+      return new HumanMessage(m.content);
     });
-
-    const prompt = ChatPromptTemplate.fromMessages(promptMessages);
-    const chain = prompt.pipe(llm);
 
     let reasoning_content = '';
     let full_content = '';
     let sentCleanLength = 0;
     let thinkTagComplete = false;
 
-    for await (const chunk of await chain.stream({})) {
+    for await (const chunk of await llm.stream(chatMessages)) {
       const content =
         chunk && typeof chunk === 'object' && 'content' in (chunk as any) ? (chunk as any).content || '' : '';
       full_content += content;

@@ -188,7 +188,7 @@
 
 <script setup lang="ts">
   import { ref, watch, reactive, nextTick, computed } from 'vue';
-  import { useVueFlow } from '@vue-flow/core';
+  import { useWorkflowStore } from '@/store/modules/workflow';
 
   interface NodeData {
     label: string;
@@ -229,8 +229,8 @@
     'update-node': [data: NodeData];
   }>();
 
-  // 获取 VueFlow 实例
-  const { nodes, edges } = useVueFlow();
+  // 使用 workflow store（比 useVueFlow() 更可靠，避免 provide/inject 上下文问题）
+  const workflowStore = useWorkflowStore();
 
   // 折叠面板激活状态
   const activeNames = ref<string[]>([]);
@@ -394,9 +394,9 @@
     }
 
     try {
-      // 获取所有边和节点 - 使用 .value 访问 ref
-      const allEdges = edges.value || [];
-      const allNodes = nodes.value || [];
+      // 直接使用 workflow store 中的 nodes 和 edges（比 useVueFlow 更可靠）
+      const allEdges = workflowStore.edges || [];
+      const allNodes = workflowStore.nodes || [];
 
       // 获取所有祖先节点
       const ancestorNodes = getAllAncestorNodes(currentNodeId, allEdges, allNodes);

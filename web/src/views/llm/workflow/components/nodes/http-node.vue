@@ -5,40 +5,25 @@
       <!-- 头部 -->
       <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100">
         <div class="flex items-center gap-2">
-          <t-icon name="internet" class="text-lg text-cyan-600" />
-          <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-            {{ data.label }}
-          </span>
-        </div>
-        <div class="flex items-center gap-1">
-          <!-- 运行按钮 -->
-          <t-button
-            variant="text"
-            size="small"
-            class="p-1 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-            @click.stop="handleRun"
-          >
-            <t-icon name="play-circle" size="16" />
-          </t-button>
+          <t-icon name="internet" class="text-lg text-gray-700" />
+          <span class="text-sm font-medium text-gray-700">{{ data.label }}</span>
         </div>
       </div>
 
       <!-- 内容区域 -->
       <div class="px-3 py-2 flex flex-col gap-2">
         <!-- 请求信息 -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">{{ displayMethod }}</span>
-          <div class="flex items-center gap-2 text-sm text-gray-700">
-            <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
-              {{ displayUrl }}
-            </span>
-          </div>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">{{ displayMethod }}</span>
+          <span class="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+            {{ displayUrl }}
+          </span>
         </div>
 
         <!-- 输出信息 -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500">输出</span>
-          <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-medium">response</span>
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-gray-400">输出</span>
+          <span class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">response</span>
         </div>
       </div>
     </div>
@@ -70,7 +55,6 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import { Handle, Position } from '@vue-flow/core';
-  import { MessagePlugin } from 'tdesign-vue-next';
 
   interface NodeData {
     label: string;
@@ -99,12 +83,6 @@
     const url = props.data?.config?.url || '';
     return url;
   });
-
-  // 运行按钮点击事件
-  const handleRun = () => {
-    MessagePlugin.info('运行HTTP节点');
-    // 这里可以添加运行逻辑
-  };
 
   // 监听 props 变化，更新本地数据
   watch(
