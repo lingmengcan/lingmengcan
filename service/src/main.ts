@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 import session from 'express-session';
 import { ConfigService } from '@nestjs/config';
 
@@ -12,10 +13,18 @@ async function bootstrap() {
   // 可以跨域
   app.enableCors();
 
+  // 注册全局参数校验管道，使 DTO 中的 class-validator 装饰器生效
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
+
   // 配置session
   app.use(
     session({
-      secret: 'lmc-session-secret',
+      secret: configService.get<string>('security.sessionSecret') || 'lmc-session-secret',
       resave: false,
       saveUninitialized: false,
     }),

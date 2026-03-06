@@ -2,18 +2,22 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from './auth.service';
-import { JWT_SECRET } from '@/constants';
+import { JWT_SECRET_DEFAULT } from '@/constants';
 import { JwtPayload } from './auth.dto';
 import { User } from '@/modules/system/user/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly authService: AuthService) {
+  constructor(
+    private readonly authService: AuthService,
+    configService: ConfigService,
+  ) {
     super({
       // 获取请求header token值
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: JWT_SECRET,
+      secretOrKey: configService.get<string>('security.jwtSecret') || JWT_SECRET_DEFAULT,
     });
   }
 

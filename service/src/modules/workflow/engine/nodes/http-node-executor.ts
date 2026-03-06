@@ -12,6 +12,63 @@ import { WorkflowNode, NodeExecutionResult, HttpNodeConfig } from '../workflow.t
 export class HttpNodeExecutor extends BaseNodeExecutor {
   private readonly logger = new Logger(HttpNodeExecutor.name);
 
+  // 内网 IP 段，用于 SSRF 防护
+  private static readonly BLOCKED_IP_PATTERNS = [
+    /^127\./,                          // 127.0.0.0/8 loopback
+    /^10\./,                           // 10.0.0.0/8 private
+    /^172\.(1[6-9]|2\d|3[0-1])\./,     // 172.16.0.0/12 private
+    /^192\.168\./,                     // 192.168.0.0/16 private
+    /^0\./,                            // 0.0.0.0/8
+    /^169\.254\./,                     // link-local
+    /^::1$/,                           // IPv6 loopback
+    /^fc00:/i,                         // IPv6 ULA
+    /^fe80:/i,                         // IPv6 link-local
+  ];
+
+  private static readonly BLOCKED_HOSTS = [
+    'localhost',
+    'metadata.google.internal',        // GCP metadata
+    'instance-data',                   // AWS metadata alias
+  ];
+
+  /**
+   * 校验 URL 是否安全（防止 SSRF 攻击）
+   */
+  private validateUrl(url: string): void {
+    try {
+      const parsed = new URL(url);
+
+      // 只允许 http/https
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error(`不允许的协议: ${parsed.protocol}`);
+      }
+
+      const hostname = parsed.hostname.toLowerCase();
+
+      // 检查禁止的主机名
+      if (HttpNodeExecutor.BLOCKED_HOSTS.includes(hostname)) {
+        throw new Error(`不允许访问内部主机: ${hostname}`);
+      }
+
+      // 检查 AWS metadata endpoint
+      if (hostname === '169.254.169.254') {
+        throw new Error('不允许访问云服务元数据端点');
+      }
+
+      // 检查禁止的 IP 段
+      for (const pattern of HttpNodeExecutor.BLOCKED_IP_PATTERNS) {
+        if (pattern.test(hostname)) {
+          throw new Error(`不允许访问内网地址: ${hostname}`);
+        }
+      }
+    } catch (error) {
+      if (error instanceof TypeError) {
+        throw new Error(`无效的 URL: ${url}`);
+      }
+      throw error;
+    }
+  }
+
   /**
    * 执行HTTP节点
    */
@@ -36,6 +93,9 @@ export class HttpNodeExecutor extends BaseNodeExecutor {
     const resolvedUrl = context.replaceVariables(url || '');
 
     this.logNodeConfig(node, context, `${method} ${resolvedUrl}`);
+
+    // SSRF 防护：校验目标 URL
+    this.validateUrl(resolvedUrl);
 
     return this.safeExecute(node, context, async () => {
       // 构建请求头

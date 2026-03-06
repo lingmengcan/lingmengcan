@@ -45,6 +45,7 @@ export class ChatController {
   /**
    * LLM 调试对话接口 - 不存储到数据库
    */
+  @UseGuards(AuthGuard('jwt'))
   @Post('debug')
   @ApiBody({
     description: 'LLM调试对话，不存储到数据库',

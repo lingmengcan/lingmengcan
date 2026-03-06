@@ -51,7 +51,9 @@ export class DatabaseNodeExecutor extends BaseNodeExecutor {
 
       try {
         if (operationType === 'raw' && sql) {
-          // 原生SQL模式
+          // 原生SQL模式 - 校验 SQL 安全性
+          this.validateRawSql(sql);
+
           const { resolvedSql, params } = this.resolveRawSql(sql, context, resolvedInputs);
 
           this.logger.log(`执行原生SQL: ${resolvedSql.substring(0, 200)}`);
@@ -424,6 +426,38 @@ export class DatabaseNodeExecutor extends BaseNodeExecutor {
     }
 
     return clauses.join(' ');
+  }
+
+  /**
+   * 校验原生 SQL 安全性，禁止危险的 DDL/DCL 操作
+   */
+  private validateRawSql(sql: string): void {
+    // 移除注释和多余空白后检测
+    const normalizedSql = sql
+      .replace(/--.*$/gm, '')        // 移除单行注释
+      .replace(/\/\*[\s\S]*?\*\//g, '') // 移除多行注释
+      .trim()
+      .toUpperCase();
+
+    const dangerousPatterns = [
+      /\bDROP\s+(TABLE|DATABASE|INDEX|VIEW|SCHEMA)\b/,
+      /\bTRUNCATE\s+TABLE\b/,
+      /\bALTER\s+(TABLE|DATABASE)\b/,
+      /\bCREATE\s+(TABLE|DATABASE|INDEX|VIEW|SCHEMA)\b/,
+      /\bGRANT\b/,
+      /\bREVOKE\b/,
+      /\bFLUSH\b/,
+      /\bSHUTDOWN\b/,
+      /\bLOAD\s+DATA\b/,
+      /\bINTO\s+OUTFILE\b/,
+      /\bINTO\s+DUMPFILE\b/,
+    ];
+
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(normalizedSql)) {
+        throw new Error(`安全限制：原生 SQL 不允许执行 DDL/DCL 操作 (匹配: ${pattern.source})`);
+      }
+    }
   }
 
   /**

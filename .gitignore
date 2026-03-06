@@ -42,3 +42,7 @@ lerna-debug.log*
 .specify/*
 
 pnpm-lock.yaml
+
+# Sensitive config files (use config.*.yaml.example as template)
+service/config.development.yaml
+service/config.production.yaml

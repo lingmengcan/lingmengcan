@@ -1,0 +1,29 @@
+http:
+  host: 'localhost'
+  port: 9999
+  prefix: 'api'
+
+mysql:
+  host: 'localhost'
+  port: 3306
+  database: 'lingmengcan'
+  username: 'your_username'
+  password: 'your_password'
+  charset: 'utf8mb4'
+
+mongodb:
+  db: 'mongodb://localhost:27017/lingmengcan'
+
+chromadb:
+  db: 'http://localhost:9000'
+
+files:
+  destination: 'upload-files'
+  aigc: 'aigc-files'
+
+stablediffusion:
+  apiUrl: 'http://localhost:7861'
+
+security:
+  jwtSecret: 'your_jwt_secret_key'
+  sessionSecret: 'your_session_secret_key'

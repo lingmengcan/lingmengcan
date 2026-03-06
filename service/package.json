@@ -17,7 +17,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "genorm": "rm -rf entities-template & npx typeorm-model-generator -h localhost -d lingmengcan -p 3306 -u root -x 123456 -e mysql -o entities-template --noConfig true --ce pascal --cp camel"
+    "genorm": "rm -rf entities-template & npx typeorm-model-generator -h ${DB_HOST:-localhost} -d ${DB_NAME:-lingmengcan} -p ${DB_PORT:-3306} -u ${DB_USER:-root} -x ${DB_PASS} -e mysql -o entities-template --noConfig true --ce pascal --cp camel"
   },
   "dependencies": {
     "@langchain/classic": "^1.0.7",
@@ -40,6 +40,7 @@
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "chromadb": "^3.2.0",
+    "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "dayjs": "^1.11.19",
     "express-session": "^1.18.2",
