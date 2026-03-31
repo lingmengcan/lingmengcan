@@ -23,3 +23,7 @@ files:
 
 stablediffusion:
   apiUrl: 'http://localhost:7861'
+
+security:
+  jwtSecret: 'CHANGE_ME_TO_A_STRONG_SECRET'
+  sessionSecret: 'CHANGE_ME_TO_A_STRONG_SECRET'
