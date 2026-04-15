@@ -6,9 +6,9 @@ http:
 mysql:
   host: 'localhost'
   port: 3306
-  database: 'lingmengcan-ai'
-  username: 'lingmengcan'
-  password: '1234556'
+  database: 'lingmengcan_ai'
+  username: 'root'
+  password: '033713111'
   charset: 'utf8'
 
 mongodb:
