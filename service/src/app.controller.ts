@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, Res, Session } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthService } from './modules/auth/auth.service';
 import { successJson } from './utils/result';
-import { LoginDto } from './modules/auth/auth.dto';
+import { ForgetPasswordDto, LoginDto } from './modules/auth/auth.dto';
 import { Response } from 'express';
 
 @Controller()
@@ -49,5 +49,16 @@ export class AppController {
     const captcha = session?.captcha;
     // 生成令牌
     return this.authService.login(loginDto, captcha);
+  }
+
+  /**
+   * 忘记密码 - 通过用户名和邮箱验证后重置密码
+   * @param forgetPasswordDto
+   * @param session
+   */
+  @Post('forget-password')
+  async forgetPassword(@Body() forgetPasswordDto: ForgetPasswordDto, @Session() session: any) {
+    const captcha = session?.captcha;
+    return this.authService.forgetPassword(forgetPasswordDto, captcha);
   }
 }
