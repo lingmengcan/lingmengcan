@@ -9,7 +9,7 @@ mysql:
   database: 'lingmengcan_ai'
   username: 'root'
   password: '033713111'
-  charset: 'utf8'
+  charset: 'utf8mb4'
 
 mongodb:
   db: 'mongodb://localhost:27017/lingmengcan'

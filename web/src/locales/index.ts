@@ -23,6 +23,10 @@ const generateLangModuleMap = () => {
     const code = fullPath.replace('./lang/', '').split('/')[0];
     langCode.push(code);
     langModuleMap.set(code, langModules[fullPath]);
+    // 添加 zh_CN 到 zh-CN 的兼容映射
+    if (code === 'zh-CN') {
+      langModuleMap.set('zh_CN', langModules[fullPath]);
+    }
   });
 };
 
