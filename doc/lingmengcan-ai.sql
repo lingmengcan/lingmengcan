@@ -12,6 +12,7 @@
 -- Table structure for table `application`
 --
 
+
 DROP TABLE IF EXISTS `application`;
 CREATE TABLE `application` (
   `app_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
@@ -672,7 +673,7 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` VALUES (1,'admin','管理员','admin@example.com','','MALE','','$2b$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx','127.0.0.1','2024-01-01 00:00:00',0,'超级管理员','admin','admin','2024-01-01 00:00:00','2024-01-01 00:00:00');
-INSERT INTO `user` VALUES (1,'admin','管理员','admin@example.com','','MALE','','$2b$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx','127.0.0.1','2024-01-01 00:00:00',0,'超级管理员','admin','admin','2024-01-01 00:00:00','2024-01-01 00:00:00');
+-- INSERT INTO `user` VALUES (1,'admin','管理员','admin@example.com','','MALE','','$2b$10$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx','127.0.0.1','2024-01-01 00:00:00',0,'超级管理员','admin','admin','2024-01-01 00:00:00','2024-01-01 00:00:00');
 
 
 DROP TABLE IF EXISTS `workflow`;

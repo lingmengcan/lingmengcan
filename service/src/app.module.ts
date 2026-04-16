@@ -22,6 +22,7 @@ import { ApplicationModule } from './modules/application/application.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { PluginModule } from './modules/plugin/plugin.module';
 import { DatasourceModule } from './modules/datasource/datasource.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { DatasourceModule } from './modules/datasource/datasource.module';
     WorkflowModule,
     PluginModule,
     DatasourceModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
