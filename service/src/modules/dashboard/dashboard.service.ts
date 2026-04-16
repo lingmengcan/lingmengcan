@@ -8,7 +8,7 @@ import { Llm } from '@/modules/model/llm.entity';
 import { Knowledge } from '@/modules/knowledge/knowledge.entity';
 import { Workflow } from '@/modules/workflow/workflow.entity';
 import { WorkflowExecution } from '@/modules/workflow/workflow-execution.entity';
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class DashboardService {
