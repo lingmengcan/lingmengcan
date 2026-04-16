@@ -2,7 +2,7 @@
   import { onMounted, ref, reactive } from 'vue';
   import { useRouter } from 'vue-router';
   import { FormProps, MessagePlugin } from 'tdesign-vue-next';
-  import { UserIcon, EmailIcon, LockOnIcon, CheckCircleIcon } from 'tdesign-icons-vue-next';
+  import { UserIcon, LockOnIcon, CheckCircleIcon } from 'tdesign-icons-vue-next';
   import { ResultEnum } from '@/constants';
   import { getCaptche, forgetPassword } from '@/api/system/user';
   import { useI18n } from 'vue-i18n';
@@ -49,7 +49,6 @@
 
   const router = useRouter();
 
-  // 刷新验证码
   const refreshCaptcha = async () => {
     const res = await getCaptche();
     if (res && res.code === 0) {
@@ -140,7 +139,7 @@
               clearable
             >
               <template #prefix-icon>
-                <EmailIcon />
+                <t-icon name="message" />
               </template>
             </t-input>
           </t-form-item>
