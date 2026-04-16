@@ -54,11 +54,19 @@ export const useChatStore = defineStore('chat-store', {
     },
 
     async deleteConversation(conversation: Conversation) {
-      conversation.status = 1; // 软删除
-      const res = await changeConversationStatus(conversation);
+      try {
+        conversation.status = 1;
+        const res = await changeConversationStatus(conversation);
 
-      if (res?.code === 0) {
-        await this.reloadRoute();
+        if (res?.code === 0) {
+          await this.reloadRoute();
+        }
+      } catch (error) {
+        console.error('删除对话失败:', error);
+        const message = window['$message'];
+        if (message) {
+          message.error('删除对话失败，请稍后重试');
+        }
       }
     },
 

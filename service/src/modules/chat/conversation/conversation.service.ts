@@ -96,6 +96,9 @@ export class ConversationService {
    */
   async updateStatus(conversation: Conversation) {
     const entity = await this.findOne(conversation.conversationId);
+    if (!entity) {
+      throw new Error('对话不存在');
+    }
     entity.status = conversation.status;
     entity.updatedAt = new Date();
     return this.repository.save(entity);
