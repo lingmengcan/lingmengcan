@@ -80,6 +80,11 @@
       MessagePlugin.warning(firstError);
     }
   };
+
+  // 跳转到忘记密码页面
+  const goToForgetPassword = () => {
+    router.push('/forget-password');
+  };
 </script>
 
 <template>
@@ -89,7 +94,7 @@
     <div class="absolute flex-grow max-w-md px-5 mx-auto bg-white rounded-lg shadowlg w-[500px] pt-5 pb-6">
       <div class="pb-5 text-5xl text-gray-700">
         <h1 class="text-4xl">{{ t('views.login.welcome') }}</h1>
-        <h1 class="text-3xl text-center">Lingmengcan</h1>
+        <h1 class="text-3xl text-center">{{ t('views.login.platformName') }}</h1>
       </div>
       <div>
         <t-form
@@ -145,7 +150,7 @@
             <div class="flex justify-between items-center">
               <t-space>
                 <t-checkbox v-model="autoLogin">{{ $t('views.login.remember') }}</t-checkbox>
-                <t-link href="javascript:">{{ $t('views.login.forget') }}</t-link>
+                <t-link @click="goToForgetPassword">{{ $t('views.login.forget') }}</t-link>
               </t-space>
             </div>
           </t-form-item>
