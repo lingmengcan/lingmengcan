@@ -33,7 +33,6 @@ declare module 'vue' {
     TDropdownItem: typeof import('tdesign-vue-next')['DropdownItem']
     TDropdownMenu: typeof import('tdesign-vue-next')['DropdownMenu']
     TEmpty: typeof import('tdesign-vue-next')['Empty']
-    TEnhancedTable: typeof import('tdesign-vue-next')['EnhancedTable']
     TForm: typeof import('tdesign-vue-next')['Form']
     TFormItem: typeof import('tdesign-vue-next')['FormItem']
     TIcon: typeof import('tdesign-vue-next')['Icon']
@@ -49,8 +48,6 @@ declare module 'vue' {
     TPagination: typeof import('tdesign-vue-next')['Pagination']
     TPopconfirm: typeof import('tdesign-vue-next')['Popconfirm']
     TPopup: typeof import('tdesign-vue-next')['Popup']
-    TRadio: typeof import('tdesign-vue-next')['Radio']
-    TRadioGroup: typeof import('tdesign-vue-next')['RadioGroup']
     TRow: typeof import('tdesign-vue-next')['Row']
     TSelect: typeof import('tdesign-vue-next')['Select']
     TSlider: typeof import('tdesign-vue-next')['Slider']
@@ -61,11 +58,8 @@ declare module 'vue' {
     TTabPanel: typeof import('tdesign-vue-next')['TabPanel']
     TTabs: typeof import('tdesign-vue-next')['Tabs']
     TTag: typeof import('tdesign-vue-next')['Tag']
-    TTagInput: typeof import('tdesign-vue-next')['TagInput']
     TTextarea: typeof import('tdesign-vue-next')['Textarea']
     TTooltip: typeof import('tdesign-vue-next')['Tooltip']
-    TTree: typeof import('tdesign-vue-next')['Tree']
-    TTreeSelect: typeof import('tdesign-vue-next')['TreeSelect']
     TUpload: typeof import('tdesign-vue-next')['Upload']
   }
 }
