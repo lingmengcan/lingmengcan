@@ -1,212 +1,230 @@
 <template>
-  <div class="dashboard-container">
-    <h2 class="page-title">数据概览</h2>
-
-    <div class="stats-cards">
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon user-icon">
-            <t-icon name="user" />
+  <div>
+    <t-card :bordered="false" class="mb-4!">
+      <h2 class="text-xl font-semibold mb-4">数据概览</h2>
+      
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #0052d9, #0594fa)">
+              <t-icon name="user" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalUsers }}</div>
+              <div class="text-sm text-gray-500 mt-1">总用户数</div>
+            </div>
           </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.totalUsers }}</div>
-            <div class="card-label">总用户数</div>
+        </t-card>
+
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #00a870, #36c298)">
+              <t-icon name="chart-pie" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.activeUsers }}</div>
+              <div class="text-sm text-gray-500 mt-1">活跃用户</div>
+            </div>
+          </div>
+        </t-card>
+
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #e37318, #faa41a)">
+              <t-icon name="chat" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalConversations }}</div>
+              <div class="text-sm text-gray-500 mt-1">总对话数</div>
+            </div>
+          </div>
+        </t-card>
+
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #d54941, #e88080)">
+              <t-icon name="message" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalMessages }}</div>
+              <div class="text-sm text-gray-500 mt-1">总消息数</div>
+            </div>
+          </div>
+        </t-card>
+      </div>
+
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #722ed1, #b37feb)">
+              <t-icon name="app" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalModels }}</div>
+              <div class="text-sm text-gray-500 mt-1">总模型数</div>
+            </div>
+          </div>
+        </t-card>
+
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #0052d9, #4080ff)">
+              <t-icon name="file" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalKnowledges }}</div>
+              <div class="text-sm text-gray-500 mt-1">总知识库</div>
+            </div>
+          </div>
+        </t-card>
+
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #00a870, #63c995)">
+              <t-icon name="flow" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalWorkflows }}</div>
+              <div class="text-sm text-gray-500 mt-1">总工作流</div>
+            </div>
+          </div>
+        </t-card>
+
+        <t-card bordered class="h-full">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-2xl"
+                 style="background: linear-gradient(135deg, #e37318, #ff9a2e)">
+              <t-icon name="check-circle" />
+            </div>
+            <div>
+              <div class="text-2xl font-semibold text-gray-800">{{ overviewData.successRate }}%</div>
+              <div class="text-sm text-gray-500 mt-1">执行成功率</div>
+            </div>
+          </div>
+        </t-card>
+      </div>
+    </t-card>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <t-card :bordered="false">
+        <template #title>用户增长趋势</template>
+        <div class="pt-4">
+          <div v-if="userGrowthData.length > 0" class="flex items-end gap-2 h-48">
+            <div v-for="(item, index) in userGrowthData" :key="index" class="flex flex-col items-center flex-1">
+              <div class="w-full flex justify-center mb-1">
+                <span class="text-xs text-gray-500">{{ item.count }}</span>
+              </div>
+              <div class="w-5 rounded-t flex-1 max-h-full"
+                   :style="{ background: 'linear-gradient(180deg, #0052d9, #0594fa)', minHeight: '4px', height: getBarHeight(userGrowthData, item.count) + '%' }">
+              </div>
+              <div class="text-xs text-gray-500 mt-2">{{ item.date }}</div>
+            </div>
+          </div>
+          <div v-else class="h-48 flex items-center justify-center text-gray-400">
+            暂无数据
           </div>
         </div>
       </t-card>
 
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon active-user-icon">
-            <t-icon name="chart-pie" />
+      <t-card :bordered="false">
+        <template #title>对话量趋势</template>
+        <div class="pt-4">
+          <div v-if="conversationTrendData.length > 0" class="flex items-end gap-2 h-48">
+            <div v-for="(item, index) in conversationTrendData" :key="index" class="flex flex-col items-center flex-1">
+              <div class="w-full flex justify-center mb-1">
+                <span class="text-xs text-gray-500">{{ item.count }}</span>
+              </div>
+              <div class="w-5 rounded-t flex-1 max-h-full"
+                   :style="{ background: 'linear-gradient(180deg, #00a870, #36c298)', minHeight: '4px', height: getBarHeight(conversationTrendData, item.count) + '%' }">
+              </div>
+              <div class="text-xs text-gray-500 mt-2">{{ item.date }}</div>
+            </div>
           </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.activeUsers }}</div>
-            <div class="card-label">活跃用户</div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon chat-icon">
-            <t-icon name="chat" />
-          </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.totalConversations }}</div>
-            <div class="card-label">总对话数</div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon message-icon">
-            <t-icon name="message" />
-          </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.totalMessages }}</div>
-            <div class="card-label">总消息数</div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon model-icon">
-            <t-icon name="app" />
-          </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.totalModels }}</div>
-            <div class="card-label">总模型数</div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon knowledge-icon">
-            <t-icon name="file" />
-          </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.totalKnowledges }}</div>
-            <div class="card-label">总知识库</div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon workflow-icon">
-            <t-icon name="flow" />
-          </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.totalWorkflows }}</div>
-            <div class="card-label">总工作流</div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="stats-card">
-        <div class="card-content">
-          <div class="card-icon success-icon">
-            <t-icon name="check-circle" />
-          </div>
-          <div class="card-info">
-            <div class="card-value">{{ overviewData.successRate }}%</div>
-            <div class="card-label">执行成功率</div>
+          <div v-else class="h-48 flex items-center justify-center text-gray-400">
+            暂无数据
           </div>
         </div>
       </t-card>
     </div>
 
-    <div class="charts-row">
-      <t-card bordered class="chart-card">
-        <div class="chart-header">
-          <h3 class="chart-title">用户增长趋势</h3>
-          <t-radio-group v-model="userDays" variant="filled" size="small">
-            <t-radio-button value="7">最近7天</t-radio-button>
-            <t-radio-button value="30">最近30天</t-radio-button>
-          </t-radio-group>
+    <div class="grid grid-cols-2 gap-4">
+      <t-card :bordered="false">
+        <template #title>工作流执行统计</template>
+        <div class="pt-4 space-y-4">
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-700">成功</span>
+              <span class="text-sm font-semibold text-gray-800">{{ workflowStats.success }}</span>
+            </div>
+            <t-progress :percentage="getPercentage(workflowStats.success, workflowStats.total)"
+                       theme="success" :showInfo="false" />
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-700">失败</span>
+              <span class="text-sm font-semibold text-gray-800">{{ workflowStats.failed }}</span>
+            </div>
+            <t-progress :percentage="getPercentage(workflowStats.failed, workflowStats.total)"
+                       theme="danger" :showInfo="false" />
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-700">运行中</span>
+              <span class="text-sm font-semibold text-gray-800">{{ workflowStats.running }}</span>
+            </div>
+            <t-progress :percentage="getPercentage(workflowStats.running, workflowStats.total)"
+                       theme="primary" :showInfo="false" />
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-700">已停止</span>
+              <span class="text-sm font-semibold text-gray-800">{{ workflowStats.stopped }}</span>
+            </div>
+            <t-progress :percentage="getPercentage(workflowStats.stopped, workflowStats.total)"
+                       theme="warning" :showInfo="false" />
+          </div>
+          <div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-700">超时</span>
+              <span class="text-sm font-semibold text-gray-800">{{ workflowStats.timeout }}</span>
+            </div>
+            <t-progress :percentage="getPercentage(workflowStats.timeout, workflowStats.total)"
+                       theme="error" :showInfo="false" />
+          </div>
         </div>
-        <div class="chart-container">
-          <div class="bar-chart">
-            <div v-for="(item, index) in userGrowthData" :key="index" class="bar-item">
-              <div class="bar-wrapper">
-                <div class="bar" :style="{ height: getBarHeight(userGrowthData, item.count) + '%' }">
-                  <span class="bar-value">{{ item.count }}</span>
-                </div>
+      </t-card>
+
+      <t-card :bordered="false">
+        <template #title>模型使用分布</template>
+        <div class="pt-4">
+          <div class="flex items-center justify-around">
+            <div class="relative w-40 h-40">
+              <div class="w-full h-full rounded-full"
+                   :style="{ background: getPieBackground(modelDistributionData) }">
               </div>
-              <div class="bar-label">{{ item.date }}</div>
-            </div>
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="chart-card">
-        <div class="chart-header">
-          <h3 class="chart-title">对话量趋势</h3>
-          <t-radio-group v-model="conversationDays" variant="filled" size="small">
-            <t-radio-button value="7">最近7天</t-radio-button>
-            <t-radio-button value="30">最近30天</t-radio-button>
-          </t-radio-group>
-        </div>
-        <div class="chart-container">
-          <div class="bar-chart">
-            <div v-for="(item, index) in conversationTrendData" :key="index" class="bar-item">
-              <div class="bar-wrapper">
-                <div class="bar bar-conversation" :style="{ height: getBarHeight(conversationTrendData, item.count) + '%' }">
-                  <span class="bar-value">{{ item.count }}</span>
-                </div>
+              <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white w-24 h-24 rounded-full flex flex-col items-center justify-center">
+                <div class="text-2xl font-semibold text-gray-800">{{ overviewData.totalModels }}</div>
+                <div class="text-xs text-gray-500">总模型数</div>
               </div>
-              <div class="bar-label">{{ item.date }}</div>
             </div>
-          </div>
-        </div>
-      </t-card>
-    </div>
-
-    <div class="charts-row">
-      <t-card bordered class="chart-card">
-        <div class="chart-header">
-          <h3 class="chart-title">工作流执行统计</h3>
-        </div>
-        <div class="stats-container">
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">成功</span>
-              <span class="progress-count">{{ workflowStats.success }}</span>
-            </div>
-            <t-progress :percentage="getPercentage(workflowStats.success, workflowStats.total)" theme="success" :showInfo="false" />
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">失败</span>
-              <span class="progress-count">{{ workflowStats.failed }}</span>
-            </div>
-            <t-progress :percentage="getPercentage(workflowStats.failed, workflowStats.total)" theme="danger" :showInfo="false" />
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">运行中</span>
-              <span class="progress-count">{{ workflowStats.running }}</span>
-            </div>
-            <t-progress :percentage="getPercentage(workflowStats.running, workflowStats.total)" theme="primary" :showInfo="false" />
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">已停止</span>
-              <span class="progress-count">{{ workflowStats.stopped }}</span>
-            </div>
-            <t-progress :percentage="getPercentage(workflowStats.stopped, workflowStats.total)" theme="warning" :showInfo="false" />
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">超时</span>
-              <span class="progress-count">{{ workflowStats.timeout }}</span>
-            </div>
-            <t-progress :percentage="getPercentage(workflowStats.timeout, workflowStats.total)" theme="error" :showInfo="false" />
-          </div>
-        </div>
-      </t-card>
-
-      <t-card bordered class="chart-card">
-        <div class="chart-header">
-          <h3 class="chart-title">模型使用分布</h3>
-        </div>
-        <div class="pie-container">
-          <div class="pie-chart">
-            <div class="pie-circle" :style="{ background: getPieBackground(modelDistributionData) }"></div>
-            <div class="pie-center">
-              <div class="pie-total">{{ overviewData.totalModels }}</div>
-              <div class="pie-label">总模型数</div>
-            </div>
-          </div>
-          <div class="pie-legend">
-            <div v-for="(item, index) in modelDistributionData" :key="index" class="legend-item">
-              <span class="legend-color" :style="{ background: getColor(index) }"></span>
-              <span class="legend-label">{{ item.type }}</span>
-              <span class="legend-count">{{ item.count }}</span>
+            <div class="space-y-3">
+              <div v-for="(item, index) in modelDistributionData" :key="index" class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full"
+                     :style="{ background: getColor(index) }">
+                </div>
+                <span class="text-sm text-gray-700">{{ item.type }}</span>
+                <span class="text-sm font-semibold text-gray-800 ml-2">{{ item.count }}</span>
+              </div>
+              <div v-if="modelDistributionData.length === 0" class="text-sm text-gray-400">
+                暂无数据
+              </div>
             </div>
           </div>
         </div>
@@ -216,7 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted } from 'vue';
 import {
   getOverview,
   getUserGrowth,
@@ -240,8 +258,6 @@ const overviewData = ref<OverviewData>({
   successRate: 0,
 });
 
-const userDays = ref<number>(7);
-const conversationDays = ref<number>(7);
 const userGrowthData = ref<TrendData[]>([]);
 const conversationTrendData = ref<TrendData[]>([]);
 const workflowStats = ref<WorkflowStats>({
@@ -258,61 +274,78 @@ const colors = ['#0052D9', '#0594FA', '#00A870', '#E37318', '#D54941', '#722ED1'
 
 const fetchOverview = async () => {
   try {
+    console.log('开始获取概览数据...');
     const res = await getOverview();
-    if (res.code === 0) {
+    console.log('概览数据响应:', res);
+    if (res && res.code === 0) {
       overviewData.value = res.data;
+      console.log('概览数据已更新:', overviewData.value);
+    } else {
+      console.warn('获取概览数据失败，code:', res?.code);
     }
   } catch (error) {
-    console.error('获取概览数据失败:', error);
+    console.error('获取概览数据异常:', error);
   }
 };
 
 const fetchUserGrowth = async () => {
   try {
-    const res = await getUserGrowth(userDays.value);
-    if (res.code === 0) {
+    console.log('开始获取用户增长数据...');
+    const res = await getUserGrowth(7);
+    console.log('用户增长数据响应:', res);
+    if (res && res.code === 0) {
       userGrowthData.value = res.data;
+      console.log('用户增长数据已更新:', userGrowthData.value);
     }
   } catch (error) {
-    console.error('获取用户增长数据失败:', error);
+    console.error('获取用户增长数据异常:', error);
   }
 };
 
 const fetchConversationTrend = async () => {
   try {
-    const res = await getConversationTrend(conversationDays.value);
-    if (res.code === 0) {
+    console.log('开始获取对话量趋势数据...');
+    const res = await getConversationTrend(7);
+    console.log('对话量趋势数据响应:', res);
+    if (res && res.code === 0) {
       conversationTrendData.value = res.data;
+      console.log('对话量趋势数据已更新:', conversationTrendData.value);
     }
   } catch (error) {
-    console.error('获取对话量趋势数据失败:', error);
+    console.error('获取对话量趋势数据异常:', error);
   }
 };
 
 const fetchWorkflowStats = async () => {
   try {
+    console.log('开始获取工作流统计数据...');
     const res = await getWorkflowStats();
-    if (res.code === 0) {
+    console.log('工作流统计数据响应:', res);
+    if (res && res.code === 0) {
       workflowStats.value = res.data;
+      console.log('工作流统计数据已更新:', workflowStats.value);
     }
   } catch (error) {
-    console.error('获取工作流统计数据失败:', error);
+    console.error('获取工作流统计数据异常:', error);
   }
 };
 
 const fetchModelDistribution = async () => {
   try {
+    console.log('开始获取模型分布数据...');
     const res = await getModelDistribution();
-    if (res.code === 0) {
+    console.log('模型分布数据响应:', res);
+    if (res && res.code === 0) {
       modelDistributionData.value = res.data;
+      console.log('模型分布数据已更新:', modelDistributionData.value);
     }
   } catch (error) {
-    console.error('获取模型分布数据失败:', error);
+    console.error('获取模型分布数据异常:', error);
   }
 };
 
 const getBarHeight = (data: TrendData[], count: number): number => {
-  if (!data || data.length === 0) return 0;
+  if (!data || data.length === 0) return 5;
   const maxCount = Math.max(...data.map((item) => item.count), 1);
   return (count / maxCount) * 80 + 5;
 };
@@ -348,15 +381,8 @@ const getPieBackground = (data: ModelDistribution[]): string => {
   return `conic-gradient(${stops.join(', ')})`;
 };
 
-watch(userDays, () => {
-  fetchUserGrowth();
-});
-
-watch(conversationDays, () => {
-  fetchConversationTrend();
-});
-
 onMounted(() => {
+  console.log('仪表盘页面已挂载，开始获取数据...');
   fetchOverview();
   fetchUserGrowth();
   fetchConversationTrend();
@@ -366,303 +392,4 @@ onMounted(() => {
 </script>
 
 <style lang="less" scoped>
-.dashboard-container {
-  padding: 20px;
-  min-height: 100%;
-}
-
-.page-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  color: #1f2329;
-}
-
-.stats-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-
-  @media (max-width: 1200px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.stats-card {
-  .card-content {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: #fff;
-  }
-
-  .user-icon {
-    background: linear-gradient(135deg, #0052d9, #0594fa);
-  }
-
-  .active-user-icon {
-    background: linear-gradient(135deg, #00a870, #36c298);
-  }
-
-  .chat-icon {
-    background: linear-gradient(135deg, #e37318, #faa41a);
-  }
-
-  .message-icon {
-    background: linear-gradient(135deg, #d54941, #e88080);
-  }
-
-  .model-icon {
-    background: linear-gradient(135deg, #722ed1, #b37feb);
-  }
-
-  .knowledge-icon {
-    background: linear-gradient(135deg, #0052d9, #4080ff);
-  }
-
-  .workflow-icon {
-    background: linear-gradient(135deg, #00a870, #63c995);
-  }
-
-  .success-icon {
-    background: linear-gradient(135deg, #e37318, #ff9a2e);
-  }
-
-  .card-info {
-    .card-value {
-      font-size: 28px;
-      font-weight: 600;
-      color: #1f2329;
-      line-height: 1.2;
-    }
-
-    .card-label {
-      font-size: 14px;
-      color: #666e7a;
-      margin-top: 4px;
-    }
-  }
-}
-
-.charts-row {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.chart-card {
-  min-height: 320px;
-
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .chart-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-    color: #1f2329;
-  }
-
-  .chart-container {
-    height: 240px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-  }
-}
-
-.bar-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 100%;
-  width: 100%;
-  padding: 0 8px;
-
-  .bar-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    min-width: 0;
-  }
-
-  .bar-wrapper {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    flex: 1;
-    width: 100%;
-  }
-
-  .bar {
-    width: 20px;
-    max-width: 100%;
-    background: linear-gradient(180deg, #0052d9, #0594fa);
-    border-radius: 4px 4px 0 0;
-    position: relative;
-    transition: height 0.3s ease;
-    min-height: 4px;
-
-    .bar-value {
-      position: absolute;
-      top: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 12px;
-      color: #666e7a;
-      white-space: nowrap;
-    }
-  }
-
-  .bar-conversation {
-    background: linear-gradient(180deg, #00a870, #36c298);
-  }
-
-  .bar-label {
-    font-size: 12px;
-    color: #666e7a;
-    margin-top: 8px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-}
-
-.stats-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 8px 0;
-
-  .progress-item {
-    .progress-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .progress-label {
-      font-size: 14px;
-      color: #1f2329;
-    }
-
-    .progress-count {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1f2329;
-    }
-  }
-}
-
-.pie-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  gap: 24px;
-  height: 240px;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    height: auto;
-  }
-}
-
-.pie-chart {
-  position: relative;
-  width: 160px;
-  height: 160px;
-
-  .pie-circle {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    transform: rotate(-90deg);
-  }
-
-  .pie-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    background: #fff;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .pie-total {
-    font-size: 24px;
-    font-weight: 600;
-    color: #1f2329;
-  }
-
-  .pie-label {
-    font-size: 12px;
-    color: #666e7a;
-    margin-top: 4px;
-  }
-}
-
-.pie-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .legend-color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-  }
-
-  .legend-label {
-    font-size: 14px;
-    color: #1f2329;
-  }
-
-  .legend-count {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1f2329;
-    margin-left: 8px;
-  }
-}
 </style>
