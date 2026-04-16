@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { JwtPayload, LoginDto } from './auth.dto';
+import { ForgetPasswordDto, JwtPayload, LoginDto } from './auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as SvgCaptcha from 'svg-captcha';
 import { Result, successJson } from '@/utils/result';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@/modules/system/user/user.entity';
 import { UserService } from '@/modules/system/user/user.service';
+import { genPassowrd } from '@/utils/cryptogram';
 
 @Injectable()
 export class AuthService {
@@ -81,5 +82,39 @@ export class AuthService {
     const user = await this.userService.findByUserId(payload.id);
 
     return user;
+  }
+
+  /**
+   * 忘记密码 - 通过用户名和邮箱验证后重置密码
+   * @param forgetPasswordDto
+   * @param captcha
+   */
+  async forgetPassword(forgetPasswordDto: ForgetPasswordDto, captcha: string) {
+    const { username, email, newPassword } = forgetPasswordDto;
+
+    let res = new Result<string>();
+
+    if (forgetPasswordDto.captcha?.toUpperCase() === captcha?.toUpperCase()) {
+      const user = await this.userService.findByUsername(username);
+
+      if (!user) {
+        res.code = 10001;
+        res.message = `用户：${username} 不存在.`;
+      } else if (user.email !== email) {
+        res.code = 10006;
+        res.message = '邮箱与用户不匹配.';
+      } else if (user.status !== 0) {
+        res.code = 10002;
+        res.message = `用户：${username} 已被停用.`;
+      } else {
+        await this.userService.resetPassword(user.userId, newPassword, user.userName);
+        res = successJson('密码重置成功');
+      }
+    } else {
+      res.code = 10005;
+      res.message = '验证码不正确.';
+    }
+
+    return res;
   }
 }

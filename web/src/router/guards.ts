@@ -9,7 +9,7 @@ import { useUser } from '@/store/modules/user';
 
 const LOGIN_PATH = PageEnum.BASE_LOGIN;
 
-const whitePathList = [LOGIN_PATH]; // no redirect whitelist
+const whitePathList = [LOGIN_PATH, PageEnum.BASE_FORGET_PASSWORD]; // no redirect whitelist
 
 // 路由守卫
 export function createRouterGuards(router: Router) {
