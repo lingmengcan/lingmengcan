@@ -1,4 +1,4 @@
-import { IsNotEmpty, MinLength, Length } from 'class-validator';
+import { IsNotEmpty, MinLength, Length, IsEmail } from 'class-validator';
 
 export class LoginDto {
   // username or email
@@ -18,4 +18,21 @@ export class JwtPayload {
   id: string;
   username: string;
   email: string;
+}
+
+export class ForgetPasswordDto {
+  @IsNotEmpty()
+  username: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @MinLength(6)
+  newPassword: string;
+
+  @IsNotEmpty()
+  @Length(5)
+  captcha: string;
 }

@@ -69,18 +69,23 @@ export const useUserStore = defineStore({
 
     // 获取用户信息
     async getInfo() {
-      const res = await getUserInfo();
+      try {
+        const res = await getUserInfo();
 
-      if (res && res.code === 0) {
-        const { user, permissions } = res.data;
+        if (res && res.code === 0) {
+          const { user, permissions } = res.data;
 
-        this.setPermissions(permissions);
-        this.setUserInfo(user);
-        this.setAvatar(user.avatar as string);
-        this.setUsername(user.userName);
+          this.setPermissions(permissions);
+          this.setUserInfo(user);
+          this.setAvatar(user.avatar as string);
+          this.setUsername(user.userName);
+        }
+
+        return res?.data;
+      } catch (error) {
+        console.error('获取用户信息失败:', error);
+        return null;
       }
-
-      return res?.data;
     },
 
     // 登出
