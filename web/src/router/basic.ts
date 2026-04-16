@@ -26,6 +26,15 @@ export const LoginRoute: RouteRecordRaw = {
   },
 };
 
+export const ForgetPasswordRoute: RouteRecordRaw = {
+  path: '/forget-password',
+  name: 'ForgetPassword',
+  component: () => import('@/views/forget-password.vue'),
+  meta: {
+    title: '忘记密码',
+  },
+};
+
 // 404 on a page
 export const ErrorPageRoute: RouteRecordRaw = {
   path: '/:path(.*)*',

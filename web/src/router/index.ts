@@ -1,5 +1,5 @@
 import { RouteRecordRaw, createRouter, createWebHistory } from 'vue-router';
-import { LoginRoute, RedirectRoute, RootRoute } from '@/router/basic';
+import { ForgetPasswordRoute, LoginRoute, RedirectRoute, RootRoute } from '@/router/basic';
 import { App } from 'vue';
 import { createRouterGuards } from './guards';
 
@@ -24,7 +24,7 @@ routeModuleList.sort(sortRoute);
 export const asyncRoutes = [...routeModuleList];
 
 //普通路由 无需验证权限
-export const defaultRoutes: RouteRecordRaw[] = [LoginRoute, RootRoute, RedirectRoute];
+export const defaultRoutes: RouteRecordRaw[] = [LoginRoute, ForgetPasswordRoute, RootRoute, RedirectRoute];
 
 const router = createRouter({
   history: createWebHistory(),

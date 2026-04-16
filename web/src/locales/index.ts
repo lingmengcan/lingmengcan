@@ -40,8 +40,8 @@ const importMessages = computed(() => {
 // 创建 i18n 实例
 export const i18n = createI18n({
   legacy: false,
-  locale: useLocalStorage(localeConfigKey, 'zh_CN').value || languages.value[0] || 'zh_CN',
-  fallbackLocale: 'zh_CN',
+  locale: useLocalStorage(localeConfigKey, 'zh-CN').value || languages.value[0] || 'zh-CN',
+  fallbackLocale: 'zh-CN',
   messages: importMessages.value,
   globalInjection: true,
 });
@@ -65,11 +65,11 @@ export function useLocale() {
   function changeLocale(lang: string) {
     // 如果切换的语言不在对应语言文件里则默认为简体中文
     if (!langCode.includes(lang)) {
-      lang = 'zh_CN';
+      lang = 'zh-CN';
     }
 
     locale.value = lang;
-    useLocalStorage(localeConfigKey, 'zh_CN').value = lang;
+    useLocalStorage(localeConfigKey, 'zh-CN').value = lang;
   }
 
   const getComponentsLocale = computed(() => {

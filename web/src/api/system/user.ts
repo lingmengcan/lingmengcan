@@ -41,3 +41,7 @@ export const changeUserStatus = (data: User) => http.request<Result<User>>('user
 
 //重置密码
 export const resetPassword = (data: UserResetPwd) => http.request<Result<string>>('user/reset-pwd', Method.PUT, data);
+
+// 忘记密码 - 通过用户名和邮箱验证后重置密码
+export const forgetPassword = (data: { username: string; email: string; newPassword: string; captcha: string }) =>
+  httpNoAuth.request<Result<string>>('forget-password', Method.POST, data);
