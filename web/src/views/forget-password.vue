@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { onMounted, ref, reactive } from 'vue';
+  import { onMounted, ref, reactive, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { FormProps, MessagePlugin } from 'tdesign-vue-next';
   import { UserIcon, LockOnIcon, CheckCircleIcon } from 'tdesign-icons-vue-next';
@@ -21,11 +21,21 @@
     captcha: '',
   });
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const rules: FormProps['rules'] = {
     username: [{ required: true, message: t('views.login.forgetPassword.usernamePlaceholder'), trigger: 'blur' }],
     email: [
       { required: true, message: t('views.login.forgetPassword.emailPlaceholder'), trigger: 'blur' },
-      { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' },
+      {
+        validator: (value: string) => {
+          if (!emailRegex.test(value)) {
+            return { result: false, message: '请输入有效的邮箱地址' };
+          }
+          return { result: true };
+        },
+        trigger: 'blur',
+      },
     ],
     newPassword: [
       { required: true, message: t('views.login.forgetPassword.newPasswordPlaceholder'), trigger: 'blur' },
@@ -33,16 +43,7 @@
     ],
     confirmPassword: [
       { required: true, message: t('views.login.forgetPassword.confirmPasswordPlaceholder'), trigger: 'blur' },
-      {
-        validator: (rule, value, callback) => {
-          if (value !== formInline.newPassword) {
-            callback(new Error(t('views.login.forgetPassword.passwordNotMatch')));
-          } else {
-            callback();
-          }
-        },
-        trigger: 'blur',
-      },
+      { min: 6, message: t('views.login.forgetPassword.passwordTooShort'), trigger: 'blur' },
     ],
     captcha: [{ required: true, message: t('views.login.input.verification'), trigger: 'blur' }],
   };
@@ -66,6 +67,11 @@
 
   const handleSubmit = async ({ validateResult, firstError }) => {
     if (validateResult === true) {
+      if (formInline.newPassword !== formInline.confirmPassword) {
+        MessagePlugin.error(t('views.login.forgetPassword.passwordNotMatch'));
+        return;
+      }
+
       const { username, email, newPassword, captcha } = formInline;
 
       loading.value = true;
@@ -133,7 +139,6 @@
           <t-form-item name="email">
             <t-input
               v-model="formInline.email"
-              type="email"
               :placeholder="$t('views.login.forgetPassword.emailPlaceholder')"
               size="large"
               clearable
